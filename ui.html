@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root {
+      --header-h: 40px;
+    }
+
+    html,
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8f9fa;
+      height: 100vh;
+    }
+
+    #header {
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: white;
+      border-bottom: 1px solid #e1e5e9;
+      font-weight: 600;
+    }
+
+    #collapseToggle {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+    }
+
+    #collapseToggle:hover {
+      background: #f0f0f0;
+    }
+
+    #content {
+      height: calc(100vh - var(--header-h));
+      overflow: auto;
+      padding: 20px;
+    }
+
+    body.collapsed #content {
+      display: none;
+    }
+
+    /* Form View Styles */
+    .main-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin: 0 0 8px 0;
+    }
+
+    .description {
+      font-size: 14px;
+      color: #666;
+      margin: 0 0 24px 0;
+      line-height: 1.4;
+    }
+
+    .section {
+      margin-bottom: 24px;
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .helper-text {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+
+    .attach-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #007AFF;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .attach-button:hover {
+      background: #0056CC;
+    }
+
+    .attach-button.attached {
+      background: #4CAF50;
+    }
+
+    .attach-button.loading {
+      background: #999;
+      cursor: not-allowed;
+    }
+
+    .dropdown-arrow {
+      margin-left: auto;
+      font-size: 12px;
+      transition: transform 0.2s;
+    }
+
+    .attach-button.open .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .library-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .library-dropdown.show {
+      display: block;
+    }
+
+    .library-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+    .library-item:last-child {
+      border-bottom: none;
+    }
+
+    .library-item:hover:not(.loading):not(.no-libraries) {
+      background: #f8f9fa;
+    }
+
+    .library-item.loading {
+      color: #666;
+      cursor: default;
+      font-style: italic;
+    }
+
+    .library-item.no-libraries {
+      color: #999;
+      cursor: default;
+      text-align: center;
+      font-style: italic;
+    }
+
+    .library-name {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .library-type {
+      font-size: 12px;
+      color: #666;
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .attach-container {
+      position: relative;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .checkbox {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ddd;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .checkbox.checked {
+      background: #007AFF;
+      border-color: #007AFF;
+    }
+
+    .checkbox.checked::after {
+      content: '✓';
+      color: white;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    .checkbox-label {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .option-name {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 2px;
+    }
+
+    .option-description {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      line-height: 1.3;
+    }
+
+    .run-button {
+      background: #007AFF;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 24px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .run-button:hover:not(.disabled) {
+      background: #0056CC;
+    }
+
+    .run-button.disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .run-button.ready {
+      background: #4CAF50;
+    }
+
+    .run-button-help {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .run-button-help.ready {
+      color: #4CAF50;
+    }
+
+    .validation-error {
+      display: none;
+      background: #ffebee;
+      border: 1px solid #ffcdd2;
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #d32f2f;
+    }
+
+    .validation-error.show {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .validation-warning {
+      display: none;
+      background: #fff3e0;
+      border: 1px solid #ffcc02;
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #f57c00;
+    }
+
+    .validation-warning.show {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* View-specific styles */
+    .view-form {
+      display: block;
+    }
+
+    .view-results {
+      display: none;
+    }
+
+    .view-collapsed {
+      display: none;
+    }
+
+    /* Results View Styles */
+    .results-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e1e5e9;
+    }
+
+    .back-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #333;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .back-button:hover {
+      background: #e0e0e0;
+    }
+
+    .back-icon {
+      font-size: 16px;
+    }
+
+    .results-title-section {
+      flex: 1;
+    }
+
+    .results-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+      margin: 0;
+    }
+
+    .results-count {
+      font-size: 14px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .results-content {
+      /* Content will be styled dynamically */
+    }
+
+    /* Issue card specific styles */
+    .issue-card {
+      background: white;
+      border-radius: 8px;
+      border-left: 4px solid #ff9800;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+    }
+
+    .issue-card:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .token-select {
+      flex: 1;
+      padding: 8px 12px;
+      border: 2px solid #007AFF;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+
+    .token-select:focus {
+      outline: none;
+      border-color: #0056CC;
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    }
+
+    .action-button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      font-family: inherit;
+    }
+
+    .action-button.view {
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      color: #333;
+    }
+
+    .action-button.view:hover {
+      background: #e9ecef;
+    }
+
+    .action-button.update {
+      background: #007AFF;
+      color: white;
+      font-weight: 500;
+      padding: 8px 16px;
+    }
+
+    .action-button.update:hover {
+      background: #0056CC;
+    }
+
+    .action-button.ignore {
+      background: transparent;
+      color: #666;
+    }
+
+    .action-button.ignore:hover {
+      background: #f8f9fa;
+      color: #333;
+    }
+
+    .issues-header {
+      background: #fff3e0;
+      border: 1px solid #ffcc02;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .best-match-section {
+      margin-bottom: 16px;
+    }
+
+    .best-match-label {
+      font-size: 12px;
+      color: #007AFF;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    /* When in results mode */
+    body.results-mode .view-form {
+      display: none;
+    }
+
+    body.results-mode .view-results {
+      display: block;
+    }
+
+    /* When collapsed */
+    body.collapsed .view-form,
+    body.collapsed .view-results {
+      display: none;
+    }
+
+    body.collapsed .view-collapsed {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: calc(100vh - var(--header-h));
+      padding: 16px;
+    }
+
+    .collapsed-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      width: 100%;
+    }
+
+    .expand-button {
+      background: #007AFF;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      color: white;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .expand-button:hover {
+      background: #0056CC;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+    }
+
+    /* Test buttons for development */
+    .dev-test-buttons {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      display: flex;
+      gap: 5px;
+      z-index: 1000;
+    }
+
+    .test-button {
+      background: #666;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      color: white;
+      font-size: 10px;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .test-button:hover {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="content">
+    <!-- Form View -->
+    <div class="view-form" id="formView">
+      <h1 class="main-title">Token Validation</h1>
+      <p class="description">
+        Validate properties are set to use the tokens defined in your design system.
+      </p>
+
+      <div class="section design-system-section">
+        <div class="section-title">Design System:</div>
+        <div class="helper-text">
+          Select a design system to validate your design tokens against.
+        </div>
+        <div class="attach-container">
+          <button class="attach-button" id="attach-design-system">
+            <span class="attach-icon">📎</span>
+            <span id="attach-text">Attach Design System</span>
+            <span class="dropdown-arrow" id="dropdown-arrow">▼</span>
+          </button>
+          <div class="library-dropdown" id="library-dropdown">
+            <div class="library-item loading">Loading design systems...</div>
+          </div>
+        </div>
+        <div class="validation-error" id="design-system-error">
+          <span class="error-icon">⚠️</span>
+          <span>Please select a design system before running validation</span>
+        </div>
+      </div>
+
+      <div class="section validation-options-section">
+        <div class="section-title">What to check:</div>
+        <div class="helper-text">
+          Select which design token properties you want to validate. At least one option is required.
+        </div>
+        <div class="checkbox-item">
+          <div class="checkbox checked" data-option="spacings"></div>
+          <label class="checkbox-label">
+            <span class="option-name">Spacings (padding, gaps)</span>
+            <span class="option-description">Check if spacing values match your design tokens</span>
+          </label>
+        </div>
+        <div class="checkbox-item">
+          <div class="checkbox" data-option="corner-radius"></div>
+          <label class="checkbox-label">
+            <span class="option-name">Corner Radius</span>
+            <span class="option-description">Validate border radius values against tokens</span>
+          </label>
+        </div>
+        <div class="checkbox-item">
+          <div class="checkbox" data-option="font-size"></div>
+          <label class="checkbox-label">
+            <span class="option-name">Font Size</span>
+            <span class="option-description">Check text size consistency with typography tokens</span>
+          </label>
+        </div>
+        <div class="checkbox-item">
+          <div class="checkbox" data-option="font-color"></div>
+          <label class="checkbox-label">
+            <span class="option-name">Font Color</span>
+            <span class="option-description">Validate text colors match your color tokens</span>
+          </label>
+        </div>
+        <div class="validation-warning" id="options-warning">
+          <span class="warning-icon">⚠️</span>
+          <span>Please select at least one validation option to continue</span>
+        </div>
+      </div>
+
+      <div class="run-section">
+        <button class="run-button disabled" id="run-check">Run Check</button>
+        <div class="run-button-help" id="run-button-help">
+          Complete the form above to enable validation
+        </div>
+      </div>
+    </div>
+
+    <!-- Results View -->
+    <div class="view-results" id="resultsView">
+      <div class="results-header">
+        <button class="back-button" id="back-to-form">
+          <span class="back-icon">←</span>
+          New Check
+        </button>
+        <div class="results-title-section">
+          <div class="results-title" id="results-title">Results</div>
+        </div>
+      </div>
+      <div class="results-content" id="results-content">
+        <!-- Results will be populated here -->
+      </div>
+    </div>
+
+    <!-- Collapsed View -->
+    <div class="view-collapsed" id="collapsedView">
+      <div class="collapsed-content">
+        <button id="expand-button" class="expand-button">
+          Token Validator
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Development test buttons -->
+  <div class="dev-test-buttons">
+    <button class="test-button" id="testForm">Form</button>
+    <button class="test-button" id="testResults">Results</button>
+    <button class="test-button" id="testCollapse">Collapse</button>
+  </div>
+
+  <script>
+    console.log('🔍 UI SCRIPT LOADING');
+
+    // State management
+    let currentView = 'form'; // 'form', 'results', 'collapsed'
+    let validationOptions = ['spacings']; // Default spacings checked
+    let attachedDesignSystem = null;
+    let availableTokens = null; // Store the actual design tokens
+
+    // Get elements
+    const collapseBtn = document.getElementById('collapseToggle');
+    const testFormBtn = document.getElementById('testForm');
+    const testResultsBtn = document.getElementById('testResults');
+    const testCollapseBtn = document.getElementById('testCollapse');
+
+    // Form elements
+    const attachButton = document.getElementById('attach-design-system');
+    const runButton = document.getElementById('run-check');
+    const backButton = document.getElementById('back-to-form');
+    const expandButton = document.getElementById('expand-button');
+
+    // View switching functions
+    function showFormView() {
+      currentView = 'form';
+      document.body.className = '';
+      console.log('📋 Switched to Form view');
+    }
+
+    function showResultsView() {
+      currentView = 'results';
+      document.body.className = 'results-mode';
+      console.log('📊 Switched to Results view');
+    }
+
+    function showCollapsedView() {
+      currentView = 'collapsed';
+      document.body.className = 'collapsed';
+      console.log('🔄 Switched to Collapsed view');
+    }
+
+    // Form interaction handlers
+    function toggleValidationOption(option) {
+      const index = validationOptions.indexOf(option);
+      if (index > -1) {
+        validationOptions.splice(index, 1);
+      } else {
+        validationOptions.push(option);
+      }
+      updateCheckboxes();
+      updateRunButton();
+      console.log('✅ Validation options:', validationOptions);
+    }
+
+    function updateCheckboxes() {
+      document.querySelectorAll('.checkbox').forEach(checkbox => {
+        const option = checkbox.dataset.option;
+        if (option) {
+          checkbox.classList.toggle('checked', validationOptions.includes(option));
+        }
+      });
+    }
+
+    function updateRunButton() {
+      const hasDesignSystem = !!attachedDesignSystem;
+      const hasOptions = validationOptions.length > 0;
+      const isValid = hasDesignSystem && hasOptions;
+
+      runButton.disabled = !isValid;
+      runButton.classList.toggle('disabled', !isValid);
+      runButton.classList.toggle('ready', isValid);
+
+      const helpText = document.getElementById('run-button-help');
+      if (!hasDesignSystem && !hasOptions) {
+        helpText.textContent = 'Please attach a design system and select validation options';
+      } else if (!hasDesignSystem) {
+        helpText.textContent = 'Please attach a design system to continue';
+      } else if (!hasOptions) {
+        helpText.textContent = 'Please select at least one validation option';
+      } else {
+        helpText.textContent = 'Ready to run validation';
+        helpText.classList.add('ready');
+      }
+
+      // Show/hide validation warnings
+      document.getElementById('design-system-error').classList.toggle('show', !hasDesignSystem);
+      document.getElementById('options-warning').classList.toggle('show', !hasOptions);
+    }
+
+    // Event listeners for form interactions
+    document.querySelectorAll('.checkbox').forEach(checkbox => {
+      checkbox.addEventListener('click', () => {
+        const option = checkbox.dataset.option;
+        if (option) {
+          toggleValidationOption(option);
+        }
+      });
+    });
+
+    document.querySelectorAll('.checkbox-label').forEach(label => {
+      label.addEventListener('click', () => {
+        const checkbox = label.previousElementSibling;
+        const option = checkbox?.dataset.option;
+        if (option) {
+          toggleValidationOption(option);
+        }
+      });
+    });
+
+    // Dropdown state
+    let isDropdownOpen = false;
+    let availableLibraries = [];
+    let isLoadingLibraries = false;
+
+    // Main action buttons
+    attachButton?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      console.log('📎 Attach design system clicked');
+
+      if (attachedDesignSystem) {
+        // If already attached, detach
+        detachDesignSystem();
+      } else {
+        // Show dropdown to select design system
+        toggleDropdown();
+      }
+    });
+
+    function toggleDropdown() {
+      isDropdownOpen = !isDropdownOpen;
+      const dropdown = document.getElementById('library-dropdown');
+      const arrow = document.getElementById('dropdown-arrow');
+
+      if (isDropdownOpen) {
+        dropdown.classList.add('show');
+        attachButton.classList.add('open');
+
+        // Load libraries if not already loaded
+        if (availableLibraries.length === 0 && !isLoadingLibraries) {
+          loadDesignSystems();
+        }
+      } else {
+        dropdown.classList.remove('show');
+        attachButton.classList.remove('open');
+      }
+    }
+
+    function closeDropdown() {
+      isDropdownOpen = false;
+      const dropdown = document.getElementById('library-dropdown');
+      dropdown.classList.remove('show');
+      attachButton.classList.remove('open');
+    }
+
+    function loadDesignSystems() {
+      isLoadingLibraries = true;
+      const dropdown = document.getElementById('library-dropdown');
+      dropdown.innerHTML = '<div class="library-item loading">Loading design systems...</div>';
+
+      // Request libraries from the plugin
+      parent.postMessage({
+        pluginMessage: {
+          type: 'get-libraries'
+        }
+      }, '*');
+    }
+
+    function populateDropdown(libraries) {
+      const dropdown = document.getElementById('library-dropdown');
+      dropdown.innerHTML = '';
+
+      if (libraries.length === 0) {
+        dropdown.innerHTML = '<div class="library-item no-libraries">No design systems found</div>';
+        return;
+      }
+
+      libraries.forEach(library => {
+        const item = document.createElement('div');
+        item.className = 'library-item';
+        item.innerHTML = `
+          <span class="library-name">${library.name}</span>
+          <span class="library-type">${library.source || 'Library'}</span>
+        `;
+
+        item.addEventListener('click', () => {
+          selectDesignSystem(library);
+        });
+
+        dropdown.appendChild(item);
+      });
+    }
+
+    function selectDesignSystem(library) {
+      console.log('📎 Selected design system:', library.name);
+      attachedDesignSystem = library;
+
+      // Update UI
+      document.getElementById('attach-text').textContent = `${library.name} Attached`;
+      attachButton.classList.add('attached');
+
+      // Close dropdown
+      closeDropdown();
+
+      // Update form validation
+      updateRunButton();
+
+      // Notify plugin
+      parent.postMessage({
+        pluginMessage: {
+          type: 'attach-design-system',
+          libraryId: library.id
+        }
+      }, '*');
+    }
+
+    function detachDesignSystem() {
+      console.log('📎 Detaching design system');
+      attachedDesignSystem = null;
+
+      // Update UI
+      document.getElementById('attach-text').textContent = 'Attach Design System';
+      attachButton.classList.remove('attached');
+
+      // Update form validation
+      updateRunButton();
+
+      // Notify plugin
+      parent.postMessage({
+        pluginMessage: {
+          type: 'detach-design-system'
+        }
+      }, '*');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!attachButton.contains(e.target) && !document.getElementById('library-dropdown').contains(e.target)) {
+        closeDropdown();
+      }
+    });
+
+    runButton?.addEventListener('click', () => {
+      if (!runButton.disabled) {
+        console.log('🚀 Run check clicked with options:', validationOptions);
+        
+        // Show loading state
+        runButton.textContent = 'Running Validation...';
+        runButton.disabled = true;
+        
+        // Switch to results view
+        showResultsView();
+        parent.postMessage({ pluginMessage: { type: 'show-results-view' } }, '*');
+        
+        // Start validation
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'run-validation',
+            options: validationOptions,
+            designSystem: attachedDesignSystem
+          } 
+        }, '*');
+      }
+    });
+
+    backButton?.addEventListener('click', () => {
+      console.log('← Back to form clicked');
+      showFormView();
+      parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
+    });
+
+    expandButton?.addEventListener('click', () => {
+      console.log('🔄 Expand clicked');
+      showFormView();
+      parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
+    });
+
+    // Header collapse toggle
+    collapseBtn?.addEventListener('click', () => {
+      console.log('🔄 Collapse toggle clicked');
+      parent.postMessage({ pluginMessage: { type: 'toggle-collapse' } }, '*');
+    });
+
+    // Development test buttons
+    testFormBtn?.addEventListener('click', () => {
+      console.log('📋 Form view test clicked');
+      showFormView();
+      parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
+    });
+
+    testResultsBtn?.addEventListener('click', () => {
+      console.log('📊 Results view test clicked');
+      showResultsView();
+      parent.postMessage({ pluginMessage: { type: 'show-results-view' } }, '*');
+    });
+
+    testCollapseBtn?.addEventListener('click', () => {
+      console.log('🔄 Collapse test clicked');
+      parent.postMessage({ pluginMessage: { type: 'toggle-collapse' } }, '*');
+    });
+
+    // Listen for messages from plugin
+    window.addEventListener('message', (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      console.log('📨 UI received message:', msg);
+
+      if (msg.type === 'ui-state') {
+        if (msg.collapsed) {
+          showCollapsedView();
+        } else {
+          // Return to previous view or default to form
+          if (currentView === 'collapsed') {
+            showFormView();
+          }
+        }
+        if (collapseBtn) {
+          collapseBtn.textContent = msg.collapsed ? '▸' : '▾';
+        }
+      }
+
+      if (msg.type === 'view-mode') {
+        if (msg.mode === 'form') {
+          showFormView();
+        } else if (msg.mode === 'results') {
+          showResultsView();
+        }
+      }
+
+      if (msg.type === 'libraries-response') {
+        console.log('📚 Received libraries:', msg.libraries);
+        isLoadingLibraries = false;
+        availableLibraries = msg.libraries || [];
+        populateDropdown(availableLibraries);
+      }
+
+      if (msg.type === 'design-system-attached') {
+        console.log('✅ Design system attached:', msg.library);
+        // Update UI to reflect successful attachment
+      }
+
+      if (msg.type === 'design-system-error') {
+        console.log('❌ Design system error:', msg.error);
+        // Show error message
+        alert('Error: ' + msg.error);
+      }
+
+      if (msg.type === 'validation-results') {
+        console.log('📊 Received validation results:', msg);
+        availableTokens = msg.tokens; // Store the actual tokens
+        displayValidationResults(msg.issues, msg.summary);
+        
+        // Reset run button
+        runButton.textContent = 'Run Check';
+        runButton.disabled = false;
+      }
+
+      if (msg.type === 'validation-error') {
+        console.log('❌ Validation error:', msg.error);
+        alert('Validation Error: ' + msg.error);
+        
+        // Reset run button and go back to form
+        runButton.textContent = 'Run Check';
+        runButton.disabled = false;
+        showFormView();
+        parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
+      }
+    });
+
+    // Results display function
+    function displayValidationResults(issues, summary) {
+      console.log('📊 Displaying validation results:', issues.length, 'issues');
+      
+      // Results count removed from header
+      
+      // Update results content
+      const resultsContent = document.getElementById('results-content');
+      if (resultsContent) {
+        if (issues.length === 0) {
+          resultsContent.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #4CAF50;">
+              <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+              <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Great job!</div>
+              <div style="font-size: 14px; color: #666;">No token validation issues found in your design.</div>
+            </div>
+          `;
+        } else {
+          // Create the new layout matching the design
+          let html = `
+            <!-- Issues Found Header -->
+            <div style="background: #fff3e0; border: 1px solid #ffcc02; border-radius: 8px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+              <div style="color: #f57c00; font-size: 20px;">⚠️</div>
+              <div>
+                <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 2px;">Issues Found</div>
+                <div style="font-size: 14px; color: #666;">${summary.totalIssues} issues in ${issues.length} nodes (Current Page)</div>
+              </div>
+            </div>
+
+            <!-- Issue Cards -->
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+          `;
+          
+          // Create issue cards
+          issues.forEach((issue, index) => {
+            const typeLabels = {
+              'spacing': 'spacing',
+              'corner-radius': 'border radius',
+              'font-size': 'font size',
+              'font-color': 'color'
+            };
+            
+            const typeLabel = typeLabels[issue.type] || issue.type;
+            
+            // Generate suggested tokens for dropdown
+            const suggestedTokens = getSuggestedTokensForIssue(issue);
+            
+            html += `
+              <div style="background: white; border-radius: 8px; border-left: 4px solid #ff9800; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <!-- Issue Header -->
+                <div style="margin-bottom: 12px;">
+                  <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 4px;">
+                    ${issue.nodeName}
+                  </div>
+                  <div style="font-size: 14px; color: #666;">
+                    Using hardcoded ${typeLabel}: ${issue.currentValue}${typeof issue.currentValue === 'number' ? 'px' : ''}
+                  </div>
+                </div>
+
+                <!-- Best Match Badge -->
+                <div style="margin-bottom: 12px;">
+                  <span style="display: inline-block; background: #E3F2FD; color: #007AFF; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 6px;">Best Match</span>
+                </div>
+
+                <!-- Dropdown and Action Buttons in one row -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <select style="min-width: 200px; max-width: 300px; padding: 8px 12px; border: 2px solid #007AFF; border-radius: 6px; font-size: 14px; background: white;" 
+                          id="token-select-${index}">
+                    ${suggestedTokens.map(token => {
+                      const displayValue = typeof token.value === 'number' ? `${token.value}px` : token.value;
+                      return `<option value="${token.id}">${token.name} - ${displayValue}</option>`;
+                    }).join('')}
+                  </select>
+                  <button style="display: flex; align-items: center; justify-content: center; padding: 8px 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer; color: #333;" 
+                          onclick="viewIssueNode('${issue.nodeId}')">
+                    View
+                  </button>
+                  <button style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #007AFF; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; color: white; font-weight: 500;" 
+                          onclick="updateIssueNode('${issue.nodeId}', ${index})">
+                    Update
+                  </button>
+                  <button style="display: flex; align-items: center; justify-content: center; padding: 8px 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer; color: #333;" 
+                          onclick="ignoreIssue('${issue.nodeId}', ${index})">
+                    Ignore
+                  </button>
+                </div>
+              </div>
+            `;
+          });
+          
+          html += '</div>';
+          resultsContent.innerHTML = html;
+        }
+      }
+    }
+
+    // Helper function to get suggested tokens for an issue
+    function getSuggestedTokensForIssue(issue) {
+      if (!availableTokens) {
+        console.log('⚠️ No tokens available yet');
+        return [];
+      }
+      
+      console.log('🎨 Getting suggested tokens for issue type:', issue.type);
+      console.log('🎨 Available tokens:', availableTokens);
+      
+      // Map issue types to token categories
+      const tokenTypeMap = {
+        'spacing': 'spacings',
+        'corner-radius': 'cornerRadius', 
+        'font-size': 'fontSize',
+        'font-color': 'fontColor'
+      };
+      
+      const tokenCategory = tokenTypeMap[issue.type];
+      if (!tokenCategory || !availableTokens[tokenCategory]) {
+        console.log('⚠️ No tokens found for category:', tokenCategory);
+        return [];
+      }
+      
+      const tokens = availableTokens[tokenCategory];
+      console.log(`🎨 Found ${tokens.length} tokens for ${issue.type}:`, tokens);
+      
+      // Sort tokens by how close they are to the current value (if numeric)
+      if (typeof issue.currentValue === 'number') {
+        return tokens.sort((a, b) => {
+          const diffA = Math.abs(a.value - issue.currentValue);
+          const diffB = Math.abs(b.value - issue.currentValue);
+          return diffA - diffB;
+        });
+      }
+      
+      return tokens;
+    }
+
+    // Action button functions
+    window.viewIssueNode = function(nodeId) {
+      console.log('👁️ Viewing node:', nodeId);
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'select-node',
+          nodeId: nodeId
+        } 
+      }, '*');
+    };
+
+    window.updateIssueNode = function(nodeId, issueIndex) {
+      console.log('🔄 Updating node:', nodeId, 'with issue index:', issueIndex);
+      
+      // Get the selected token from the dropdown
+      const selectElement = document.getElementById(`token-select-${issueIndex}`);
+      const selectedTokenId = selectElement ? selectElement.value : null;
+      
+      if (selectedTokenId) {
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'update-node-token',
+            nodeId: nodeId,
+            tokenId: selectedTokenId,
+            issueIndex: issueIndex
+          } 
+        }, '*');
+      } else {
+        console.log('❌ No token selected for update');
+      }
+    };
+
+    window.ignoreIssue = function(nodeId, issueIndex) {
+      console.log('✕ Ignoring issue for node:', nodeId, 'issue index:', issueIndex);
+      
+      // Remove the issue card from the UI
+      const issueCards = document.querySelectorAll('[style*="border-left: 4px solid #ff9800"]');
+      if (issueCards[issueIndex]) {
+        issueCards[issueIndex].style.opacity = '0.5';
+        issueCards[issueIndex].style.pointerEvents = 'none';
+        
+        // Add "Ignored" label
+        const header = issueCards[issueIndex].querySelector('[style*="font-size: 16px"]');
+        if (header && !header.textContent.includes('(Ignored)')) {
+          header.textContent += ' (Ignored)';
+        }
+      }
+      
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'ignore-issue',
+          nodeId: nodeId,
+          issueIndex: issueIndex
+        } 
+      }, '*');
+    };
+
+    // Legacy function for backward compatibility
+    window.selectIssueNode = function(nodeId) {
+      console.log('🎯 Selecting node:', nodeId);
+      window.viewIssueNode(nodeId);
+    };
+
+    // Initial setup
+    updateCheckboxes();
+    updateRunButton();
+    showFormView();
+
+    console.log('✅ UI SCRIPT LOADED');
+  </script>
+</body>
+
+</html>

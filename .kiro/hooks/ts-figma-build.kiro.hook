@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "TypeScript Figma Build",
+  "description": "Automatically builds the project and updates Figma plugin code when TypeScript files are saved",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A TypeScript file has been saved. Please perform the following steps:\n1. Run \"npm run build\" to compile TypeScript files\n2. Copy the compiled \"dist/code.js\" file to \"code.js\" in the root directory  \n3. Show a success message when complete\nThis automates the build process for Figma plugin development with TypeScript."
+  }
+}
