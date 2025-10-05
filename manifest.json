@@ -2,7 +2,7 @@
   "name": "Token Validation",
   "id": "1555652831143954929",
   "api": "1.0.0",
-  "main": "code.js",
+  "main": "dist/code.js",
   "capabilities": [],
   "enableProposedApi": false,
   "documentAccess": "dynamic-page",
@@ -13,7 +13,8 @@
   "ui": "ui.html",
   "networkAccess": {
     "allowedDomains": [
-      "none"
-    ]
+      "https://api.figma.com"
+    ],
+    "reasoning": "Auto-import text styles from design system libraries"
   }
 }

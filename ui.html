@@ -567,7 +567,7 @@
     <div class="view-form" id="formView">
       <h1 class="main-title">Token Validation</h1>
       <p class="description">
-        Validate properties are set to use the tokens defined in your design system.
+        Attach a design system to automatically import text styles and access design tokens.
       </p>
 
       <div class="section design-system-section">
@@ -585,57 +585,10 @@
             <div class="library-item loading">Loading design systems...</div>
           </div>
         </div>
-        <div class="validation-error" id="design-system-error">
-          <span class="error-icon">⚠️</span>
-          <span>Please select a design system before running validation</span>
-        </div>
+
       </div>
 
-      <div class="section validation-options-section">
-        <div class="section-title">What to check:</div>
-        <div class="helper-text">
-          Select which design token properties you want to validate. At least one option is required.
-        </div>
-        <div class="checkbox-item">
-          <div class="checkbox checked" data-option="spacings"></div>
-          <label class="checkbox-label">
-            <span class="option-name">Spacings (padding, gaps)</span>
-            <span class="option-description">Check if spacing values match your design tokens</span>
-          </label>
-        </div>
-        <div class="checkbox-item">
-          <div class="checkbox" data-option="corner-radius"></div>
-          <label class="checkbox-label">
-            <span class="option-name">Corner Radius</span>
-            <span class="option-description">Validate border radius values against tokens</span>
-          </label>
-        </div>
-        <div class="checkbox-item">
-          <div class="checkbox" data-option="font-size"></div>
-          <label class="checkbox-label">
-            <span class="option-name">Font Size</span>
-            <span class="option-description">Check text size consistency with typography tokens</span>
-          </label>
-        </div>
-        <div class="checkbox-item">
-          <div class="checkbox" data-option="font-color"></div>
-          <label class="checkbox-label">
-            <span class="option-name">Font Color</span>
-            <span class="option-description">Validate text colors match your color tokens</span>
-          </label>
-        </div>
-        <div class="validation-warning" id="options-warning">
-          <span class="warning-icon">⚠️</span>
-          <span>Please select at least one validation option to continue</span>
-        </div>
-      </div>
 
-      <div class="run-section">
-        <button class="run-button disabled" id="run-check">Run Check</button>
-        <div class="run-button-help" id="run-button-help">
-          Complete the form above to enable validation
-        </div>
-      </div>
     </div>
 
     <!-- Results View -->
@@ -676,7 +629,7 @@
 
     // State management
     let currentView = 'form'; // 'form', 'results', 'collapsed'
-    let validationOptions = ['spacings']; // Default spacings checked
+    // Removed validation options - focusing only on design system attachment
     let attachedDesignSystem = null;
     let availableTokens = null; // Store the actual design tokens
 
@@ -688,7 +641,7 @@
 
     // Form elements
     const attachButton = document.getElementById('attach-design-system');
-    const runButton = document.getElementById('run-check');
+    // Removed runButton - not needed for design system focus
     const backButton = document.getElementById('back-to-form');
     const expandButton = document.getElementById('expand-button');
 
@@ -711,73 +664,13 @@
       console.log('🔄 Switched to Collapsed view');
     }
 
-    // Form interaction handlers
-    function toggleValidationOption(option) {
-      const index = validationOptions.indexOf(option);
-      if (index > -1) {
-        validationOptions.splice(index, 1);
-      } else {
-        validationOptions.push(option);
-      }
-      updateCheckboxes();
-      updateRunButton();
-      console.log('✅ Validation options:', validationOptions);
+    // Simplified - only need to track design system attachment
+    function updateUI() {
+      console.log('🔄 Updating UI state');
+      // UI updates handled by design system attachment flow
     }
 
-    function updateCheckboxes() {
-      document.querySelectorAll('.checkbox').forEach(checkbox => {
-        const option = checkbox.dataset.option;
-        if (option) {
-          checkbox.classList.toggle('checked', validationOptions.includes(option));
-        }
-      });
-    }
-
-    function updateRunButton() {
-      const hasDesignSystem = !!attachedDesignSystem;
-      const hasOptions = validationOptions.length > 0;
-      const isValid = hasDesignSystem && hasOptions;
-
-      runButton.disabled = !isValid;
-      runButton.classList.toggle('disabled', !isValid);
-      runButton.classList.toggle('ready', isValid);
-
-      const helpText = document.getElementById('run-button-help');
-      if (!hasDesignSystem && !hasOptions) {
-        helpText.textContent = 'Please attach a design system and select validation options';
-      } else if (!hasDesignSystem) {
-        helpText.textContent = 'Please attach a design system to continue';
-      } else if (!hasOptions) {
-        helpText.textContent = 'Please select at least one validation option';
-      } else {
-        helpText.textContent = 'Ready to run validation';
-        helpText.classList.add('ready');
-      }
-
-      // Show/hide validation warnings
-      document.getElementById('design-system-error').classList.toggle('show', !hasDesignSystem);
-      document.getElementById('options-warning').classList.toggle('show', !hasOptions);
-    }
-
-    // Event listeners for form interactions
-    document.querySelectorAll('.checkbox').forEach(checkbox => {
-      checkbox.addEventListener('click', () => {
-        const option = checkbox.dataset.option;
-        if (option) {
-          toggleValidationOption(option);
-        }
-      });
-    });
-
-    document.querySelectorAll('.checkbox-label').forEach(label => {
-      label.addEventListener('click', () => {
-        const checkbox = label.previousElementSibling;
-        const option = checkbox?.dataset.option;
-        if (option) {
-          toggleValidationOption(option);
-        }
-      });
-    });
+    // Removed checkbox event listeners - no validation options needed
 
     // Dropdown state
     let isDropdownOpen = false;
@@ -873,8 +766,8 @@
       // Close dropdown
       closeDropdown();
 
-      // Update form validation
-      updateRunButton();
+      // Update UI state
+      updateUI();
 
       // Notify plugin
       parent.postMessage({
@@ -893,8 +786,8 @@
       document.getElementById('attach-text').textContent = 'Attach Design System';
       attachButton.classList.remove('attached');
 
-      // Update form validation
-      updateRunButton();
+      // Update UI state
+      updateUI();
 
       // Notify plugin
       parent.postMessage({
@@ -911,28 +804,7 @@
       }
     });
 
-    runButton?.addEventListener('click', () => {
-      if (!runButton.disabled) {
-        console.log('🚀 Run check clicked with options:', validationOptions);
-        
-        // Show loading state
-        runButton.textContent = 'Running Validation...';
-        runButton.disabled = true;
-        
-        // Switch to results view
-        showResultsView();
-        parent.postMessage({ pluginMessage: { type: 'show-results-view' } }, '*');
-        
-        // Start validation
-        parent.postMessage({ 
-          pluginMessage: { 
-            type: 'run-validation',
-            options: validationOptions,
-            designSystem: attachedDesignSystem
-          } 
-        }, '*');
-      }
-    });
+    // Removed runButton event listener - focusing only on design system attachment
 
     backButton?.addEventListener('click', () => {
       console.log('← Back to form clicked');
@@ -1022,20 +894,32 @@
         availableTokens = msg.tokens; // Store the actual tokens
         displayValidationResults(msg.issues, msg.summary);
         
-        // Reset run button
-        runButton.textContent = 'Run Check';
-        runButton.disabled = false;
+        // Removed run button reset - not needed
       }
 
       if (msg.type === 'validation-error') {
         console.log('❌ Validation error:', msg.error);
         alert('Validation Error: ' + msg.error);
         
-        // Reset run button and go back to form
-        runButton.textContent = 'Run Check';
-        runButton.disabled = false;
+        // Go back to form
         showFormView();
         parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
+      }
+
+      if (msg.type === 'text-styles-analyzed') {
+        console.log('📝 Text styles analyzed:', msg);
+        
+        // Show a brief notification about the analysis
+        const styleCount = msg.stylePatterns.length;
+        const libraryCount = msg.usage.libraryStyles;
+        
+        if (styleCount > 0) {
+          console.log(`✨ Found ${styleCount} text style patterns in use`);
+          console.log(`📚 ${libraryCount} elements using library styles`);
+          
+          // Could show a toast notification here in the future
+          // For now, just log the success
+        }
       }
     });
 
@@ -1238,8 +1122,7 @@
     };
 
     // Initial setup
-    updateCheckboxes();
-    updateRunButton();
+    updateUI();
     showFormView();
 
     console.log('✅ UI SCRIPT LOADED');
