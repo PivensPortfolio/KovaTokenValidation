@@ -24,7 +24,7 @@ const SIZE_FORM = { width: 400, height: 800 }; // Form view
 const SIZE_RESULTS = { width: 800, height: 800 }; // Results view  
 const SIZE_DOCUMENTATION = { width: 1280, height: 800 }; // Documentation view
 const SIZE_COLLAPSED = { width: 220, height: 44 }; // Collapsed view
-const SIZE_MINIMIZED = { width: 800, height: 60 }; // Minimized view (single row height)
+const SIZE_MINIMIZED = { width: 800, height: 100 }; // Minimized view (comfortable height)
 let isCollapsed = false;
 let currentDesignSystem: any = null;
 

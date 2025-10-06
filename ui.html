@@ -564,7 +564,7 @@
       border-bottom: 1px solid #e1e5e9;
       z-index: 1000;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      min-height: 60px;
+      min-height: 100px;
       display: none;
     }
 
@@ -572,44 +572,48 @@
       display: block !important;
     }
 
-    .minimized-content {
+    .minimized-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       padding: 8px 12px;
-      background: white;
-      padding-right: 60px; /* Make room for expand button */
+      border-bottom: 1px solid #f0f0f0;
+      background: #fafafa;
     }
 
-    .minimized-controls {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 1001;
+    .minimized-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .minimized-content {
+      padding: 12px;
+      background: white;
     }
 
     .expand-button {
       background: #007AFF;
-      border: 1px solid #007AFF;
-      border-radius: 4px;
-      padding: 8px;
+      border: none;
+      border-radius: 3px;
+      padding: 6px 10px;
       cursor: pointer;
+      font-size: 11px;
+      color: white;
+      font-weight: 500;
+      transition: all 0.2s ease;
       display: flex;
       align-items: center;
-      justify-content: center;
-      color: white;
-      transition: all 0.2s ease;
-      min-width: 32px;
-      min-height: 32px;
+      gap: 4px;
     }
 
     .expand-button:hover {
       background: #0056b3;
-      border-color: #0056b3;
-      transform: scale(1.05);
     }
 
     .expand-button svg {
-      width: 16px;
-      height: 16px;
+      width: 12px;
+      height: 12px;
     }
 
     /* Hide other views when minimized */
@@ -1184,27 +1188,23 @@
 
     <!-- Minimized View -->
     <div class="view-minimized" id="minimizedView" style="display: none;">
-      <div class="minimized-content" id="minimized-content">
-        <!-- Minimized issue row will be populated here -->
-        <div style="display: flex; align-items: center; padding: 8px 12px; background: white; color: #666;">
-          Loading minimized view...
-        </div>
-      </div>
-      <div class="minimized-controls">
+      <div class="minimized-header">
+        <div class="minimized-title">Token Validation - Issue View</div>
         <button class="expand-button" id="expand-button" onclick="expandView()" title="Expand to full view">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15,3 21,3 21,9"></polyline>
             <polyline points="9,21 3,21 3,15"></polyline>
             <line x1="21" y1="3" x2="14" y2="10"></line>
             <line x1="3" y1="21" x2="10" y2="14"></line>
           </svg>
+          Expand
         </button>
       </div>
-      <!-- Fallback expand button in case the main one doesn't work -->
-      <div style="position: absolute; top: 4px; right: 50px; z-index: 1002;">
-        <button onclick="expandView()" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer;" title="Emergency expand">
-          ↗ Expand
-        </button>
+      <div class="minimized-content" id="minimized-content">
+        <!-- Minimized issue row will be populated here -->
+        <div style="display: flex; align-items: center; color: #666; font-size: 13px;">
+          Loading issue details...
+        </div>
       </div>
     </div>
 
@@ -2508,12 +2508,12 @@
         // Fallback: show a basic message in minimized view
         if (minimizedContent) {
           minimizedContent.innerHTML = `
-            <div style="display: flex; align-items: center; padding: 8px 12px; background: white; border-top: 1px solid #e1e5e9;">
+            <div style="display: flex; align-items: center; background: white;">
               <div style="flex: 1; min-width: 0; margin-right: 12px;">
                 <span style="font-size: 13px; color: #333;">
-                  <span style="font-weight: 600; color: #007AFF;">Viewing Issue</span>
+                  <span style="font-weight: 600; color: #007AFF;">Viewing Issue ${issueIndex + 1}</span>
                   <span style="margin: 0 6px; color: #666;">-</span>
-                  <span style="color: #333;">Issue ${issueIndex + 1}</span>
+                  <span style="color: #333;">Unable to load issue details</span>
                 </span>
               </div>
             </div>
