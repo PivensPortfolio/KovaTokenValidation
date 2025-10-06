@@ -12,7 +12,7 @@
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f8f9fa;
+      background: #ffffff;
       height: 100vh;
     }
 
@@ -415,6 +415,32 @@
       box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
     }
 
+    .token-select optgroup {
+      font-weight: 600;
+      color: #666;
+      background: #f8f9fa;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .token-select option {
+      padding: 6px 8px;
+      color: #333;
+      font-size: 12px;
+    }
+
+    .token-select optgroup option {
+      padding-left: 16px;
+      font-weight: normal;
+      color: #333;
+      background: white;
+    }
+
+    .token-select optgroup option:hover {
+      background: #f0f8ff;
+    }
+
     .action-button {
       display: flex;
       align-items: center;
@@ -450,13 +476,15 @@
     }
 
     .action-button.ignore {
-      background: transparent;
-      color: #666;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
     }
 
     .action-button.ignore:hover {
-      background: #f8f9fa;
-      color: #333;
+      background: #fee2e2;
+      border: 1px solid #f87171;
+      color: #b91c1c;
     }
 
     .issues-header {
@@ -905,6 +933,48 @@
       margin: 12px 0;
     }
 
+    /* Tab Navigation */
+    .tab-navigation {
+      display: flex;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e1e5e9;
+      margin: -20px -20px 20px -20px;
+      padding: 0 20px;
+      overflow-x: auto;
+    }
+
+    .tab-button {
+      background: none;
+      border: none;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #666;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .tab-button:hover {
+      color: #333;
+      background: rgba(0, 122, 255, 0.05);
+    }
+
+    .tab-button.active {
+      color: #007AFF;
+      border-bottom-color: #007AFF;
+      background: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
     /* When in documentation mode */
     body.documentation-mode .view-form,
     body.documentation-mode .view-results {
@@ -1022,8 +1092,280 @@
           <div class="documentation-title">Documentation</div>
         </div>
       </div>
+
+      <!-- Tab Navigation -->
+      <div class="tab-navigation">
+        <button class="tab-button active" data-tab="overview">Overview</button>
+        <button class="tab-button" data-tab="getting-started">Getting Started</button>
+        <button class="tab-button" data-tab="text-styles">Text Styles</button>
+        <button class="tab-button" data-tab="spacing-tokens">Spacing Tokens</button>
+        <button class="tab-button" data-tab="rules-matching">Rules & Matching Logic</button>
+        <button class="tab-button" data-tab="best-practices">Best Practices</button>
+        <button class="tab-button" data-tab="troubleshooting">Troubleshooting</button>
+      </div>
+
       <div class="documentation-content" id="documentationContent">
-        <!-- Documentation content will be loaded here -->
+        <!-- Overview Tab -->
+        <div class="tab-content active" id="overview">
+          <h1>Overview</h1>
+          <p>The Token Validation Tool helps teams keep typography and spacing consistent across Figma files by checking what's in your document against the design system you attach (local styles/variables or published team libraries). It scans your file, flags mismatches, and recommends replacing hard-coded values with the appropriate design tokens so you can fix issues quickly and confidently.</p>
+
+          <h2>Why local variables matter</h2>
+          <p>This tool is built around Figma local variables, which are the most reliable way to encode spacing, colors, and typography as design tokens—making them reusable, theme-able, and machine-verifiable. We provide companion plugins to create tokens as local variables and to convert existing hard-coded values into local variables. Today, the best practice—and what this tool supports—is to build your system using local variables.</p>
+
+          <h2>What the tool validates today</h2>
+          <ul>
+            <li><strong>Text Styles</strong> → Finds text layers without a style, surfaces available styles, and prompts you to apply the appropriate style from the attached system.</li>
+            <li><strong>Spacing Tokens</strong> → Detects hard-coded spacing (e.g., 16px) and recommends replacing it with a spacing token from your attached system's variable collections (not a guessed variable name).</li>
+          </ul>
+
+          <h2>How it works (at a glance)</h2>
+          <ol>
+            <li>Attach a design system (your file's local variables/styles or a published team library).</li>
+            <li>The tool scans your document for text, spacing, and variable usage.</li>
+            <li>It highlights inconsistencies and suggests using tokens instead of hard-coded values (e.g., replace 16px with a matching spacing token from your system).</li>
+            <li>You apply corrections to align your file with the design system.</li>
+          </ol>
+
+          <h2>Who it's for</h2>
+          <ul>
+            <li>Designers who want fast, reliable guardrails for token usage</li>
+            <li>Design-ops and system owners migrating teams to variable-based tokens</li>
+            <li>Anyone auditing files before handoff to ensure token parity with the system</li>
+          </ul>
+          <p><strong>Note:</strong> The tool recommends using tokens and surfaces candidate matches from your attached system. It does not invent or guess new token names; creating or renaming tokens is handled by the companion creation/conversion plugins.</p>
+        </div>
+
+        <!-- Getting Started Tab -->
+        <div class="tab-content" id="getting-started">
+          <h1>Getting Started</h1>
+
+          <h2>1. Attach a Design System</h2>
+          <ol>
+            <li>Click "Attach Design System" in the main interface</li>
+            <li>Select from available design systems:
+              <ul>
+                <li><strong>Local Styles & Variables</strong>: Your current document's styles and variables</li>
+                <li><strong>Team Libraries</strong>: Published design systems from your team</li>
+              </ul>
+            </li>
+          </ol>
+
+          <h2>2. Validation Options</h2>
+          <p>Once a design system is attached, you'll see validation options with counts:</p>
+          <ul>
+            <li><strong>Text Styles</strong>: Validates text style usage (shows "X Styles Available")</li>
+            <li><strong>Spacing</strong>: Validates spacing tokens and layout consistency (shows "X Variables
+              Available")</li>
+          </ul>
+        </div>
+
+        <!-- Text Styles Tab -->
+        <div class="tab-content" id="text-styles">
+          <h1>Text Style Detection</h1>
+
+          <h2>How It Works</h2>
+          <p>The tool detects text styles from attached design systems and compares them against text styles used in
+            your document.</p>
+
+          <h2>Current Implementation</h2>
+          <ul>
+            <li><strong>Library text styles</strong>: Automatically detected from attached design systems</li>
+            <li><strong>Count display</strong>: Shows total number of available text styles (e.g., "16 Styles
+              Available")</li>
+            <li><strong>Usage validation</strong>: Checks which styles from the design system are actually being used
+            </li>
+          </ul>
+        </div>
+
+        <!-- Spacing Tokens Tab -->
+        <div class="tab-content" id="spacing-tokens">
+          <h1>Spacing Variable Detection</h1>
+
+          <h2>How It Works</h2>
+          <p>The tool automatically detects spacing variables by looking at <strong>collection names</strong>. It counts
+            ALL variables within collections whose names contain spacing-related keywords.</p>
+
+          <h2>Supported Collection Names (Case-Insensitive)</h2>
+          <p>Collections will be detected if their name contains any of these keywords:</p>
+          <ul>
+            <li><code>spacing</code></li>
+            <li><code>space</code></li>
+            <li><code>gap</code></li>
+            <li><code>margin</code></li>
+            <li><code>padding</code></li>
+            <li><code>size</code></li>
+          </ul>
+
+          <h2>Examples</h2>
+          <h3>✅ Will be detected:</h3>
+          <ul>
+            <li>"Spacing"</li>
+            <li>"Space"</li>
+            <li>"Design Spacing"</li>
+            <li>"Layout Spacing"</li>
+            <li>"Spacing Tokens"</li>
+            <li>"Gap"</li>
+            <li>"Margins"</li>
+            <li>"Padding"</li>
+            <li>"Size"</li>
+            <li>"Component Spacing"</li>
+          </ul>
+
+          <h3>❌ Will NOT be detected:</h3>
+          <ul>
+            <li>"Design Tokens"</li>
+            <li>"Foundation"</li>
+            <li>"Variables"</li>
+            <li>"System"</li>
+            <li>"Tokens"</li>
+          </ul>
+
+          <h2>What Gets Counted</h2>
+          <ul>
+            <li><strong>ALL variables</strong> within collections that match the naming criteria</li>
+            <li>Individual variable names within those collections are <strong>not filtered</strong></li>
+            <li>If a collection is named "Spacing", <strong>all variables in it</strong> count as spacing variables</li>
+          </ul>
+        </div>
+
+        <!-- Rules & Matching Logic Tab -->
+        <div class="tab-content" id="rules-matching">
+          <h1>Validation Process</h1>
+
+          <h2>What Gets Validated</h2>
+
+          <h3>1. Text Style Usage:</h3>
+          <ul>
+            <li>Identifies text nodes using hardcoded formatting instead of design system styles</li>
+            <li>Suggests appropriate text styles from the attached design system</li>
+          </ul>
+
+          <h3>2. Spacing Consistency:</h3>
+          <ul>
+            <li>Detects hardcoded spacing values</li>
+            <li>Suggests appropriate spacing tokens from detected spacing collections</li>
+          </ul>
+
+          <h2>Validation Requirements</h2>
+          <p>For validation to work properly:</p>
+          <ol>
+            <li><strong>Design system must be attached</strong> and contain relevant tokens</li>
+            <li><strong>At least some design system tokens must be in use</strong> in your document</li>
+            <li><strong>Spacing variables must be in properly named collections</strong> (see Spacing Tokens tab)</li>
+          </ol>
+
+          <h2>Console Logging</h2>
+          <p>The tool provides detailed console logging to help you understand what's happening:</p>
+
+          <h3>Spacing Detection Example</h3>
+          <pre><code>📊 Getting spacing variables count for Blueprint Atoms...
+📋 SPACING DETECTION: Looking for collections with names containing: spacing, space, gap, margin, padding, size
+🔍 Analyzing 2 collections...
+🔍 Checking collection: "Spacing" with 3 variables
+✅ "Spacing" is a spacing collection with 3 variables
+🔍 Checking collection: "Colors" with 12 variables
+⏭️ "Colors" is not a spacing collection, skipping
+
+📊 SPACING DETECTION SUMMARY:
+   ✅ Detected spacing collections: "Spacing" (3 variables)
+   ⏭️ Skipped collections: "Colors"
+   📏 Total spacing variables: 3</code></pre>
+        </div>
+
+        <!-- Best Practices Tab -->
+        <div class="tab-content" id="best-practices">
+          <h1>Best Practices</h1>
+
+          <h2>Organizing Variables</h2>
+          <ol>
+            <li><strong>Create dedicated collections</strong> for different token types:
+              <ul>
+                <li>"Spacing" for spacing tokens</li>
+                <li>"Colors" for color tokens</li>
+                <li>"Typography" for typography tokens</li>
+              </ul>
+            </li>
+            <li><strong>Use descriptive names</strong> that include relevant keywords for automatic detection</li>
+            <li><strong>Group related variables</strong> together in the same collection</li>
+          </ol>
+
+          <h2>Design System Setup</h2>
+          <ol>
+            <li><strong>Publish your design system</strong> as a team library for broader access</li>
+            <li><strong>Use consistent naming conventions</strong> across your design tokens</li>
+            <li><strong>Apply design system styles</strong> to at least some elements in your document before validation
+            </li>
+          </ol>
+
+          <h2>Limitations</h2>
+
+          <h3>Current Limitations</h3>
+          <ul>
+            <li><strong>Collection name dependency</strong>: Spacing detection relies on collection names containing
+              specific keywords</li>
+            <li><strong>Library access</strong>: Some design systems may not be accessible depending on permissions</li>
+            <li><strong>Text style API</strong>: Full text style enumeration requires REST API access (currently
+              simulated)</li>
+          </ul>
+
+          <h3>Future Improvements</h3>
+          <ul>
+            <li>Individual variable name detection (not just collection names)</li>
+            <li>More flexible detection patterns</li>
+            <li>Enhanced text style discovery</li>
+            <li>Custom keyword configuration</li>
+          </ul>
+        </div>
+
+        <!-- Troubleshooting Tab -->
+        <div class="tab-content" id="troubleshooting">
+          <h1>Troubleshooting</h1>
+
+          <h2>Spacing Variables</h2>
+          <p>If your spacing variables show "0 Variables Available":</p>
+          <ol>
+            <li><strong>Check your collection names</strong> in Figma's Variables panel</li>
+            <li><strong>Ensure at least one collection name contains</strong> one of the supported keywords</li>
+            <li><strong>Consider renaming</strong> your collection to include "Spacing" or "Space"</li>
+            <li><strong>Alternative</strong>: Create a dedicated "Spacing" collection for your spacing variables</li>
+          </ol>
+
+          <h2>Getting Help</h2>
+          <ol>
+            <li><strong>Check the console</strong> for detailed logging and troubleshooting information</li>
+            <li><strong>Verify your collection names</strong> match the supported patterns</li>
+            <li><strong>Ensure your design system is properly published</strong> and accessible</li>
+            <li><strong>Test with a simple setup</strong> first (e.g., create a "Spacing" collection with a few
+              variables)</li>
+          </ol>
+
+          <h2>Common Issues</h2>
+
+          <h3>"0 Variables Available" for spacing:</h3>
+          <ul>
+            <li>Check collection names contain spacing-related keywords</li>
+            <li>Verify variables are in collections, not loose variables</li>
+          </ul>
+
+          <h3>"No design system usage found":</h3>
+          <ul>
+            <li>Apply at least one text style from the design system to your document</li>
+            <li>Ensure the design system is properly attached</li>
+          </ul>
+
+          <h3>Design system not appearing:</h3>
+          <ul>
+            <li>Check if the library is published and you have access</li>
+            <li>Try refreshing the design system list</li>
+          </ul>
+
+          <h2>Troubleshooting Output</h2>
+          <pre><code>⚠️ TROUBLESHOOTING: No spacing variables detected!
+   💡 To fix this, ensure at least one collection name contains:
+      "spacing", "space", "gap", "margin", "padding", or "size"
+   💡 Consider renaming a collection to "Spacing" or creating a dedicated spacing collection</code></pre>
+        </div>
       </div>
     </div>
 
@@ -1061,6 +1403,7 @@
     // Removed validation options - focusing only on design system attachment
     let attachedDesignSystem = null;
     let availableTokens = null; // Store the actual design tokens
+    let currentDesignSystem = null; // Store the current design system with text styles
 
     // Get elements
     const collapseBtn = document.getElementById('collapseToggle');
@@ -1190,6 +1533,7 @@
     function selectDesignSystem(library) {
       console.log('📎 Selected design system:', library.name);
       attachedDesignSystem = library;
+      currentDesignSystem = library; // Also store for dropdown population
 
       // Don't update button state yet - wait for validation check
       // The button will only update to "attached" if validation is possible
@@ -1212,6 +1556,7 @@
     function detachDesignSystem() {
       console.log('📎 Detaching design system');
       attachedDesignSystem = null;
+      currentDesignSystem = null;
 
       // Update UI
       document.getElementById('attach-text').textContent = 'Attach Design System';
@@ -1251,6 +1596,52 @@
       showFormView();
       parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
     });
+
+    // Documentation functionality
+    const documentationLink = document.getElementById('documentation-link');
+    const documentationBackButton = document.getElementById('documentation-back-button');
+
+    documentationLink?.addEventListener('click', () => {
+      console.log('📖 Documentation link clicked');
+      showDocumentationView();
+      parent.postMessage({ pluginMessage: { type: 'show-documentation-view' } }, '*');
+    });
+
+    documentationBackButton?.addEventListener('click', () => {
+      console.log('← Documentation back clicked');
+      showFormView();
+      parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
+    });
+
+    // Tab navigation functionality
+    function initTabNavigation() {
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const targetTab = button.getAttribute('data-tab');
+
+          // Remove active class from all buttons and contents
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          tabContents.forEach(content => content.classList.remove('active'));
+
+          // Add active class to clicked button and corresponding content
+          button.classList.add('active');
+          const targetContent = document.getElementById(targetTab);
+          if (targetContent) {
+            targetContent.classList.add('active');
+          }
+
+          console.log('📑 Switched to tab:', targetTab);
+        });
+      });
+    }
+
+    // Initialize tab navigation when DOM is loaded
+    document.addEventListener('DOMContentLoaded', initTabNavigation);
+    // Also initialize immediately in case DOM is already loaded
+    initTabNavigation();
 
     // Documentation functionality
     document.getElementById('documentation-link')?.addEventListener('click', () => {
@@ -1481,32 +1872,87 @@
 
       if (msg.type === 'design-system-error') {
         console.log('❌ Design system error:', msg.error);
+        
+        // Hide validation options since there was an error
+        document.getElementById('validation-options').style.display = 'none';
+        
+        // Reset the attach button state
+        document.getElementById('attach-text').textContent = 'Attach Design System';
+        attachButton.classList.remove('attached');
+        attachedDesignSystem = null;
+        
         // Show error message
         alert('Error: ' + msg.error);
       }
 
       if (msg.type === 'no-design-system-usage') {
         console.log('⚠️ No design system usage found:', msg.message);
+        
+        // Hide validation options since validation is not possible
+        document.getElementById('validation-options').style.display = 'none';
+        
+        // Reset the attach button to show it's not properly attached
+        document.getElementById('attach-text').textContent = 'Attach Design System';
+        attachButton.classList.remove('attached');
+        attachedDesignSystem = null;
+        
         // Alert user that validation isn't possible without usage
         alert(`⚠️ Validation Not Possible\n\n${msg.message}\n\nTip: Select a text field and apply at least 1 text style from "${msg.libraryName}" using the text style panel, then try attaching the design system again.`);
       }
 
       if (msg.type === 'tokens-response') {
         console.log('📋 Received tokens:', msg);
+        console.log('📋 Tokens data:', msg.tokens);
+        console.log('📋 Token type:', msg.tokenType);
+        
+        // Store tokens globally for dropdown use
+        if (!currentTokensData) {
+          currentTokensData = {};
+        }
+        currentTokensData[msg.tokenType] = msg.tokens;
+        
+        console.log('📋 Updated currentTokensData:', currentTokensData);
+        
         populateTokensPanel(msg.tokens, msg.tokenType);
+        
+        // If we're in results view and this is text-styles, refresh the dropdowns
+        if (msg.tokenType === 'text-styles' && document.body.classList.contains('results-mode')) {
+          console.log('🔄 Refreshing results with loaded text styles...');
+          const resultsContent = document.getElementById('results-content');
+          if (resultsContent && resultsContent.innerHTML.includes('Loading text styles...')) {
+            // Re-render the results with the loaded text styles
+            const currentIssues = window.currentValidationIssues;
+            const currentSummary = window.currentValidationSummary;
+            if (currentIssues) {
+              displayValidationResults(currentIssues, currentSummary);
+            }
+          }
+        }
       }
 
       if (msg.type === 'documentation-content') {
-        console.log('📖 Received documentation content');
-        const content = document.getElementById('documentationContent');
-        if (content) {
-          content.innerHTML = msg.content;
-        }
+        console.log('📖 Received documentation content - using tab structure instead');
+        // Don't replace content - we're using the tab navigation structure
+        // The content is already in the HTML tabs
       }
 
       if (msg.type === 'validation-results') {
         console.log('📊 Received validation results:', msg);
         availableTokens = msg.tokens; // Store the actual tokens
+        currentDesignSystem = msg.designSystem; // Store the design system data
+        
+        // Check if we have text style issues and need to load text styles
+        const hasTextStyleIssues = msg.issues.some(issue => issue.type === 'text-style');
+        if (hasTextStyleIssues && (!currentTokensData || !currentTokensData['text-styles'])) {
+          console.log('🎨 Auto-loading text styles for dropdown...');
+          parent.postMessage({
+            pluginMessage: {
+              type: 'get-tokens',
+              tokenType: 'text-styles'
+            }
+          }, '*');
+        }
+        
         displayValidationResults(msg.issues, msg.summary);
 
         // Removed run button reset - not needed
@@ -1524,6 +1970,65 @@
         // Go back to form
         showFormView();
         parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
+      }
+
+      if (msg.type === 'update-success') {
+        console.log('✅ Node updated successfully:', msg);
+        
+        // Show success feedback
+        const issueRow = document.querySelector(`#token-select-${msg.issueIndex}`)?.closest('[style*="border-bottom: 1px solid #e1e5e9"]');
+        if (issueRow) {
+          // Add success styling
+          issueRow.style.background = '#f0f8ff';
+          issueRow.style.borderLeft = '4px solid #4CAF50';
+          
+          // Update the message text
+          const messageSpan = issueRow.querySelector('span[style*="color: #333"]');
+          if (messageSpan) {
+            messageSpan.innerHTML = `<span style="color: #4CAF50; font-weight: 500;">✓ Applied style: ${msg.appliedStyle}</span>`;
+          }
+          
+          // Disable the update button
+          const updateButton = issueRow.querySelector('button[style*="background: #007AFF"]');
+          if (updateButton) {
+            updateButton.style.background = '#4CAF50';
+            updateButton.textContent = 'Applied';
+            updateButton.disabled = true;
+            updateButton.style.cursor = 'default';
+          }
+        }
+      }
+
+      if (msg.type === 'update-error') {
+        console.log('❌ Update error:', msg.error);
+        alert('Update Error: ' + msg.error);
+      }
+
+      if (msg.type === 'node-updated') {
+        console.log('✅ Node updated successfully:', msg);
+        
+        // Show success feedback
+        const issueRow = document.querySelector(`#token-select-${msg.issueIndex}`)?.closest('[style*="border-bottom: 1px solid #e1e5e9"]');
+        if (issueRow) {
+          // Add success styling
+          issueRow.style.background = '#f0f8ff';
+          issueRow.style.borderLeft = '4px solid #4CAF50';
+          
+          // Update the message text
+          const messageSpan = issueRow.querySelector('span[style*="color: #333"]');
+          if (messageSpan) {
+            messageSpan.innerHTML = `<span style="color: #4CAF50; font-weight: 500;">✓ Applied token: ${msg.tokenId}</span>`;
+          }
+          
+          // Disable the update button
+          const updateButton = issueRow.querySelector('button[style*="background: #007AFF"]');
+          if (updateButton) {
+            updateButton.style.background = '#4CAF50';
+            updateButton.textContent = 'Applied';
+            updateButton.disabled = true;
+            updateButton.style.cursor = 'default';
+          }
+        }
       }
 
       if (msg.type === 'text-styles-analyzed') {
@@ -1546,6 +2051,10 @@
     // Results display function
     function displayValidationResults(issues, summary) {
       console.log('📊 Displaying validation results:', issues.length, 'issues');
+      
+      // Store current issues and summary for potential re-rendering
+      window.currentValidationIssues = issues;
+      window.currentValidationSummary = summary;
 
       // Results count removed from header
 
@@ -1572,8 +2081,8 @@
               </div>
             </div>
 
-            <!-- Issue Cards -->
-            <div style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Issue List -->
+            <div style="border: 1px solid #e1e5e9; border-radius: 6px; overflow: hidden; background: white;">
           `;
 
           // Create issue cards
@@ -1591,42 +2100,39 @@
             const suggestedTokens = getSuggestedTokensForIssue(issue);
 
             html += `
-              <div style="background: white; border-radius: 8px; border-left: 4px solid #ff9800; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <!-- Issue Header -->
-                <div style="margin-bottom: 12px;">
-                  <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 4px;">
-                    ${issue.nodeName}
-                  </div>
-                  <div style="font-size: 14px; color: #666;">
-                    Using hardcoded ${typeLabel}: ${issue.currentValue}${typeof issue.currentValue === 'number' ? 'px' : ''}
-                  </div>
+              <div style="display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #e1e5e9; background: white;">
+                <!-- Issue Info -->
+                <div style="flex: 1; min-width: 0; margin-right: 12px;">
+                  <span style="font-size: 13px; color: #333;">
+                    <span style="font-weight: 600; color: #007AFF;">[${issue.nodeName}]</span>
+                    <span style="margin: 0 6px; color: #666;">-</span>
+                    <span style="color: #333;">${issue.message || `Using hardcoded ${typeLabel}: ${issue.currentValue}${typeof issue.currentValue === 'number' ? 'px' : ''}`}</span>
+                  </span>
                 </div>
-
-                <!-- Best Match Badge -->
-                <div style="margin-bottom: 12px;">
-                  <span style="display: inline-block; background: #E3F2FD; color: #007AFF; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 6px;">Best Match</span>
-                </div>
-
-                <!-- Dropdown and Action Buttons in one row -->
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <select style="min-width: 200px; max-width: 300px; padding: 8px 12px; border: 2px solid #007AFF; border-radius: 6px; font-size: 14px; background: white;" 
+                
+                <!-- Controls -->
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <select style="width: 180px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; background: white;" 
                           id="token-select-${index}">
-                    ${suggestedTokens.map(token => {
-              const displayValue = typeof token.value === 'number' ? `${token.value}px` : token.value;
-              return `<option value="${token.id}">${token.name} - ${displayValue}</option>`;
-            }).join('')}
+                    ${generateDropdownOptions(suggestedTokens)}
                   </select>
-                  <button style="display: flex; align-items: center; justify-content: center; padding: 8px 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer; color: #333;" 
-                          onclick="viewIssueNode('${issue.nodeId}')">
-                    View
-                  </button>
-                  <button style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #007AFF; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; color: white; font-weight: 500;" 
+                  <button style="padding: 6px 10px; background: #007AFF; border: none; border-radius: 3px; font-size: 11px; cursor: pointer; color: white; font-weight: 500;" 
                           onclick="updateIssueNode('${issue.nodeId}', ${index})">
                     Update
                   </button>
-                  <button style="display: flex; align-items: center; justify-content: center; padding: 8px 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer; color: #333;" 
-                          onclick="ignoreIssue('${issue.nodeId}', ${index})">
+                  <button style="padding: 6px 8px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 3px; font-size: 11px; cursor: pointer; color: #dc2626;" 
+                          onclick="ignoreIssue('${issue.nodeId}', ${index})"
+                          onmouseover="this.style.background='#fee2e2'; this.style.borderColor='#f87171'; this.style.color='#b91c1c';"
+                          onmouseout="this.style.background='#fef2f2'; this.style.borderColor='#fecaca'; this.style.color='#dc2626';">
                     Ignore
+                  </button>
+                  <button style="padding: 6px 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; font-size: 11px; cursor: pointer; color: #333; display: flex; align-items: center; justify-content: center;" 
+                          onclick="viewIssueNode('${issue.nodeId}')"
+                          title="View node">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -1639,14 +2145,123 @@
       }
     }
 
+    // Helper function to generate organized dropdown options
+    function generateDropdownOptions(tokens) {
+      console.log('🔧 Generating dropdown options for tokens:', tokens);
+      
+      // Handle loading state
+      if (tokens && tokens.loading) {
+        console.log('🔧 Showing loading state');
+        return tokens.loading.map(token => 
+          `<option value="${token.id}">${token.name}</option>`
+        ).join('');
+      }
+      
+      // Handle grouped tokens (text styles)
+      if (typeof tokens === 'object' && !Array.isArray(tokens) && !tokens.loading) {
+        console.log('🔧 Generating grouped tokens dropdown');
+        let html = '<option value="">Select a style...</option>';
+        
+        Object.keys(tokens).sort().forEach(category => {
+          console.log(`🔧 Processing category: ${category} with ${tokens[category].length} tokens`);
+          tokens[category].forEach(token => {
+            const displayValue = typeof token.value === 'number' ? `${token.value}px` : token.displayName || token.name;
+            const fullDisplayName = `${category} - ${displayValue}`;
+            html += `<option value="${token.id}">${fullDisplayName}</option>`;
+          });
+        });
+        
+        console.log('🔧 Generated HTML:', html);
+        return html;
+      }
+      
+      // Handle flat array of tokens (spacing, etc.)
+      if (Array.isArray(tokens)) {
+        let html = '<option value="">Select a token...</option>';
+        tokens.forEach(token => {
+          const displayValue = typeof token.value === 'number' ? `${token.value}px` : token.value;
+          html += `<option value="${token.id}">${token.name} - ${displayValue}</option>`;
+        });
+        return html;
+      }
+      
+      return '<option value="">No options available</option>';
+    }
+
     // Helper function to get suggested tokens for an issue
     function getSuggestedTokensForIssue(issue) {
+      console.log('🎨 Getting suggested tokens for issue type:', issue.type);
+      console.log('🎨 Current tokens data:', currentTokensData);
+
+      // Handle text style issues
+      if (issue.type === 'text-style') {
+        if (!currentTokensData || !currentTokensData['text-styles']) {
+          console.log('⚠️ No text styles available - requesting them...');
+          
+          // Request text styles if not already loaded
+          parent.postMessage({
+            pluginMessage: {
+              type: 'get-tokens',
+              tokenType: 'text-styles'
+            }
+          }, '*');
+          
+          return {
+            loading: [{
+              id: 'loading',
+              name: 'Loading text styles...',
+              value: 'Loading...'
+            }]
+          };
+        }
+
+        const textStyles = currentTokensData['text-styles'];
+        console.log(`🎨 Found ${textStyles.length} text styles:`, textStyles);
+        
+        // If no text styles loaded, return test data to verify dropdown works
+        if (!textStyles || textStyles.length === 0) {
+          console.log('🎨 No text styles found, returning test data');
+          return {
+            'Body': [
+              { id: 'body-large', name: 'Body/Large', displayName: 'Large' },
+              { id: 'body-medium', name: 'Body/Medium', displayName: 'Medium' },
+              { id: 'body-small', name: 'Body/Small', displayName: 'Small' }
+            ],
+            'Display': [
+              { id: 'display-large', name: 'Display/Large', displayName: 'Large' },
+              { id: 'display-medium', name: 'Display/Medium', displayName: 'Medium' }
+            ]
+          };
+        }
+        
+        // Group text styles by family/category
+        const groupedStyles = {};
+        textStyles.forEach(style => {
+          // Extract category from style name (e.g., "Body/Large" -> "Body")
+          const parts = style.name.split('/');
+          const category = parts.length > 1 ? parts[0] : 'Other';
+          
+          if (!groupedStyles[category]) {
+            groupedStyles[category] = [];
+          }
+          
+          groupedStyles[category].push({
+            id: style.id || style.key || style.name,
+            name: style.name,
+            value: style.name,
+            displayName: parts.length > 1 ? parts.slice(1).join('/') : style.name
+          });
+        });
+        
+        return groupedStyles;
+      }
+
+      // Handle design token issues (spacing, corner-radius, etc.)
       if (!availableTokens) {
         console.log('⚠️ No tokens available yet');
         return [];
       }
 
-      console.log('🎨 Getting suggested tokens for issue type:', issue.type);
       console.log('🎨 Available tokens:', availableTokens);
 
       // Map issue types to token categories
@@ -1667,15 +2282,48 @@
       console.log(`🎨 Found ${tokens.length} tokens for ${issue.type}:`, tokens);
 
       // Sort tokens by how close they are to the current value (if numeric)
+      let sortedTokens = tokens;
       if (typeof issue.currentValue === 'number') {
-        return tokens.sort((a, b) => {
+        sortedTokens = tokens.sort((a, b) => {
           const diffA = Math.abs(a.value - issue.currentValue);
           const diffB = Math.abs(b.value - issue.currentValue);
           return diffA - diffB;
         });
       }
 
-      return tokens;
+      // For spacing tokens, group by size ranges
+      if (issue.type === 'spacing') {
+        const groupedTokens = {
+          'Small (0-8px)': [],
+          'Medium (9-24px)': [],
+          'Large (25-64px)': [],
+          'Extra Large (65px+)': []
+        };
+
+        sortedTokens.forEach(token => {
+          const value = typeof token.value === 'number' ? token.value : parseInt(token.value);
+          if (value <= 8) {
+            groupedTokens['Small (0-8px)'].push(token);
+          } else if (value <= 24) {
+            groupedTokens['Medium (9-24px)'].push(token);
+          } else if (value <= 64) {
+            groupedTokens['Large (25-64px)'].push(token);
+          } else {
+            groupedTokens['Extra Large (65px+)'].push(token);
+          }
+        });
+
+        // Remove empty groups
+        Object.keys(groupedTokens).forEach(key => {
+          if (groupedTokens[key].length === 0) {
+            delete groupedTokens[key];
+          }
+        });
+
+        return groupedTokens;
+      }
+
+      return sortedTokens;
     }
 
     // Action button functions

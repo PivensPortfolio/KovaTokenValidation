@@ -4,7 +4,7 @@ import { StateManager } from '../state/StateManager';
 import { PersistenceManager } from '../state/PersistenceManager';
 import { ViewTransitionController } from './ViewTransitionController';
 import { ViewType, DesignSystemInfo, ValidationIssue, ResultsData } from '../types/ViewState';
-import { FormView, ResultsView, CollapsedView } from '../components';
+import { FormView, CollapsedView } from '../components';
 import { NavigationIndicator } from '../components/NavigationIndicator';
 
 export class ViewStateController {
@@ -15,7 +15,6 @@ export class ViewStateController {
   
   // View components
   private formView: FormView | null = null;
-  private resultsView: ResultsView | null = null;
   private collapsedView: CollapsedView | null = null;
   private navigationIndicator: NavigationIndicator | null = null;
   private currentContainer: HTMLElement | null = null;
@@ -180,13 +179,7 @@ export class ViewStateController {
       });
     }
     
-    if (this.resultsView && state.resultsData) {
-      this.resultsView.setResults(
-        state.resultsData.issues,
-        state.resultsData.totalNodes,
-        state.resultsData.scope
-      );
-    }
+
   }
 
   // View transition methods
