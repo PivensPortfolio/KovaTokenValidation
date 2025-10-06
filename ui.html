@@ -564,36 +564,52 @@
       border-bottom: 1px solid #e1e5e9;
       z-index: 1000;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      min-height: 60px;
+      display: none;
+    }
+
+    body.minimized .view-minimized {
+      display: block !important;
     }
 
     .minimized-content {
       padding: 8px 12px;
       background: white;
+      padding-right: 60px; /* Make room for expand button */
     }
 
     .minimized-controls {
       position: absolute;
-      right: 8px;
+      right: 12px;
       top: 50%;
       transform: translateY(-50%);
+      z-index: 1001;
     }
 
     .expand-button {
-      background: #f8f9fa;
-      border: 1px solid #ddd;
+      background: #007AFF;
+      border: 1px solid #007AFF;
       border-radius: 4px;
-      padding: 6px;
+      padding: 8px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #333;
+      color: white;
       transition: all 0.2s ease;
+      min-width: 32px;
+      min-height: 32px;
     }
 
     .expand-button:hover {
-      background: #e9ecef;
-      border-color: #adb5bd;
+      background: #0056b3;
+      border-color: #0056b3;
+      transform: scale(1.05);
+    }
+
+    .expand-button svg {
+      width: 16px;
+      height: 16px;
     }
 
     /* Hide other views when minimized */
@@ -1170,15 +1186,24 @@
     <div class="view-minimized" id="minimizedView" style="display: none;">
       <div class="minimized-content" id="minimized-content">
         <!-- Minimized issue row will be populated here -->
+        <div style="display: flex; align-items: center; padding: 8px 12px; background: white; color: #666;">
+          Loading minimized view...
+        </div>
       </div>
       <div class="minimized-controls">
-        <button class="expand-button" id="expand-button" onclick="expandView()">
+        <button class="expand-button" id="expand-button" onclick="expandView()" title="Expand to full view">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15,3 21,3 21,9"></polyline>
             <polyline points="9,21 3,21 3,15"></polyline>
             <line x1="21" y1="3" x2="14" y2="10"></line>
             <line x1="3" y1="21" x2="10" y2="14"></line>
           </svg>
+        </button>
+      </div>
+      <!-- Fallback expand button in case the main one doesn't work -->
+      <div style="position: absolute; top: 4px; right: 50px; z-index: 1002;">
+        <button onclick="expandView()" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; cursor: pointer;" title="Emergency expand">
+          ↗ Expand
         </button>
       </div>
     </div>
@@ -2442,27 +2467,31 @@
       
       // Find the issue row to display in minimized view
       const issueRow = document.querySelector(`#token-select-${issueIndex}`)?.closest('[style*="border-top: 1px solid #e1e5e9"]');
+      console.log('Found issue row:', issueRow);
       
-      if (issueRow) {
-        // Clone the issue row for the minimized view
-        const minimizedContent = document.getElementById('minimized-content');
-        if (minimizedContent) {
-          // Create a simplified version of the issue row
-          const clonedRow = issueRow.cloneNode(true);
-          
-          // Remove the view button from the cloned row since we're already viewing
-          const viewButton = clonedRow.querySelector('button[title="View node"]');
-          if (viewButton) {
-            viewButton.remove();
-          }
-          
-          // Clear and populate minimized content
-          minimizedContent.innerHTML = '';
-          minimizedContent.appendChild(clonedRow);
+      const minimizedContent = document.getElementById('minimized-content');
+      console.log('Minimized content element:', minimizedContent);
+      
+      if (issueRow && minimizedContent) {
+        // Create a simplified version of the issue row
+        const clonedRow = issueRow.cloneNode(true);
+        console.log('Cloned row:', clonedRow);
+        
+        // Remove the view button from the cloned row since we're already viewing
+        const viewButton = clonedRow.querySelector('button[title="View node"]');
+        if (viewButton) {
+          viewButton.remove();
+          console.log('Removed view button');
         }
+        
+        // Clear and populate minimized content
+        minimizedContent.innerHTML = '';
+        minimizedContent.appendChild(clonedRow);
+        console.log('Added cloned row to minimized content');
         
         // Switch to minimized view
         document.body.classList.add('minimized');
+        console.log('Added minimized class to body');
         
         // Store the current issue index for reference
         window.currentMinimizedIssue = issueIndex;
@@ -2473,6 +2502,30 @@
             type: 'show-minimized-view'
           }
         }, '*');
+        console.log('Sent show-minimized-view message');
+      } else {
+        console.error('Could not find issue row or minimized content element');
+        // Fallback: show a basic message in minimized view
+        if (minimizedContent) {
+          minimizedContent.innerHTML = `
+            <div style="display: flex; align-items: center; padding: 8px 12px; background: white; border-top: 1px solid #e1e5e9;">
+              <div style="flex: 1; min-width: 0; margin-right: 12px;">
+                <span style="font-size: 13px; color: #333;">
+                  <span style="font-weight: 600; color: #007AFF;">Viewing Issue</span>
+                  <span style="margin: 0 6px; color: #666;">-</span>
+                  <span style="color: #333;">Issue ${issueIndex + 1}</span>
+                </span>
+              </div>
+            </div>
+          `;
+          document.body.classList.add('minimized');
+          window.currentMinimizedIssue = issueIndex;
+          parent.postMessage({
+            pluginMessage: {
+              type: 'show-minimized-view'
+            }
+          }, '*');
+        }
       }
       
       // Select the node in Figma
@@ -2487,16 +2540,21 @@
     // Function to expand back to full view
     window.expandView = function() {
       console.log('📈 Expanding to full view');
+      
+      // Remove minimized class
       document.body.classList.remove('minimized');
+      console.log('Removed minimized class from body');
       
       // Clear minimized content
       const minimizedContent = document.getElementById('minimized-content');
       if (minimizedContent) {
         minimizedContent.innerHTML = '';
+        console.log('Cleared minimized content');
       }
       
       // Clear stored issue index
       window.currentMinimizedIssue = null;
+      console.log('Cleared current minimized issue');
       
       // Notify backend to resize window back to results view
       parent.postMessage({
@@ -2504,6 +2562,7 @@
           type: 'expand-from-minimized'
         }
       }, '*');
+      console.log('Sent expand-from-minimized message');
     };
 
     // Function to update Total Errors count
