@@ -24,6 +24,7 @@ const SIZE_FORM = { width: 400, height: 800 }; // Form view
 const SIZE_RESULTS = { width: 800, height: 800 }; // Results view  
 const SIZE_DOCUMENTATION = { width: 1280, height: 800 }; // Documentation view
 const SIZE_COLLAPSED = { width: 220, height: 44 }; // Collapsed view
+const SIZE_MINIMIZED = { width: 800, height: 60 }; // Minimized view (single row height)
 let isCollapsed = false;
 let currentDesignSystem: any = null;
 
@@ -60,6 +61,14 @@ async function setDocumentationView() {
   moveUiTopCenter({ width: SIZE_DOCUMENTATION.width, height: SIZE_DOCUMENTATION.height, padding: 16 });
   figma.ui.postMessage({ type: 'view-mode', mode: 'documentation' });
   console.log('✅ setDocumentationView complete');
+}
+
+async function setMinimizedView() {
+  console.log('🔍 setMinimizedView called - resizing to:', SIZE_MINIMIZED.width, 'x', SIZE_MINIMIZED.height);
+  figma.ui.resize(SIZE_MINIMIZED.width, SIZE_MINIMIZED.height);
+  moveUiTopCenter({ width: SIZE_MINIMIZED.width, height: SIZE_MINIMIZED.height, padding: 0 });
+  figma.ui.postMessage({ type: 'view-mode', mode: 'minimized' });
+  console.log('✅ setMinimizedView complete');
 }
 
 // Design system management functions
@@ -1852,6 +1861,14 @@ if (figma.editorType === 'figma') {
       console.log('Handling show-documentation-view');
       await setDocumentationView();
       await loadDocumentationContent();
+    }
+    else if (msg.type === 'show-minimized-view') {
+      console.log('Handling show-minimized-view');
+      await setMinimizedView();
+    }
+    else if (msg.type === 'expand-from-minimized') {
+      console.log('Handling expand-from-minimized');
+      await setResultsView();
     }
     else if (msg.type === 'update-node-token') {
       console.log('Handling update-node-token:', msg.nodeId, msg.tokenId);

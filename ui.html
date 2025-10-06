@@ -554,6 +554,59 @@
       display: block;
     }
 
+    /* Minimized View Styles */
+    .view-minimized {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-bottom: 1px solid #e1e5e9;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .minimized-content {
+      padding: 8px 12px;
+      background: white;
+    }
+
+    .minimized-controls {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .expand-button {
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+      transition: all 0.2s ease;
+    }
+
+    .expand-button:hover {
+      background: #e9ecef;
+      border-color: #adb5bd;
+    }
+
+    /* Hide other views when minimized */
+    body.minimized .view-results,
+    body.minimized .view-form,
+    body.minimized .view-documentation {
+      display: none;
+    }
+
+    body.minimized .view-minimized {
+      display: block;
+    }
+
     .collapsed-content {
       display: flex;
       align-items: center;
@@ -1110,6 +1163,23 @@
             0
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Minimized View -->
+    <div class="view-minimized" id="minimizedView" style="display: none;">
+      <div class="minimized-content" id="minimized-content">
+        <!-- Minimized issue row will be populated here -->
+      </div>
+      <div class="minimized-controls">
+        <button class="expand-button" id="expand-button" onclick="expandView()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15,3 21,3 21,9"></polyline>
+            <polyline points="9,21 3,21 3,15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -2159,7 +2229,7 @@
                     Ignore
                   </button>
                   <button style="padding: 6px 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; font-size: 11px; cursor: pointer; color: #333; display: flex; align-items: center; justify-content: center;" 
-                          onclick="viewIssueNode('${issue.nodeId}')"
+                          onclick="viewIssueNode('${issue.nodeId}', ${index})"
                           title="View node">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -2367,12 +2437,71 @@
     }
 
     // Action button functions
-    window.viewIssueNode = function (nodeId) {
-      console.log('👁️ Viewing node:', nodeId);
+    window.viewIssueNode = function (nodeId, issueIndex) {
+      console.log('👁️ Viewing node:', nodeId, 'issue index:', issueIndex);
+      
+      // Find the issue row to display in minimized view
+      const issueRow = document.querySelector(`#token-select-${issueIndex}`)?.closest('[style*="border-top: 1px solid #e1e5e9"]');
+      
+      if (issueRow) {
+        // Clone the issue row for the minimized view
+        const minimizedContent = document.getElementById('minimized-content');
+        if (minimizedContent) {
+          // Create a simplified version of the issue row
+          const clonedRow = issueRow.cloneNode(true);
+          
+          // Remove the view button from the cloned row since we're already viewing
+          const viewButton = clonedRow.querySelector('button[title="View node"]');
+          if (viewButton) {
+            viewButton.remove();
+          }
+          
+          // Clear and populate minimized content
+          minimizedContent.innerHTML = '';
+          minimizedContent.appendChild(clonedRow);
+        }
+        
+        // Switch to minimized view
+        document.body.classList.add('minimized');
+        
+        // Store the current issue index for reference
+        window.currentMinimizedIssue = issueIndex;
+        
+        // Notify backend to resize window
+        parent.postMessage({
+          pluginMessage: {
+            type: 'show-minimized-view'
+          }
+        }, '*');
+      }
+      
+      // Select the node in Figma
       parent.postMessage({
         pluginMessage: {
           type: 'select-node',
           nodeId: nodeId
+        }
+      }, '*');
+    };
+
+    // Function to expand back to full view
+    window.expandView = function() {
+      console.log('📈 Expanding to full view');
+      document.body.classList.remove('minimized');
+      
+      // Clear minimized content
+      const minimizedContent = document.getElementById('minimized-content');
+      if (minimizedContent) {
+        minimizedContent.innerHTML = '';
+      }
+      
+      // Clear stored issue index
+      window.currentMinimizedIssue = null;
+      
+      // Notify backend to resize window back to results view
+      parent.postMessage({
+        pluginMessage: {
+          type: 'expand-from-minimized'
         }
       }, '*');
     };
@@ -2396,6 +2525,35 @@
         const totalErrorsSection = document.getElementById('total-errors-section');
         if (totalErrorsSection) {
           totalErrorsSection.style.display = count > 0 ? 'block' : 'none';
+        }
+        
+        // Update minimized view if currently shown
+        if (document.body.classList.contains('minimized') && window.currentMinimizedIssue !== null) {
+          updateMinimizedView();
+        }
+      }
+    }
+
+    // Function to update the minimized view with current issue state
+    function updateMinimizedView() {
+      const issueIndex = window.currentMinimizedIssue;
+      if (issueIndex !== null) {
+        const issueRow = document.querySelector(`#token-select-${issueIndex}`)?.closest('[style*="border-top: 1px solid #e1e5e9"]');
+        const minimizedContent = document.getElementById('minimized-content');
+        
+        if (issueRow && minimizedContent) {
+          // Clone the updated issue row
+          const clonedRow = issueRow.cloneNode(true);
+          
+          // Remove the view button from the cloned row
+          const viewButton = clonedRow.querySelector('button[title="View node"]');
+          if (viewButton) {
+            viewButton.remove();
+          }
+          
+          // Update minimized content
+          minimizedContent.innerHTML = '';
+          minimizedContent.appendChild(clonedRow);
         }
       }
     }
