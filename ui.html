@@ -91,7 +91,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      background: #007AFF;
+      background: #6B7280;
       border: none;
       border-radius: 6px;
       padding: 10px 16px;
@@ -105,7 +105,7 @@
     }
 
     .attach-button:hover {
-      background: #0056CC;
+      background: #4B5563;
     }
 
     .attach-button.attached {
@@ -391,12 +391,12 @@
       border-radius: 8px;
       border-left: 4px solid #ff9800;
       padding: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       margin-bottom: 16px;
     }
 
     .issue-card:hover {
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
 
     .token-select {
@@ -534,29 +534,385 @@
       box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
     }
 
-    /* Test buttons for development */
-    .dev-test-buttons {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
+    /* Validation Options */
+    .validation-options {
+      margin-top: 20px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #e1e5e9;
+    }
+
+    .option-group {
+      margin: 16px 0;
+    }
+
+    .option-item {
       display: flex;
-      gap: 5px;
-      z-index: 1000;
-    }
-
-    .test-button {
-      background: #666;
-      border: none;
-      border-radius: 4px;
-      padding: 4px 8px;
-      color: white;
-      font-size: 10px;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #e1e5e9;
       cursor: pointer;
-      opacity: 0.7;
+      transition: all 0.2s;
     }
 
-    .test-button:hover {
-      opacity: 1;
+    .option-item:hover {
+      border-color: #6B7280;
+      background: #fafbfc;
+    }
+
+    .option-item input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      margin: 0;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ddd;
+      border-radius: 3px;
+      background: white;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .option-item input[type="checkbox"]:checked {
+      background: #E8F5E8;
+      border-color: #4CAF50;
+    }
+
+    .option-item input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #000;
+      font-size: 10px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    .option-content {
+      flex: 1;
+    }
+
+    .option-title {
+      font-weight: 500;
+      font-size: 14px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .option-description {
+      font-size: 12px;
+      color: #666;
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+
+    .option-count {
+      font-size: 11px;
+      color: #4CAF50;
+      font-weight: 500;
+    }
+
+    .run-validation-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #4CAF50;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 20px;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .run-validation-button:hover {
+      background: #45a049;
+      transform: translateY(-1px);
+    }
+
+    .run-validation-button:disabled,
+    .run-validation-button.disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .run-icon {
+      font-size: 12px;
+    }
+
+    /* View Tokens Link */
+    .view-tokens-link {
+      background: none;
+      border: none;
+      color: #007AFF;
+      font-size: 11px;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    .view-tokens-link:hover {
+      color: #0056CC;
+    }
+
+    /* Tokens Panel */
+    .tokens-panel {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 100%;
+      height: 100vh;
+      background: white;
+      z-index: 2000;
+      transition: right 0.3s ease;
+      overflow-y: auto;
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .tokens-panel.show {
+      right: 0;
+    }
+
+    .tokens-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e1e5e9;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .tokens-back-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #333;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tokens-back-button:hover {
+      background: #e0e0e0;
+    }
+
+    .tokens-panel-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+    }
+
+    .tokens-panel-content {
+      padding: 20px;
+    }
+
+    .token-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      background: white;
+      border: 1px solid #e1e5e9;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .token-item:hover {
+      border-color: #007AFF;
+      box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+    }
+
+    .token-info {
+      flex: 1;
+    }
+
+    .token-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .token-description {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .token-value {
+      font-size: 14px;
+      color: #007AFF;
+      font-weight: 500;
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .tokens-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+
+    .tokens-empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    /* Token Categories */
+    .token-category {
+      margin-bottom: 24px;
+    }
+
+    .token-category-header {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e1e5e9;
+    }
+
+    /* Documentation Link */
+    .documentation-section {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #e1e5e9;
+      text-align: center;
+    }
+
+    .documentation-link {
+      background: none;
+      border: none;
+      color: #007AFF;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .documentation-link:hover {
+      background: #f0f8ff;
+      color: #0056CC;
+      text-decoration: none;
+    }
+
+    /* Documentation View */
+    .view-documentation {
+      display: none;
+    }
+
+    .documentation-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e1e5e9;
+    }
+
+    .documentation-title-section {
+      flex: 1;
+    }
+
+    .documentation-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+      margin: 0;
+    }
+
+    .documentation-content {
+      line-height: 1.6;
+      color: #333;
+    }
+
+    .documentation-content h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin: 0 0 16px 0;
+    }
+
+    .documentation-content h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin: 24px 0 12px 0;
+    }
+
+    .documentation-content h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin: 20px 0 8px 0;
+    }
+
+    .documentation-content p {
+      margin: 0 0 12px 0;
+    }
+
+    .documentation-content ul {
+      margin: 0 0 12px 20px;
+      padding: 0;
+    }
+
+    .documentation-content li {
+      margin-bottom: 4px;
+    }
+
+    .documentation-content code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 13px;
+    }
+
+    .documentation-content pre {
+      background: #f8f9fa;
+      border: 1px solid #e1e5e9;
+      border-radius: 6px;
+      padding: 12px;
+      overflow-x: auto;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 13px;
+      margin: 12px 0;
+    }
+
+    /* When in documentation mode */
+    body.documentation-mode .view-form,
+    body.documentation-mode .view-results {
+      display: none;
+    }
+
+    body.documentation-mode .view-documentation {
+      display: block;
     }
   </style>
 </head>
@@ -577,7 +933,6 @@
         </div>
         <div class="attach-container">
           <button class="attach-button" id="attach-design-system">
-            <span class="attach-icon">📎</span>
             <span id="attach-text">Attach Design System</span>
             <span class="dropdown-arrow" id="dropdown-arrow">▼</span>
           </button>
@@ -586,8 +941,57 @@
           </div>
         </div>
 
+        <!-- Validation Options (shown after successful attachment) -->
+        <div class="validation-options" id="validation-options" style="display: none;">
+          <div class="section-title">Validation Options</div>
+          <div class="helper-text">
+            Select what you'd like to validate from your attached design system.
+          </div>
+
+          <div class="option-group">
+            <label class="option-item">
+              <input type="checkbox" id="validate-text-styles">
+              <span class="checkmark"></span>
+              <div class="option-content">
+                <div class="option-title">Text Styles</div>
+                <div class="option-description">Validate text styles usage from the design system</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="option-count" id="text-styles-count">Loading...</div>
+                  <button class="view-tokens-link" id="view-text-styles" style="display: none;"
+                    onclick="showTokensPanel('text-styles')">View Tokens</button>
+                </div>
+              </div>
+            </label>
+
+            <label class="option-item">
+              <input type="checkbox" id="validate-spacing">
+              <span class="checkmark"></span>
+              <div class="option-content">
+                <div class="option-title">Spacing</div>
+                <div class="option-description">Validate spacing tokens and layout consistency</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="option-count" id="spacing-count">Loading...</div>
+                  <button class="view-tokens-link" id="view-spacing" style="display: none;"
+                    onclick="showTokensPanel('spacing')">View Tokens</button>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <button class="run-validation-button" id="run-validation" disabled>
+            <span class="run-icon">▶</span>
+            Run Validation
+          </button>
+        </div>
+
       </div>
 
+      <!-- Documentation Link -->
+      <div class="documentation-section">
+        <button class="documentation-link" id="documentation-link">
+          Documentation
+        </button>
+      </div>
 
     </div>
 
@@ -607,6 +1011,22 @@
       </div>
     </div>
 
+    <!-- Documentation View -->
+    <div class="view-documentation" id="documentationView">
+      <div class="documentation-header">
+        <button class="back-button" id="documentation-back-button">
+          <span class="back-icon">←</span>
+          Back
+        </button>
+        <div class="documentation-title-section">
+          <div class="documentation-title">Documentation</div>
+        </div>
+      </div>
+      <div class="documentation-content" id="documentationContent">
+        <!-- Documentation content will be loaded here -->
+      </div>
+    </div>
+
     <!-- Collapsed View -->
     <div class="view-collapsed" id="collapsedView">
       <div class="collapsed-content">
@@ -615,14 +1035,23 @@
         </button>
       </div>
     </div>
+
+    <!-- Tokens Panel -->
+    <div class="tokens-panel" id="tokensPanel">
+      <div class="tokens-panel-header">
+        <button class="tokens-back-button" id="tokensBackButton">
+          <span>←</span>
+          Back
+        </button>
+        <h2 class="tokens-panel-title" id="tokensPanelTitle">Available Tokens</h2>
+      </div>
+      <div class="tokens-panel-content" id="tokensPanelContent">
+        <!-- Tokens will be populated here -->
+      </div>
+    </div>
   </div>
 
-  <!-- Development test buttons -->
-  <div class="dev-test-buttons">
-    <button class="test-button" id="testForm">Form</button>
-    <button class="test-button" id="testResults">Results</button>
-    <button class="test-button" id="testCollapse">Collapse</button>
-  </div>
+
 
   <script>
     console.log('🔍 UI SCRIPT LOADING');
@@ -635,9 +1064,6 @@
 
     // Get elements
     const collapseBtn = document.getElementById('collapseToggle');
-    const testFormBtn = document.getElementById('testForm');
-    const testResultsBtn = document.getElementById('testResults');
-    const testCollapseBtn = document.getElementById('testCollapse');
 
     // Form elements
     const attachButton = document.getElementById('attach-design-system');
@@ -662,6 +1088,12 @@
       currentView = 'collapsed';
       document.body.className = 'collapsed';
       console.log('🔄 Switched to Collapsed view');
+    }
+
+    function showDocumentationView() {
+      currentView = 'documentation';
+      document.body.className = 'documentation-mode';
+      console.log('📖 Switched to Documentation view');
     }
 
     // Simplified - only need to track design system attachment
@@ -759,9 +1191,8 @@
       console.log('📎 Selected design system:', library.name);
       attachedDesignSystem = library;
 
-      // Update UI
-      document.getElementById('attach-text').textContent = `${library.name} Attached`;
-      attachButton.classList.add('attached');
+      // Don't update button state yet - wait for validation check
+      // The button will only update to "attached" if validation is possible
 
       // Close dropdown
       closeDropdown();
@@ -785,6 +1216,9 @@
       // Update UI
       document.getElementById('attach-text').textContent = 'Attach Design System';
       attachButton.classList.remove('attached');
+
+      // Hide validation options
+      document.getElementById('validation-options').style.display = 'none';
 
       // Update UI state
       updateUI();
@@ -818,29 +1252,172 @@
       parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
     });
 
+    // Documentation functionality
+    document.getElementById('documentation-link')?.addEventListener('click', () => {
+      console.log('📖 Documentation clicked');
+      showDocumentationView();
+      parent.postMessage({ pluginMessage: { type: 'show-documentation-view' } }, '*');
+    });
+
+    document.getElementById('documentation-back-button')?.addEventListener('click', () => {
+      console.log('← Documentation back clicked');
+      showFormView();
+      parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
+    });
+
+    // Function to update Run Validation button state
+    function updateRunValidationButton() {
+      const runValidationButton = document.getElementById('run-validation');
+      const validateTextStyles = document.getElementById('validate-text-styles')?.checked || false;
+      const validateSpacing = document.getElementById('validate-spacing')?.checked || false;
+
+      const hasSelection = validateTextStyles || validateSpacing;
+
+      if (runValidationButton) {
+        runValidationButton.disabled = !hasSelection;
+        if (hasSelection) {
+          runValidationButton.classList.remove('disabled');
+        } else {
+          runValidationButton.classList.add('disabled');
+        }
+      }
+    }
+
+    // Add event listeners to checkboxes to update button state
+    document.getElementById('validate-text-styles')?.addEventListener('change', updateRunValidationButton);
+    document.getElementById('validate-spacing')?.addEventListener('change', updateRunValidationButton);
+
+    // Run validation button
+    const runValidationButton = document.getElementById('run-validation');
+    runValidationButton?.addEventListener('click', () => {
+      console.log('▶ Run validation clicked');
+
+      // Get selected validation options
+      const validateTextStyles = document.getElementById('validate-text-styles').checked;
+      const validateSpacing = document.getElementById('validate-spacing').checked;
+
+      if (!validateTextStyles && !validateSpacing) {
+        alert('Please select at least one validation option.');
+        return;
+      }
+
+      // Send validation request to plugin
+      parent.postMessage({
+        pluginMessage: {
+          type: 'run-validation',
+          options: {
+            textStyles: validateTextStyles,
+            spacing: validateSpacing
+          }
+        }
+      }, '*');
+
+      // Switch to results view
+      showResultsView();
+      parent.postMessage({ pluginMessage: { type: 'show-results-view' } }, '*');
+    });
+
+    // Initialize button state
+    updateRunValidationButton();
+
     // Header collapse toggle
     collapseBtn?.addEventListener('click', () => {
       console.log('🔄 Collapse toggle clicked');
       parent.postMessage({ pluginMessage: { type: 'toggle-collapse' } }, '*');
     });
 
-    // Development test buttons
-    testFormBtn?.addEventListener('click', () => {
-      console.log('📋 Form view test clicked');
-      showFormView();
-      parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
-    });
 
-    testResultsBtn?.addEventListener('click', () => {
-      console.log('📊 Results view test clicked');
-      showResultsView();
-      parent.postMessage({ pluginMessage: { type: 'show-results-view' } }, '*');
-    });
 
-    testCollapseBtn?.addEventListener('click', () => {
-      console.log('🔄 Collapse test clicked');
-      parent.postMessage({ pluginMessage: { type: 'toggle-collapse' } }, '*');
-    });
+    // Function to fetch all published styles from a library via REST API
+    async function fetchLibraryStyles(fileKey, libraryName) {
+      console.log(`🚀🚀🚀 FETCHING ALL PUBLISHED STYLES FROM ${libraryName} 🚀🚀🚀`);
+      console.log(`📁 File Key: ${fileKey}`);
+
+      try {
+        // Note: This requires a Figma access token
+        // For demo purposes, we'll show what the response would look like
+        console.log(`\n📡 REST API CALL:`);
+        console.log(`   URL: https://api.figma.com/v1/files/${fileKey}`);
+        console.log(`   Method: GET`);
+        console.log(`   Headers: { 'Authorization': 'Bearer YOUR_FIGMA_ACCESS_TOKEN' }`);
+
+        console.log(`\n⚠️ NOTE: This demo cannot make actual HTTP requests due to browser security.`);
+        console.log(`   To see all published styles, you would need to:`);
+        console.log(`   1. Get a Figma access token from https://www.figma.com/developers/api`);
+        console.log(`   2. Make the API call from your server or a tool like Postman`);
+        console.log(`   3. Filter response.styles for style_type === 'TEXT'`);
+
+        console.log(`\n📋 EXPECTED RESPONSE STRUCTURE:`);
+        console.log(`{`);
+        console.log(`  "styles": [`);
+        console.log(`    {`);
+        console.log(`      "key": "style_key_here",`);
+        console.log(`      "name": "Display/Large",`);
+        console.log(`      "description": "Large display text",`);
+        console.log(`      "style_type": "TEXT",`);
+        console.log(`      "created_at": "2024-01-01T00:00:00Z",`);
+        console.log(`      "updated_at": "2024-01-01T00:00:00Z"`);
+        console.log(`    },`);
+        console.log(`    {`);
+        console.log(`      "key": "another_style_key",`);
+        console.log(`      "name": "Display/Medium",`);
+        console.log(`      "description": "Medium display text",`);
+        console.log(`      "style_type": "TEXT"`);
+        console.log(`    }`);
+        console.log(`    // ... more styles`);
+        console.log(`  ]`);
+        console.log(`}`);
+
+        console.log(`\n💡 JAVASCRIPT EXAMPLE TO FETCH ALL STYLES:`);
+        console.log(`const response = await fetch('https://api.figma.com/v1/files/${fileKey}', {`);
+        console.log(`  headers: { 'Authorization': 'Bearer YOUR_ACCESS_TOKEN' }`);
+        console.log(`});`);
+        console.log(`const data = await response.json();`);
+        console.log(`const textStyles = data.styles.filter(s => s.style_type === 'TEXT');`);
+        console.log(`console.log('All published text styles:', textStyles);`);
+
+        // Simulate what the response might contain based on complete Blueprint Atoms library
+        console.log(`\n🎯 SIMULATED RESPONSE (based on complete Blueprint Atoms library):`);
+        const simulatedStyles = [
+          // Display Family (2 Large variants visible in image)
+          { key: `${fileKey}:700`, name: 'Display/Large', style_type: 'TEXT', description: 'Large display text (57/64)' },
+          { key: `${fileKey}:701`, name: 'Display/Large', style_type: 'TEXT', description: 'Large display text variant (57/64)' },
+          { key: `${fileKey}:775`, name: 'Display/Medium', style_type: 'TEXT', description: 'Medium display text (45/52)' },
+          { key: `${fileKey}:782`, name: 'Display/Small', style_type: 'TEXT', description: 'Small display text (36/44)' },
+
+          // Headline Family
+          { key: `${fileKey}:800`, name: 'Headline/Large', style_type: 'TEXT', description: 'Large headline text (32/40)' },
+          { key: `${fileKey}:801`, name: 'Headline/Medium', style_type: 'TEXT', description: 'Medium headline text (28/36)' },
+          { key: `${fileKey}:802`, name: 'Headline/Small', style_type: 'TEXT', description: 'Small headline text (24/32)' },
+
+          // Title Family
+          { key: `${fileKey}:810`, name: 'Title/Large', style_type: 'TEXT', description: 'Large title text (22/28)' },
+          { key: `${fileKey}:811`, name: 'Title/Medium', style_type: 'TEXT', description: 'Medium title text (16/24)' },
+          { key: `${fileKey}:812`, name: 'Title/Small', style_type: 'TEXT', description: 'Small title text (14/20)' },
+
+          // Body Family
+          { key: `${fileKey}:820`, name: 'Body/Large', style_type: 'TEXT', description: 'Large body text (16/24)' },
+          { key: `${fileKey}:821`, name: 'Body/Medium', style_type: 'TEXT', description: 'Medium body text (14/20)' },
+          { key: `${fileKey}:822`, name: 'Body/Small', style_type: 'TEXT', description: 'Small body text (12/16)' },
+
+          // Label Family
+          { key: `${fileKey}:830`, name: 'Label/Large', style_type: 'TEXT', description: 'Large label text (14/20)' },
+          { key: `${fileKey}:831`, name: 'Label/Medium', style_type: 'TEXT', description: 'Medium label text (12/16)' },
+          { key: `${fileKey}:832`, name: 'Label/Small', style_type: 'TEXT', description: 'Small label text (11/16)' }
+        ];
+
+        console.log(`📊 SIMULATED: Found ${simulatedStyles.length} published text styles:`);
+        simulatedStyles.forEach((style, index) => {
+          console.log(`   ${index + 1}. "${style.name}" (Key: ${style.key})`);
+          console.log(`      📝 ${style.description}`);
+        });
+
+        console.log(`\n✅✅✅ LIBRARY STYLES FETCH COMPLETE ✅✅✅`);
+
+      } catch (error) {
+        console.error('❌ Error fetching library styles:', error);
+      }
+    }
 
     // Listen for messages from plugin
     window.addEventListener('message', (event) => {
@@ -881,6 +1458,25 @@
       if (msg.type === 'design-system-attached') {
         console.log('✅ Design system attached:', msg.library);
         // Update UI to reflect successful attachment
+        document.getElementById('attach-text').textContent = `${msg.library.name} Attached`;
+        attachButton.classList.add('attached');
+
+        // Update counts in validation options
+        if (msg.counts) {
+          document.getElementById('text-styles-count').textContent = `${msg.counts.textStyles} Styles Available`;
+          document.getElementById('spacing-count').textContent = `${msg.counts.spacing} Variables Available`;
+
+          // Show "View Tokens" links if there are tokens available
+          if (msg.counts.textStyles > 0) {
+            document.getElementById('view-text-styles').style.display = 'inline';
+          }
+          if (msg.counts.spacing > 0) {
+            document.getElementById('view-spacing').style.display = 'inline';
+          }
+        }
+
+        // Show validation options
+        document.getElementById('validation-options').style.display = 'block';
       }
 
       if (msg.type === 'design-system-error') {
@@ -889,18 +1485,42 @@
         alert('Error: ' + msg.error);
       }
 
+      if (msg.type === 'no-design-system-usage') {
+        console.log('⚠️ No design system usage found:', msg.message);
+        // Alert user that validation isn't possible without usage
+        alert(`⚠️ Validation Not Possible\n\n${msg.message}\n\nTip: Select a text field and apply at least 1 text style from "${msg.libraryName}" using the text style panel, then try attaching the design system again.`);
+      }
+
+      if (msg.type === 'tokens-response') {
+        console.log('📋 Received tokens:', msg);
+        populateTokensPanel(msg.tokens, msg.tokenType);
+      }
+
+      if (msg.type === 'documentation-content') {
+        console.log('📖 Received documentation content');
+        const content = document.getElementById('documentationContent');
+        if (content) {
+          content.innerHTML = msg.content;
+        }
+      }
+
       if (msg.type === 'validation-results') {
         console.log('📊 Received validation results:', msg);
         availableTokens = msg.tokens; // Store the actual tokens
         displayValidationResults(msg.issues, msg.summary);
-        
+
         // Removed run button reset - not needed
+      }
+
+      if (msg.type === 'fetch-library-styles') {
+        console.log('📡 Fetching library styles via REST API:', msg);
+        fetchLibraryStyles(msg.fileKey, msg.libraryName);
       }
 
       if (msg.type === 'validation-error') {
         console.log('❌ Validation error:', msg.error);
         alert('Validation Error: ' + msg.error);
-        
+
         // Go back to form
         showFormView();
         parent.postMessage({ pluginMessage: { type: 'show-form-view' } }, '*');
@@ -908,15 +1528,15 @@
 
       if (msg.type === 'text-styles-analyzed') {
         console.log('📝 Text styles analyzed:', msg);
-        
+
         // Show a brief notification about the analysis
         const styleCount = msg.stylePatterns.length;
         const libraryCount = msg.usage.libraryStyles;
-        
+
         if (styleCount > 0) {
           console.log(`✨ Found ${styleCount} text style patterns in use`);
           console.log(`📚 ${libraryCount} elements using library styles`);
-          
+
           // Could show a toast notification here in the future
           // For now, just log the success
         }
@@ -926,9 +1546,9 @@
     // Results display function
     function displayValidationResults(issues, summary) {
       console.log('📊 Displaying validation results:', issues.length, 'issues');
-      
+
       // Results count removed from header
-      
+
       // Update results content
       const resultsContent = document.getElementById('results-content');
       if (resultsContent) {
@@ -955,7 +1575,7 @@
             <!-- Issue Cards -->
             <div style="display: flex; flex-direction: column; gap: 16px;">
           `;
-          
+
           // Create issue cards
           issues.forEach((issue, index) => {
             const typeLabels = {
@@ -964,12 +1584,12 @@
               'font-size': 'font size',
               'font-color': 'color'
             };
-            
+
             const typeLabel = typeLabels[issue.type] || issue.type;
-            
+
             // Generate suggested tokens for dropdown
             const suggestedTokens = getSuggestedTokensForIssue(issue);
-            
+
             html += `
               <div style="background: white; border-radius: 8px; border-left: 4px solid #ff9800; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                 <!-- Issue Header -->
@@ -992,9 +1612,9 @@
                   <select style="min-width: 200px; max-width: 300px; padding: 8px 12px; border: 2px solid #007AFF; border-radius: 6px; font-size: 14px; background: white;" 
                           id="token-select-${index}">
                     ${suggestedTokens.map(token => {
-                      const displayValue = typeof token.value === 'number' ? `${token.value}px` : token.value;
-                      return `<option value="${token.id}">${token.name} - ${displayValue}</option>`;
-                    }).join('')}
+              const displayValue = typeof token.value === 'number' ? `${token.value}px` : token.value;
+              return `<option value="${token.id}">${token.name} - ${displayValue}</option>`;
+            }).join('')}
                   </select>
                   <button style="display: flex; align-items: center; justify-content: center; padding: 8px 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer; color: #333;" 
                           onclick="viewIssueNode('${issue.nodeId}')">
@@ -1012,7 +1632,7 @@
               </div>
             `;
           });
-          
+
           html += '</div>';
           resultsContent.innerHTML = html;
         }
@@ -1025,27 +1645,27 @@
         console.log('⚠️ No tokens available yet');
         return [];
       }
-      
+
       console.log('🎨 Getting suggested tokens for issue type:', issue.type);
       console.log('🎨 Available tokens:', availableTokens);
-      
+
       // Map issue types to token categories
       const tokenTypeMap = {
         'spacing': 'spacings',
-        'corner-radius': 'cornerRadius', 
+        'corner-radius': 'cornerRadius',
         'font-size': 'fontSize',
         'font-color': 'fontColor'
       };
-      
+
       const tokenCategory = tokenTypeMap[issue.type];
       if (!tokenCategory || !availableTokens[tokenCategory]) {
         console.log('⚠️ No tokens found for category:', tokenCategory);
         return [];
       }
-      
+
       const tokens = availableTokens[tokenCategory];
       console.log(`🎨 Found ${tokens.length} tokens for ${issue.type}:`, tokens);
-      
+
       // Sort tokens by how close they are to the current value (if numeric)
       if (typeof issue.currentValue === 'number') {
         return tokens.sort((a, b) => {
@@ -1054,72 +1674,189 @@
           return diffA - diffB;
         });
       }
-      
+
       return tokens;
     }
 
     // Action button functions
-    window.viewIssueNode = function(nodeId) {
+    window.viewIssueNode = function (nodeId) {
       console.log('👁️ Viewing node:', nodeId);
-      parent.postMessage({ 
-        pluginMessage: { 
+      parent.postMessage({
+        pluginMessage: {
           type: 'select-node',
           nodeId: nodeId
-        } 
+        }
       }, '*');
     };
 
-    window.updateIssueNode = function(nodeId, issueIndex) {
+    window.updateIssueNode = function (nodeId, issueIndex) {
       console.log('🔄 Updating node:', nodeId, 'with issue index:', issueIndex);
-      
+
       // Get the selected token from the dropdown
       const selectElement = document.getElementById(`token-select-${issueIndex}`);
       const selectedTokenId = selectElement ? selectElement.value : null;
-      
+
       if (selectedTokenId) {
-        parent.postMessage({ 
-          pluginMessage: { 
+        parent.postMessage({
+          pluginMessage: {
             type: 'update-node-token',
             nodeId: nodeId,
             tokenId: selectedTokenId,
             issueIndex: issueIndex
-          } 
+          }
         }, '*');
       } else {
         console.log('❌ No token selected for update');
       }
     };
 
-    window.ignoreIssue = function(nodeId, issueIndex) {
+    window.ignoreIssue = function (nodeId, issueIndex) {
       console.log('✕ Ignoring issue for node:', nodeId, 'issue index:', issueIndex);
-      
+
       // Remove the issue card from the UI
       const issueCards = document.querySelectorAll('[style*="border-left: 4px solid #ff9800"]');
       if (issueCards[issueIndex]) {
         issueCards[issueIndex].style.opacity = '0.5';
         issueCards[issueIndex].style.pointerEvents = 'none';
-        
+
         // Add "Ignored" label
         const header = issueCards[issueIndex].querySelector('[style*="font-size: 16px"]');
         if (header && !header.textContent.includes('(Ignored)')) {
           header.textContent += ' (Ignored)';
         }
       }
-      
-      parent.postMessage({ 
-        pluginMessage: { 
+
+      parent.postMessage({
+        pluginMessage: {
           type: 'ignore-issue',
           nodeId: nodeId,
           issueIndex: issueIndex
-        } 
+        }
       }, '*');
     };
 
     // Legacy function for backward compatibility
-    window.selectIssueNode = function(nodeId) {
+    window.selectIssueNode = function (nodeId) {
       console.log('🎯 Selecting node:', nodeId);
       window.viewIssueNode(nodeId);
     };
+
+    // Tokens Panel Management
+    let currentTokensData = null;
+
+    function showTokensPanel(tokenType) {
+      console.log('📋 Showing tokens panel for:', tokenType);
+
+      const panel = document.getElementById('tokensPanel');
+      const title = document.getElementById('tokensPanelTitle');
+      const content = document.getElementById('tokensPanelContent');
+
+      // Set title based on token type
+      if (tokenType === 'text-styles') {
+        title.textContent = 'Text Styles';
+      } else if (tokenType === 'spacing') {
+        title.textContent = 'Spacing Tokens';
+      }
+
+      // Request tokens data from plugin
+      parent.postMessage({
+        pluginMessage: {
+          type: 'get-tokens',
+          tokenType: tokenType
+        }
+      }, '*');
+
+      // Show the panel
+      panel.classList.add('show');
+    }
+
+    function hideTokensPanel() {
+      console.log('📋 Hiding tokens panel');
+      const panel = document.getElementById('tokensPanel');
+      panel.classList.remove('show');
+    }
+
+    function populateTokensPanel(tokens, tokenType) {
+      console.log('📋 Populating tokens panel with:', tokens);
+      const content = document.getElementById('tokensPanelContent');
+
+      if (!tokens || tokens.length === 0) {
+        content.innerHTML = `
+          <div class="tokens-empty">
+            <div class="tokens-empty-icon">📋</div>
+            <div>No ${tokenType === 'text-styles' ? 'text styles' : 'spacing variables'} available</div>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+
+      if (tokenType === 'text-styles') {
+        // Group text styles by family (Display, Headline, Title, etc.)
+        const groupedStyles = {};
+
+        tokens.forEach(token => {
+          const parts = token.name.split('/');
+          const family = parts[0] || 'Other';
+
+          if (!groupedStyles[family]) {
+            groupedStyles[family] = [];
+          }
+
+          groupedStyles[family].push(token);
+        });
+
+        // Create sections with headers and original card design
+        Object.keys(groupedStyles).sort().forEach(family => {
+          html += `
+            <div class="token-category">
+              <div class="token-category-header">${family}</div>
+          `;
+
+          groupedStyles[family].forEach(token => {
+            const parts = token.name.split('/');
+            const variant = parts[1] || token.name; // Extract just the variant (Large, Medium, Small)
+
+            html += `
+              <div class="token-item">
+                <div class="token-info">
+                  <div class="token-name">${variant}</div>
+                  <div class="token-description">${token.description || 'Text style from design system'}</div>
+                </div>
+                <div class="token-value">${token.fontSize}px</div>
+              </div>
+            `;
+          });
+
+          html += `</div>`;
+        });
+      } else if (tokenType === 'spacing') {
+        tokens.forEach(token => {
+          html += `
+            <div class="token-item">
+              <div class="token-info">
+                <div class="token-name">${token.name}</div>
+                <div class="token-description">${token.description || 'Spacing variable from design system'}</div>
+              </div>
+              <div class="token-value">${token.value}${typeof token.value === 'number' ? 'px' : ''}</div>
+            </div>
+          `;
+        });
+      }
+
+      content.innerHTML = html;
+    }
+
+
+
+    // Tokens panel event listeners
+    document.getElementById('tokensBackButton')?.addEventListener('click', () => {
+      hideTokensPanel();
+    });
+
+    // Global function for onclick handlers
+    window.showTokensPanel = showTokensPanel;
 
     // Initial setup
     updateUI();
