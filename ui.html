@@ -532,6 +532,28 @@
       padding: 16px;
     }
 
+    /* When minimized */
+    body.minimized .view-form,
+    body.minimized .view-collapsed {
+      display: none;
+    }
+
+    body.minimized .view-results {
+      display: block;
+    }
+
+    body.minimized .results-header {
+      display: none;
+    }
+
+    body.minimized .results-content {
+      padding: 0;
+    }
+
+    body.minimized .view-minimized {
+      display: block;
+    }
+
     .collapsed-content {
       display: flex;
       align-items: center;
@@ -1078,6 +1100,16 @@
       </div>
       <div class="results-content" id="results-content">
         <!-- Results will be populated here -->
+      </div>
+      
+      <!-- Total Errors Section -->
+      <div class="total-errors-section" id="total-errors-section" style="display: none;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: white; border-top: 1px solid #e1e5e9; border-radius: 0 0 8px 8px;">
+          <span style="font-size: 16px; color: #666; font-weight: 500;">Total Errors</span>
+          <div style="background: #ff5757; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; min-width: 40px; text-align: center;" id="total-errors-count">
+            0
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1997,6 +2029,9 @@
             updateButton.style.cursor = 'default';
           }
         }
+        
+        // Update Total Errors count
+        updateTotalErrorsCount();
       }
 
       if (msg.type === 'update-error') {
@@ -2069,20 +2104,17 @@
               <div style="font-size: 14px; color: #666;">No token validation issues found in your design.</div>
             </div>
           `;
+          
+          // Hide Total Errors section when no issues
+          const totalErrorsSection = document.getElementById('total-errors-section');
+          if (totalErrorsSection) {
+            totalErrorsSection.style.display = 'none';
+          }
         } else {
-          // Create the new layout matching the design
+          // Create the new layout without the Issues Found header
           let html = `
-            <!-- Issues Found Header -->
-            <div style="background: #fff3e0; border: 1px solid #ffcc02; border-radius: 8px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
-              <div style="color: #f57c00; font-size: 20px;">⚠️</div>
-              <div>
-                <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 2px;">Issues Found</div>
-                <div style="font-size: 14px; color: #666;">${summary.totalIssues} issues in ${issues.length} nodes (Current Page)</div>
-              </div>
-            </div>
-
             <!-- Issue List -->
-            <div style="border: 1px solid #e1e5e9; border-radius: 6px; overflow: hidden; background: white;">
+            <div style="border-radius: 6px; overflow: hidden; background: white;">
           `;
 
           // Create issue cards
@@ -2100,7 +2132,7 @@
             const suggestedTokens = getSuggestedTokensForIssue(issue);
 
             html += `
-              <div style="display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #e1e5e9; background: white;">
+              <div style="display: flex; align-items: center; padding: 8px 12px; background: white; border-top: 1px solid #e1e5e9;">
                 <!-- Issue Info -->
                 <div style="flex: 1; min-width: 0; margin-right: 12px;">
                   <span style="font-size: 13px; color: #333;">
@@ -2141,6 +2173,14 @@
 
           html += '</div>';
           resultsContent.innerHTML = html;
+          
+          // Show and update Total Errors section
+          const totalErrorsSection = document.getElementById('total-errors-section');
+          const totalErrorsCount = document.getElementById('total-errors-count');
+          if (totalErrorsSection && totalErrorsCount) {
+            totalErrorsSection.style.display = 'block';
+            totalErrorsCount.textContent = summary.totalIssues;
+          }
         }
       }
     }
@@ -2337,6 +2377,29 @@
       }, '*');
     };
 
+    // Function to update Total Errors count
+    function updateTotalErrorsCount() {
+      const totalErrorsCount = document.getElementById('total-errors-count');
+      if (totalErrorsCount) {
+        // Count remaining active issues (not resolved or ignored)
+        const allIssueRows = document.querySelectorAll('[style*="border-top: 1px solid #e1e5e9"]');
+        const activeIssues = Array.from(allIssueRows).filter(row => {
+          // Exclude ignored issues (opacity 0.5) and resolved issues (green border)
+          const style = row.getAttribute('style') || '';
+          return !style.includes('opacity: 0.5') && !style.includes('border-left: 4px solid #4CAF50');
+        });
+        
+        const count = activeIssues.length;
+        totalErrorsCount.textContent = count;
+        
+        // Hide the Total Errors section if no issues remain
+        const totalErrorsSection = document.getElementById('total-errors-section');
+        if (totalErrorsSection) {
+          totalErrorsSection.style.display = count > 0 ? 'block' : 'none';
+        }
+      }
+    }
+
     window.updateIssueNode = function (nodeId, issueIndex) {
       console.log('🔄 Updating node:', nodeId, 'with issue index:', issueIndex);
 
@@ -2381,6 +2444,9 @@
           issueIndex: issueIndex
         }
       }, '*');
+      
+      // Update Total Errors count
+      updateTotalErrorsCount();
     };
 
     // Legacy function for backward compatibility
