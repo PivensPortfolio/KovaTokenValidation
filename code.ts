@@ -30,7 +30,7 @@ type SavedLibrary = {
   libraryName: string;
   libraryFileKey?: string | null;
   generatedAt: string;
-  type: 'text-style-keys' | 'design-system-export';
+  type: 'design-system-export';
   version: number;
   items: Record<string, string>; // "Display/Large" -> style.key
   variables?: Record<string, any>; // Variable data
@@ -46,30 +46,30 @@ let selectedLibraryKey: string | null = null;
 
 // Set proper initial size based on status
 (async () => {
-  console.log('🚀 Initial setup - checking status');
+  console.log('Initial setup - checking status');
   const status = await getStatus();
-  console.log(`🎯 Initial status determined: ${status}`);
+  console.log(`Initial status determined: ${status}`);
 
   if (status === 0) {
     setScreenSize('LINK_SCREEN');
-    console.log('📐 Set initial size: LINK_SCREEN');
+    console.log('Set initial size: LINK_SCREEN');
   } else if (status === 1) {
     setScreenSize('SELECTION_SCREEN');
-    console.log('📐 Set initial size: SELECTION_SCREEN');
+    console.log('Set initial size: SELECTION_SCREEN');
   } else if (status === 2) {
     setScreenSize('SELECTION_SCREEN');
-    console.log('📐 Set initial size: SELECTION_SCREEN');
+    console.log('Set initial size: SELECTION_SCREEN');
   } else if (status === 3) {
     setScreenSize('SELECTION_SCREEN');
-    console.log('📐 Set initial size: SELECTION_SCREEN');
+    console.log('Set initial size: SELECTION_SCREEN');
   } else if (status === 4) {
     setScreenSize('EXPORT_INSTRUCTIONS_SCREEN');
-    console.log('📐 Set initial size: EXPORT_INSTRUCTIONS_SCREEN');
+    console.log('Set initial size: EXPORT_INSTRUCTIONS_SCREEN');
   } else if (status === 5) {
     setScreenSize('EXPORT_SCREEN');
-    console.log('📐 Set initial size: EXPORT_SCREEN (Status 5)');
+    console.log('Set initial size: EXPORT_SCREEN (Status 5)');
   } else {
-    console.log(`⚠️ Unknown status: ${status} - defaulting to LINK_SCREEN`);
+    console.log(`Unknown status: ${status} - defaulting to LINK_SCREEN`);
     setScreenSize('LINK_SCREEN');
   }
 })();
@@ -116,30 +116,30 @@ async function getStatus(): Promise<number> {
   const libraries = await getAllSavedLibraries();
   const libraryCount = Object.keys(libraries).length;
 
-  console.log('🔍 Status check:', { storedStatus, libraryCount });
+  console.log('Status check:', { storedStatus, libraryCount });
 
   // If we have a stored status, use it (except for special workflow states)
   if (storedStatus !== null && storedStatus !== undefined) {
-    console.log(`📊 Using stored status: ${storedStatus}`);
+    console.log(`Using stored status: ${storedStatus}`);
     return storedStatus;
   }
 
   // Default status based on available libraries (only when no stored status)
   if (libraryCount === 0) {
-    console.log('📊 No stored status, no libraries - defaulting to Status 0 (Link screen)');
+    console.log('No stored status, no libraries - defaulting to Status 0 (Link screen)');
     return 0; // No libraries available
   } else if (!selectedLibraryKey) {
-    console.log('📊 No stored status, has libraries - defaulting to Status 1 (Selection screen)');
+    console.log('No stored status, has libraries - defaulting to Status 1 (Selection screen)');
     return 1; // Has libraries, none selected
   } else {
-    console.log('📊 No stored status, library selected - defaulting to Status 2 (Home screen)');
+    console.log('No stored status, library selected - defaulting to Status 2 (Home screen)');
     return 2; // Library selected
   }
 }
 
 async function setStatus(status: number): Promise<void> {
   await figma.clientStorage.setAsync('status', status);
-  console.log(`🔄 Status: ${status}`);
+  console.log(`Status: ${status}`);
 }
 
 
@@ -175,7 +175,7 @@ async function exportLibraryKeys(): Promise<void> {
     // Get local variables using the async API
     if (figma.variables && figma.variables.getLocalVariablesAsync) {
       const variables = await figma.variables.getLocalVariablesAsync();
-      console.log(`🔍 Found ${variables.length} local variables`);
+      console.log(`Found ${variables.length} local variables`);
 
       for (const variable of variables) {
         try {
@@ -198,16 +198,16 @@ async function exportLibraryKeys(): Promise<void> {
             scopes: variable.scopes,
             values: variable.valuesByMode
           };
-          console.log(`✅ Exported variable: ${collectionKey}/${variable.name}`);
+          console.log(`Exported variable: ${collectionKey}/${variable.name}`);
         } catch (error) {
-          console.log(`❌ Could not process variable ${variable.name}:`, error);
+          console.log(`Could not process variable ${variable.name}:`, error);
         }
       }
     } else {
-      console.log('❌ Variables API not available in this Figma version');
+      console.log('Variables API not available in this Figma version');
     }
   } catch (error) {
-    console.log('❌ Variables export failed:', error);
+    console.log('Variables export failed:', error);
   }
 
   const libraryName = figma.root.name ?? 'Unknown Library';
@@ -587,7 +587,7 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
 
       // Log progress every 100 nodes
       if (nodeCount % 100 === 0) {
-        console.log(`🔄 Processed ${nodeCount} nodes, found ${results.length} issues so far`);
+        console.log(`Processed ${nodeCount} nodes, found ${results.length} issues so far`);
       }
     } catch (error) {
       console.log(`Error processing node ${node?.id || 'unknown'}:`, error);
@@ -596,14 +596,14 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
   }
 
   try {
-    console.log('🔄 Starting validation...');
+    console.log('Starting validation...');
 
     // Start validation from the target (frame or page)
     const displayName = targetName || target.name;
 
     if (target.type === 'PAGE') {
       // For pages, iterate through all top-level children
-      console.log(`🔄 Validating page with ${target.children.length} top-level nodes`);
+      console.log(`Validating page with ${target.children.length} top-level nodes`);
       for (const child of target.children) {
         if (child && typeof child === 'object') {
           traverseNode(child, displayName);
@@ -614,7 +614,7 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
       traverseNode(target, displayName);
     }
 
-    console.log(`🔍 Validation complete. Found ${results.length} issues after checking ${nodeCount} nodes`);
+    console.log(`Validation complete. Found ${results.length} issues after checking ${nodeCount} nodes`);
     return results;
   } catch (error) {
     console.error('Validation failed:', error);
@@ -625,9 +625,9 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
 
 figma.ui.onmessage = async (msg: PluginMessage) => {
   if (msg.type === 'get-ui-mode') {
-    console.log('🎯 UI requesting mode...');
+    console.log('UI requesting mode...');
     const status = await getStatus();
-    console.log(`🎯 Final status for UI: ${status}`);
+    console.log(`Final status for UI: ${status}`);
     let mode: 'export' | 'link' | 'selection' | 'home' | 'export-instructions' = 'link';
 
     if (status === 0) {
@@ -641,14 +641,14 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
     } else if (status === 2) {
       mode = 'selection';
       setScreenSize('SELECTION_SCREEN');
-      console.log('📋 Screen: Selection (Status 2 - has JSON files, none selected)');
+      console.log('Screen: Selection (Status 2 - has JSON files, none selected)');
     } else if (status === 3) {
       mode = 'selection';
       setScreenSize('SELECTION_SCREEN');
-      console.log('📋 Screen: Selection (Status 3 - library was selected, showing selection screen)');
+      console.log('Screen: Selection (Status 3 - library was selected, showing selection screen)');
     }
 
-    console.log(`🎯 Sending UI mode: ${mode}`);
+    console.log(`Sending UI mode: ${mode}`);
     figma.ui.postMessage({
       type: 'ui-mode',
       mode: mode,
@@ -713,7 +713,7 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
       });
 
       // Calculate spacing variables count specifically
-      console.log('🔍 Library variables structure:', library.variables);
+      console.log('Library variables structure:', library.variables);
 
       let spacingVariables: Record<string, any> = {};
       let spacingVariablesCount = 0;
@@ -723,7 +723,7 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
         if (library.variables.spacing) {
           spacingVariables = library.variables.spacing;
           spacingVariablesCount = Object.keys(spacingVariables).length;
-          console.log(`🔍 Found ${spacingVariablesCount} spacing variables (new format):`, spacingVariables);
+          console.log(`Found ${spacingVariablesCount} spacing variables (new format):`, spacingVariables);
         } else {
           // Handle old structure (flat with collection names in keys)
           const oldFormatSpacing: Record<string, any> = {};
@@ -735,7 +735,7 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
           }
           spacingVariables = oldFormatSpacing;
           spacingVariablesCount = Object.keys(spacingVariables).length;
-          console.log(`🔍 Found ${spacingVariablesCount} spacing variables (old format):`, spacingVariables);
+          console.log(`Found ${spacingVariablesCount} spacing variables (old format):`, spacingVariables);
         }
       }
 
@@ -863,18 +863,18 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
   } else if (msg.type === 'user-going-to-design-system') {
     // Set status to indicate user is going to design system file
     await setStatus(1);
-    console.log('🔄 Status: User going to design system file');
+    console.log('Status: User going to design system file');
     figma.closePlugin();
   } else if (msg.type === 'cancel-export-instructions') {
     // Reset status to 0 and close plugin
     await setStatus(0);
-    console.log('🔄 Status: Cancelled export instructions - reset to 0');
+    console.log('Status: Cancelled export instructions - reset to 0');
     figma.closePlugin();
   } else if (msg.type === 'get-text-styles') {
     if (selectedLibraryKey) {
       const library = await getSavedLibrary(selectedLibraryKey);
       if (library) {
-        console.log(`🔄 Loading ${Object.keys(library.items).length} text styles...`);
+        console.log(`Loading ${Object.keys(library.items).length} text styles...`);
 
         // Get detailed information for each text style
         const detailedStyles: Record<string, any> = {};
@@ -922,7 +922,7 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
           }
         }
 
-        console.log(`✅ Loaded ${Object.keys(detailedStyles).length} text styles`);
+        console.log(`Loaded ${Object.keys(detailedStyles).length} text styles`);
 
         figma.ui.postMessage({
           type: 'text-styles-data',
@@ -949,14 +949,14 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
           }
         }
 
-        console.log(`🔄 Loading ${Object.keys(spacingVariables).length} spacing variables...`);
+        console.log(`Loading ${Object.keys(spacingVariables).length} spacing variables...`);
 
         figma.ui.postMessage({
           type: 'spacing-variables-data',
           spacingVariables: spacingVariables
         });
       } else {
-        console.log('❌ No spacing variables found in selected library');
+        console.log('No spacing variables found in selected library');
         figma.ui.postMessage({
           type: 'spacing-variables-data',
           spacingVariables: {}
@@ -976,7 +976,7 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
         return;
       }
 
-      console.log('🔄 Running validation with options:', msg.options);
+      console.log('Running validation with options:', msg.options);
 
       // Get the current selection or use the entire page
       const selection = figma.currentPage.selection;
@@ -987,7 +987,7 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
         // No selection - validate the entire current page
         targetNode = figma.currentPage;
         targetName = `entire page "${figma.currentPage.name}"`;
-        console.log(`🎯 No selection found, validating entire page: ${figma.currentPage.name}`);
+        console.log(`No selection found, validating entire page: ${figma.currentPage.name}`);
         figma.notify(`Validating entire page: ${figma.currentPage.name}`);
       } else {
         const selectedNode = selection[0];
@@ -995,12 +995,12 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
           // Frame selected - validate the frame
           targetNode = selectedNode as FrameNode;
           targetName = `frame "${selectedNode.name}"`;
-          console.log(`🎯 Validating selected frame: ${selectedNode.name}`);
+          console.log(`Validating selected frame: ${selectedNode.name}`);
         } else {
           // Other node type selected - validate the entire page
           targetNode = figma.currentPage;
           targetName = `entire page "${figma.currentPage.name}" (non-frame selected)`;
-          console.log(`🎯 Non-frame selected, validating entire page: ${figma.currentPage.name}`);
+          console.log(`Non-frame selected, validating entire page: ${figma.currentPage.name}`);
           figma.notify(`Non-frame selected, validating entire page: ${figma.currentPage.name}`);
         }
       }
@@ -1015,7 +1015,7 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
 
       // Resize UI for validation results
       setScreenSize('VALIDATION_RESULTS_SCREEN');
-      console.log('📐 Resized UI for validation results');
+      console.log('Resized UI for validation results');
 
       // Send results to UI
       figma.ui.postMessage({
@@ -1026,7 +1026,7 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
         targetType: targetNode.type === 'PAGE' ? 'page' : 'frame'
       });
 
-      console.log('✅ Validation completed successfully');
+      console.log('Validation completed successfully');
     } catch (error) {
       console.error('Validation error:', error);
       figma.notify('Validation failed. Please try again.', { error: true });
@@ -1040,7 +1040,7 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
   } else if (msg.type === 'back-to-validation') {
     // Resize back to home screen
     setScreenSize('HOME_SCREEN');
-    console.log('📐 Resized UI back to home screen');
+    console.log('Resized UI back to home screen');
   } else if (msg.type === 'select-node') {
     if (msg.nodeId) {
       try {
@@ -1059,10 +1059,10 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
     }
   } else if (msg.type === 'enable-selection-tracking') {
     isSelectionTrackingEnabled = true;
-    console.log('🔄 Selection tracking enabled');
+    console.log('Selection tracking enabled');
   } else if (msg.type === 'disable-selection-tracking') {
     isSelectionTrackingEnabled = false;
-    console.log('🔄 Selection tracking disabled');
+    console.log('Selection tracking disabled');
   } else if (msg.type === 'close-plugin') {
     figma.closePlugin();
   }

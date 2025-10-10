@@ -1505,7 +1505,7 @@
 
 <script>
   // Request UI mode on startup
-  console.log('🚀 UI starting up, requesting mode...')
+  console.log('UI starting up, requesting mode...')
 
   // Ensure slide-in screens are hidden on startup
   const textStylesSlideScreen = document.getElementById('text-styles-view-screen')
@@ -1848,14 +1848,14 @@
   setTimeout(() => {
     const activeScreen = document.querySelector('.screen.active')
     if (!activeScreen) {
-      console.log('⚠️ No screen active, showing home screen as fallback')
+      console.log('No screen active, showing home screen as fallback')
       showScreen('home')
     }
   }, 1000)
 
   // Function to show only one screen
   function showScreen(mode) {
-    console.log('🖥️ showScreen called with mode:', mode)
+    console.log('showScreen called with mode:', mode)
 
     // Hide all screens
     document.querySelectorAll('.screen').forEach(screen => {
@@ -1874,18 +1874,18 @@
     }
 
     const screenId = screenMap[mode]
-    console.log('🖥️ Mapped to screenId:', screenId)
+    console.log('Mapped to screenId:', screenId)
 
     if (screenId) {
       const screen = document.getElementById(screenId)
       if (screen) {
         screen.classList.add('active')
-        console.log('🖥️ Successfully activated screen:', screenId)
+        console.log('Successfully activated screen:', screenId)
       } else {
-        console.log('❌ Screen element not found:', screenId)
+        console.log('Screen element not found:', screenId)
       }
     } else {
-      console.log('❌ No mapping found for mode:', mode)
+      console.log('No mapping found for mode:', mode)
     }
   }
 
@@ -2342,13 +2342,13 @@
   }
 
   function showValidationResults(results, library, targetName, targetType) {
-    console.log('🔍 showValidationResults called with:', results)
-    console.log('📚 Library data:', library)
-    console.log('🎯 Target:', targetName, 'Type:', targetType)
+    console.log('showValidationResults called with:', results)
+    console.log('Library data:', library)
+    console.log('Target:', targetName, 'Type:', targetType)
 
     // Reset updated items when new validation results are shown
     window.updatedItems = new Set()
-    console.log('🔄 Reset updated items for new validation results')
+    console.log('Reset updated items for new validation results')
 
     // Filter out updated items for counting
     const updatedItems = window.updatedItems || new Set()
@@ -2674,9 +2674,9 @@
   }
 
   function displayValidationResults(results) {
-    console.log('📋 displayValidationResults called with:', results)
+    console.log('displayValidationResults called with:', results)
     const content = document.getElementById('validation-results-content')
-    console.log('📋 Content element:', content)
+    console.log('Content element:', content)
 
     // Filter out items that have been successfully updated
     const updatedItems = window.updatedItems || new Set()
@@ -2685,7 +2685,7 @@
       return !nodeId || !updatedItems.has(nodeId)
     })
 
-    console.log(`📋 Filtered results: ${results.length} -> ${filteredResults.length} (${updatedItems.size} items updated)`)
+    console.log(`Filtered results: ${results.length} -> ${filteredResults.length} (${updatedItems.size} items updated)`)
 
     if (filteredResults.length === 0) {
       content.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No issues found! Your design is compliant with the design system.</div>'
@@ -2813,7 +2813,7 @@
     const msg = event.data.pluginMessage
 
     if (msg.type === 'ui-mode') {
-      console.log('🖥️ UI received mode:', msg.mode)
+      console.log('UI received mode:', msg.mode)
       showScreen(msg.mode)
       if (msg.mode === 'export') {
         document.getElementById('file-name').textContent = msg.fileName
@@ -2938,7 +2938,7 @@
     if (msg.type === 'applied') {
       if (msg.ok) {
         // Success - show visual feedback
-        console.log('✅ Style applied successfully:', msg)
+        console.log('Style applied successfully:', msg)
         showStyleAppliedFeedback(msg.nodeId, msg.styleName, msg.targetType)
       } else {
         // Error - show error message
