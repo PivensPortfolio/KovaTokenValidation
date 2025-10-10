@@ -1,40 +1,189 @@
-Below are the steps to get your plugin running. You can also find instructions at:
+# Figma Token Validator
 
-  https://www.figma.com/plugin-docs/plugin-quickstart-guide/
+A powerful Figma plugin that helps design teams maintain consistency by validating design system compliance and applying text styles and spacing tokens from external design system libraries.
 
-This plugin template uses Typescript and NPM, two standard tools in creating JavaScript applications.
+## Features
 
-First, download Node.js which comes with NPM. This will allow you to install TypeScript and other
-libraries. You can find the download link here:
+### 🎯 Design System Validation
+- **Text Style Validation**: Identifies text layers without applied text styles
+- **Spacing Validation**: Detects hardcoded spacing values (padding, gaps) that should use design tokens
+- **Real-time Results**: Instant validation feedback with detailed issue reporting
+- **Collapsed View**: Focus mode for individual asset validation
 
-  https://nodejs.org/en/download/
+### 📚 External Library Integration
+- **Library Export**: Export text styles and variables from any Figma file
+- **Cross-file Application**: Apply styles from external design system files
+- **Variable Support**: Full support for Figma variables including spacing tokens
+- **Multiple Libraries**: Manage and switch between multiple design system libraries
 
-Next, install TypeScript using the command:
+### 🔧 Smart Application Tools
+- **One-click Style Application**: Apply text styles directly to validation issues
+- **Spacing Token Application**: Replace hardcoded spacing with design tokens
+- **Bulk Operations**: Apply styles to multiple text layers at once
+- **Node Selection**: Automatic node selection and highlighting
 
-  npm install -g typescript
+### 🎨 Intuitive Interface
+- **Multi-screen Workflow**: Guided process from export to validation
+- **Responsive UI**: Adaptive interface that resizes based on current mode
+- **Visual Feedback**: Clear indicators for validation status and progress
+- **Collapsed Mode**: Minimized view for focused validation work
 
-Finally, in the directory of your plugin, get the latest type definitions for the plugin API by running:
+## How It Works
 
-  npm install --save-dev @figma/plugin-typings
+### 1. Export Design System
+1. Open your design system file in Figma
+2. Launch the Token Validator plugin
+3. Click "Export Keys" to extract text styles and variables
+4. The plugin saves your design system data locally
 
-If you are familiar with JavaScript, TypeScript will look very familiar. In fact, valid JavaScript code
-is already valid Typescript code.
+### 2. Validate Designs
+1. Open any design file you want to validate
+2. Launch the plugin and select your exported design system
+3. Choose validation options (text styles, spacing, or both)
+4. Run validation to see compliance issues
 
-TypeScript adds type annotations to variables. This allows code editors such as Visual Studio Code
-to provide information about the Figma API while you are writing code, as well as help catch bugs
-you previously didn't notice.
+### 3. Fix Issues
+1. Review validation results in the detailed report
+2. Use dropdown menus to select appropriate styles/tokens
+3. Click "Update" to apply fixes instantly
+4. Use the "View" button to focus on specific assets
 
-For more information, visit https://www.typescriptlang.org/
+## Installation & Setup
 
-Using TypeScript requires a compiler to convert TypeScript (code.ts) into JavaScript (code.js)
-for the browser to run.
+### Prerequisites
+- Node.js (https://nodejs.org/en/download/)
+- TypeScript: `npm install -g typescript`
 
-We recommend writing TypeScript code using Visual Studio code:
+### Development Setup
+1. Clone this repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Install Figma plugin types:
+   ```bash
+   npm install --save-dev @figma/plugin-typings
+   ```
+4. Build the plugin:
+   ```bash
+   npm run build
+   ```
+   Or for development with auto-rebuild:
+   ```bash
+   npm run watch
+   ```
 
-1. Download Visual Studio Code if you haven't already: https://code.visualstudio.com/.
-2. Open this directory in Visual Studio Code.
-3. Compile TypeScript to JavaScript: Run the "Terminal > Run Build Task..." menu item,
-    then select "npm: watch". You will have to do this again every time
-    you reopen Visual Studio Code.
+### Installing in Figma
+1. Open Figma Desktop App
+2. Go to Plugins → Development → Import plugin from manifest
+3. Select the `manifest.json` file from this project
+4. The plugin will appear in your Plugins menu
 
-That's it! Visual Studio Code will regenerate the JavaScript file every time you save.
+## Usage Guide
+
+### Exporting a Design System
+1. **Open your design system file** in Figma
+2. **Launch the plugin** from the Plugins menu
+3. **Click "Export Keys"** - this will:
+   - Extract all local text styles
+   - Export all local variables (including spacing tokens)
+   - Save the data with your file name as the library key
+4. **Confirmation** - you'll see a success message with the count of exported items
+
+### Validating a Design File
+1. **Open the file** you want to validate
+2. **Launch the plugin** and select your exported design system library
+3. **Choose validation options**:
+   - Text Styles: Find text without applied styles
+   - Spacing: Find hardcoded padding and gaps
+4. **Run validation** - results appear instantly
+5. **Review issues** in the detailed report
+
+### Fixing Validation Issues
+1. **Select appropriate fixes** using the dropdown menus next to each issue
+2. **Click "Update"** to apply the selected style or token
+3. **Use "View" button** to switch to collapsed mode and focus on specific assets
+4. **Track progress** - fixed items are automatically removed from the list
+
+### Collapsed Mode
+- **Automatic activation** when clicking "View" buttons
+- **Focused validation** showing only issues for the selected asset
+- **Minimize/expand** toggle for switching between full and collapsed views
+- **Selection tracking** automatically updates when you select different assets
+
+## Technical Architecture
+
+### Core Components
+- **`code.ts`**: Main plugin logic, Figma API interactions, validation engine
+- **`ui.html`**: Complete user interface with embedded CSS and JavaScript
+- **`manifest.json`**: Plugin configuration and permissions
+
+### Key Features Implementation
+- **Duplicate Prevention**: Event handlers use `data-handlers-attached` attributes
+- **State Management**: Persistent storage for libraries and UI state
+- **Validation Engine**: Recursive node traversal with safety checks
+- **Cross-file Integration**: Figma's `importStyleByKeyAsync` API for external styles
+
+### Data Structure
+```typescript
+type SavedLibrary = {
+  libraryName: string;
+  libraryFileKey?: string | null;
+  generatedAt: string;
+  type: 'design-system-export';
+  version: number;
+  items: Record<string, string>; // Style name -> style key
+  variables?: Record<string, any>; // Variable collections
+};
+```
+
+## API Reference
+
+### Plugin Messages
+- `export-keys`: Export design system from current file
+- `run-validation`: Validate current selection or page
+- `apply-text-style`: Apply text style to specific node
+- `apply-spacing-token`: Apply spacing token to specific node
+- `select-node`: Select and highlight specific node in Figma
+
+### Storage
+- `savedLibraries`: Persistent storage for exported design systems
+- `status`: Current UI state and workflow position
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes and test thoroughly
+4. Commit with descriptive messages
+5. Push to your fork and submit a pull request
+
+### Development Guidelines
+- Follow TypeScript best practices
+- Maintain backward compatibility for saved libraries
+- Test with multiple design system configurations
+- Ensure UI responsiveness across different screen sizes
+
+## Troubleshooting
+
+### Common Issues
+- **"No style map found"**: Ensure you've exported a design system library first
+- **"Style not found"**: The selected style may have been renamed or deleted in the source file
+- **Validation not working**: Check that you have proper selection or are on a valid page
+- **UI not responsive**: Try refreshing the plugin or restarting Figma
+
+### Performance Tips
+- Validation is limited to 1000 nodes for performance
+- Large files may take longer to process
+- Use collapsed mode for focused work on specific assets
+
+## License
+
+This project is open source. Feel free to use, modify, and distribute according to your needs.
+
+## Support
+
+For issues, feature requests, or questions:
+- Create an issue in this GitHub repository
+- Include steps to reproduce any bugs
+- Provide sample files when possible
