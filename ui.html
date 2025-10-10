@@ -2311,10 +2311,7 @@
     }
 
     // Generate HTML for spacing variables
-    let html = '<div class="text-style-group">'
-    html += '<div class="text-style-group-title">Spacing Variables</div>'
-
-    Object.entries(spacingVariables).forEach(([name, data]) => {
+    const spacingItems = Object.entries(spacingVariables).map(([name, data]) => {
       // Extract the pixel value from the variable data
       let pixelValue = 'Unknown'
       if (data.values && typeof data.values === 'object') {
@@ -2324,16 +2321,19 @@
         }
       }
 
-      html += `<div class="text-style-item">
+      return `<div class="text-style-item">
         <div class="text-style-info">
           <h4>${name}</h4>
           <p>Spacing token for consistent layout</p>
         </div>
         <div class="text-style-size">${pixelValue}</div>
       </div>`
-    })
+    }).join('')
 
-    html += '</div>'
+    const html = `<div class="text-style-group">
+      <div class="text-style-group-title">Spacing Variables</div>
+      ${spacingItems}
+    </div>`
 
     content.innerHTML = html
 

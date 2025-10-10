@@ -97,13 +97,11 @@ interface PluginMessage {
 }
 
 async function getAllSavedLibraries(): Promise<Record<string, SavedLibrary>> {
-  const data = await figma.clientStorage.getAsync('savedLibraries') || {};
-  return data as Record<string, SavedLibrary>;
+  return (await figma.clientStorage.getAsync('savedLibraries') || {}) as Record<string, SavedLibrary>;
 }
 
 async function getSavedLibrary(libraryKey: string): Promise<SavedLibrary | null> {
-  const libraries = await getAllSavedLibraries();
-  return libraries[libraryKey] || null;
+  return (await getAllSavedLibraries())[libraryKey] || null;
 }
 
 async function clearAllSavedLibraries(): Promise<void> {
@@ -119,7 +117,7 @@ async function getStatus(): Promise<number> {
   console.log('Status check:', { storedStatus, libraryCount });
 
   // If we have a stored status, use it (except for special workflow states)
-  if (storedStatus !== null && storedStatus !== undefined) {
+  if (storedStatus != null) {
     console.log(`Using stored status: ${storedStatus}`);
     return storedStatus;
   }
