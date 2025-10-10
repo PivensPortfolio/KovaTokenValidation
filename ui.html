@@ -1,0 +1,3302 @@
+<style>
+  /* CSS Custom Properties (Design Tokens) */
+  :root {
+    /* Colors - Green & Purple Theme */
+    --color-primary: #8b5cf6;
+    --color-primary-hover: #7c3aed;
+    --color-primary-light: #f3f4f6;
+    --color-success: #10b981;
+    --color-success-hover: #059669;
+    --color-checkbox: #10b981;
+    --color-checkbox-light: #ecfdf5;
+    --color-success-light: #ecfdf5;
+    --color-warning: #f59e0b;
+    --color-warning-light: #fef3c7;
+    --color-danger: #ef4444;
+    --color-danger-hover: #dc2626;
+    --color-danger-light: #fef2f2;
+    --color-gray-50: #f9fafb;
+    --color-gray-100: #f3f4f6;
+    --color-gray-200: #e5e7eb;
+    --color-gray-300: #d1d5db;
+    --color-gray-400: #9ca3af;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #4b5563;
+    --color-gray-700: #374151;
+    --color-gray-800: #1f2937;
+    --color-gray-900: #111827;
+
+    /* Typography */
+    --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-size-xs: 11px;
+    --font-size-sm: 12px;
+    --font-size-base: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 18px;
+    --font-size-2xl: 20px;
+    --font-size-3xl: 24px;
+
+    /* Spacing */
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-10: 40px;
+
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Reset and Base Styles */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    color: var(--color-gray-700);
+    background: #ffffff;
+    padding: var(--spacing-4) 16px;
+    overflow: hidden;
+    position: relative;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Remove body padding effect for validation results screen */
+  #validation-results-screen {
+    margin-top: calc(-1 * var(--spacing-4));
+  }
+
+  /* Screen Management */
+  .screen {
+    display: none;
+  }
+
+  .screen.active {
+    display: block;
+  }
+
+  /* Typography */
+  .header {
+    margin-bottom: var(--spacing-6);
+  }
+
+  .title {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0 0 var(--spacing-1) 0;
+    letter-spacing: -0.025em;
+  }
+
+  .subtitle {
+    font-size: var(--font-size-base);
+    color: var(--color-gray-500);
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .section {
+    margin-bottom: var(--spacing-6);
+  }
+
+  .section-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: var(--spacing-2);
+    letter-spacing: -0.025em;
+  }
+
+  /* Form Controls */
+  .dropdown {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-8) var(--spacing-3) var(--spacing-3);
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-lg);
+    background: #ffffff;
+    color: var(--color-gray-700);
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: var(--spacing-3);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right var(--spacing-3) center;
+    background-size: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .dropdown:hover {
+    border-color: var(--color-gray-400);
+    box-shadow: var(--shadow-md);
+  }
+
+  .dropdown:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+  }
+
+  .dropdown.attached {
+    background: #10b981;
+    color: white;
+    border-color: #10b981;
+    font-weight: 600;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right var(--spacing-3) center;
+    background-size: 16px;
+  }
+
+  .dropdown.attached:hover {
+    background: var(--color-success-hover);
+    border-color: var(--color-success-hover);
+  }
+
+  .dropdown.attached:focus {
+    outline: none;
+    border-color: var(--color-success);
+    box-shadow: 0 0 0 3px var(--color-success-light);
+    background: var(--color-success);
+  }
+
+  /* Custom Dropdown Component */
+  .custom-dropdown {
+    position: relative;
+    width: 100%;
+    margin-bottom: var(--spacing-3);
+  }
+
+  .dropdown-selected {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-8) var(--spacing-3) var(--spacing-3);
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-lg);
+    background: #ffffff;
+    color: var(--color-gray-700);
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .dropdown-selected:hover {
+    border-color: var(--color-gray-400);
+    box-shadow: var(--shadow-md);
+  }
+
+  .dropdown-arrow {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .custom-dropdown.open .dropdown-arrow {
+    transform: rotate(180deg);
+  }
+
+  .dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--color-gray-300);
+    border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .custom-dropdown.open .dropdown-options {
+    display: block;
+  }
+
+  .dropdown-option {
+    padding: var(--spacing-3);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: var(--font-size-base);
+    color: var(--color-gray-700);
+  }
+
+  .dropdown-option:hover {
+    background: var(--color-gray-50);
+  }
+
+  .dropdown-option.selected {
+    background: var(--color-success-light);
+    color: var(--color-success);
+    font-weight: 600;
+  }
+
+  /* Attached state styling */
+  .custom-dropdown.attached .dropdown-selected {
+    background: var(--color-success);
+    color: white;
+    border-color: var(--color-success);
+    font-weight: 600;
+  }
+
+  .custom-dropdown.attached .dropdown-selected:hover {
+    background: var(--color-success-hover);
+    border-color: var(--color-success-hover);
+  }
+
+  .custom-dropdown.attached .dropdown-arrow {
+    color: white;
+  }
+
+  /* Button System */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    line-height: 1;
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    white-space: nowrap;
+    user-select: none;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Primary Button */
+  .btn-primary {
+    background: #2da44e;
+    color: white;
+    border: 1px solid rgba(27, 31, 36, 0.15);
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    box-shadow: 0 1px 0 rgba(27, 31, 36, 0.1);
+  }
+
+  .btn-primary:hover {
+    background: #2c974b;
+    border-color: rgba(27, 31, 36, 0.15);
+    box-shadow: 0 1px 0 rgba(27, 31, 36, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .btn-primary:active {
+    background: #298e46;
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-primary:disabled {
+    background: #999;
+    color: white;
+    border-color: #999;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .btn-primary:disabled:hover {
+    background: #999;
+    border-color: #999;
+    box-shadow: none;
+  }
+
+  /* Legacy primary button for compatibility */
+  .primary-button {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+  }
+
+  .primary-button:hover {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  /* Run Validation Button - Black when active */
+  #run-validation:not(:disabled) {
+    background: var(--color-gray-900) !important;
+    border-color: var(--color-gray-900) !important;
+    color: white !important;
+  }
+
+  #run-validation:not(:disabled):hover {
+    background: var(--color-gray-800) !important;
+    border-color: var(--color-gray-800) !important;
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  /* Secondary Button */
+  .secondary-button,
+  .btn-secondary {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+    border-color: var(--color-gray-300);
+  }
+
+  .secondary-button:hover,
+  .btn-secondary:hover {
+    background: var(--color-gray-200);
+    border-color: var(--color-gray-400);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  /* Success Button */
+  .btn-success {
+    background: var(--color-success);
+    color: white;
+    border-color: var(--color-success);
+  }
+
+  .btn-success:hover {
+    background: var(--color-success-hover);
+    border-color: var(--color-success-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  /* Danger Button */
+  .btn-danger {
+    background: white;
+    color: #cf222e;
+    border: 1px solid #d0d7de;
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-danger:hover {
+    background: #f6f8fa;
+    border-color: #cf222e;
+  }
+
+  .btn-danger:active {
+    background: #eaeef2;
+  }
+
+  /* Icon Button */
+  .btn-icon {
+    background: white;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 6px;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-icon:hover {
+    background: #f6f8fa;
+    border-color: #afb8c1;
+  }
+
+  .btn-icon .icon {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+
+
+  /* Button Sizes */
+  .btn-sm {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-sm);
+  }
+
+  .btn-lg {
+    padding: var(--spacing-4) var(--spacing-6);
+    font-size: var(--font-size-lg);
+  }
+
+  /* Full Width Button */
+  .btn-full {
+    width: 100%;
+  }
+
+  /* Legacy button classes for compatibility */
+  .primary-button {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-4);
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: none;
+  }
+
+  .primary-button:hover {
+    background: var(--color-success-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  .primary-button:disabled {
+    background: #999;
+    cursor: not-allowed;
+    opacity: 1;
+  }
+
+  .primary-button:disabled:hover {
+    background: #999;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .secondary-button {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .secondary-button:hover {
+    background: var(--color-gray-200);
+    border-color: var(--color-gray-400);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  /* Tab System */
+  .tab-button {
+    background: none;
+    border: none;
+    padding: 0 var(--spacing-4);
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: var(--color-gray-500);
+    transition: all 0.2s ease;
+  }
+
+  .tab-button:hover {
+    color: var(--color-gray-700);
+  }
+
+  .tab-button.active {
+    color: var(--color-primary);
+  }
+
+  /* Validation Components */
+  .validation-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-4);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-3);
+    background: white;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+
+  .validation-item:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-gray-300);
+  }
+
+  .validation-item-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    flex: 1;
+  }
+
+  .validation-badge {
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .validation-badge.spacing {
+    background: var(--color-warning-light);
+    color: var(--color-warning);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .validation-badge.text {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .validation-actions {
+    display: flex;
+    gap: var(--spacing-2);
+  }
+
+  /* Card Components */
+  .card {
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-gray-300);
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    margin-bottom: var(--spacing-4);
+    padding-bottom: var(--spacing-3);
+    border-bottom: 1px solid var(--color-gray-100);
+  }
+
+  .card-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+  }
+
+  .card-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+    margin: var(--spacing-1) 0 0 0;
+  }
+
+  /* Form Components */
+  .form-group {
+    margin-bottom: var(--spacing-4);
+  }
+
+  .form-label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-gray-700);
+    margin-bottom: var(--spacing-2);
+  }
+
+  .form-input {
+    width: 100%;
+    padding: var(--spacing-3);
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-base);
+    color: var(--color-gray-700);
+    background: white;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .form-input:hover {
+    border-color: var(--color-gray-400);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+  }
+
+  /* Checkbox Styles */
+  .checkbox-group {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    padding: var(--spacing-4);
+    border: 2px solid var(--color-gray-200);
+    border-radius: var(--radius-xl);
+    background: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    margin-bottom: var(--spacing-4);
+  }
+
+  .checkbox-group:hover {
+    border-color: var(--color-gray-300);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .checkbox-group.selected {
+    border-color: var(--color-checkbox);
+    background: var(--color-checkbox-light);
+  }
+
+  .checkbox-group input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 24px;
+    height: 24px;
+    margin-top: 0px;
+    border: 2px solid var(--color-gray-200);
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .checkbox-group input[type="checkbox"]:checked {
+    background: var(--color-checkbox);
+    border-color: var(--color-checkbox);
+  }
+
+  .checkbox-group input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M20 6 9 17l-5-5'/%3e%3c/svg%3e");
+    background-size: 16px 16px;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  .checkbox-content {
+    flex: 1;
+  }
+
+  .checkbox-title {
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: var(--spacing-1);
+    font-size: 15px;
+  }
+
+  .checkbox-description {
+    font-size: 13px;
+    color: var(--color-gray-500);
+    margin-bottom: var(--spacing-2);
+    line-height: 1.4;
+  }
+
+  .checkbox-meta {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .checkbox-meta .count {
+    color: var(--color-checkbox);
+  }
+
+  .checkbox-meta .link {
+    color: var(--color-primary);
+    text-decoration: none;
+    margin-left: var(--spacing-2);
+  }
+
+  .checkbox-meta .link:hover {
+    text-decoration: underline;
+  }
+
+  /* Status Messages */
+  .status-message {
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid;
+    margin-bottom: var(--spacing-4);
+    font-size: var(--font-size-base);
+  }
+
+  .status-message.success {
+    background: var(--color-success-light);
+    border-color: var(--color-success);
+    color: var(--color-success);
+  }
+
+  .status-message.warning {
+    background: var(--color-warning-light);
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+  }
+
+  .status-message.info {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  /* Utility Classes */
+  .text-center {
+    text-align: center;
+  }
+
+  .text-sm {
+    font-size: var(--font-size-sm);
+  }
+
+  .text-lg {
+    font-size: var(--font-size-lg);
+  }
+
+  .font-medium {
+    font-weight: 500;
+  }
+
+  .font-semibold {
+    font-weight: 600;
+  }
+
+  .font-bold {
+    font-weight: 700;
+  }
+
+  .text-gray-500 {
+    color: var(--color-gray-500);
+  }
+
+  .text-gray-700 {
+    color: var(--color-gray-700);
+  }
+
+  .text-gray-900 {
+    color: var(--color-gray-900);
+  }
+
+  .mb-2 {
+    margin-bottom: var(--spacing-2);
+  }
+
+  .mb-4 {
+    margin-bottom: var(--spacing-4);
+  }
+
+  .mt-2 {
+    margin-top: var(--spacing-2);
+  }
+
+  .mt-4 {
+    margin-top: var(--spacing-4);
+  }
+
+  /* SVG Icon System */
+  .icon {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .icon-sm {
+    width: 14px;
+    height: 14px;
+  }
+
+  .icon-lg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .icon-xl {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Play Icon for Buttons */
+  .play-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    stroke: none;
+  }
+
+  .primary-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .primary-button:hover {
+    background: var(--color-success-hover);
+  }
+
+  .large-add-button {
+    width: 100%;
+    padding: 20px 16px;
+    background: var(--color-success);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .large-add-button:hover {
+    background: var(--color-success-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  .button-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .button-row button {
+    flex: 1;
+    margin-top: 0;
+  }
+
+  .blue-button {
+    padding: 10px 16px;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .blue-button:hover {
+    background: var(--color-primary-hover);
+  }
+
+  .red-button {
+    padding: 10px 16px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .red-button:hover {
+    background: #c82333;
+  }
+
+  .gray-button {
+    padding: 10px 16px;
+    background: #c7c7c7;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .gray-button:hover {
+    background: #5a6268;
+  }
+
+  .status-message {
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1.4;
+    margin-bottom: 16px;
+    background: #f5f5f5;
+    color: #666;
+    border: 1px solid #e0e0e0;
+  }
+
+  .play-icon::before {
+    content: "▶";
+    font-size: 10px;
+  }
+
+  /* Text Style Components */
+  .text-style-group {
+    margin-bottom: var(--spacing-6);
+  }
+
+  .text-style-group-title {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: var(--spacing-4);
+    padding-bottom: var(--spacing-2);
+    border-bottom: 2px solid var(--color-gray-100);
+    letter-spacing: -0.025em;
+  }
+
+  .text-style-item {
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    margin-bottom: var(--spacing-3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .text-style-item:hover {
+    border-color: var(--color-gray-300);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  .text-style-item.selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+    box-shadow: var(--shadow-md);
+  }
+
+  .text-style-info h4 {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-primary);
+    margin: 0 0 var(--spacing-1) 0;
+  }
+
+  .text-style-info p {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .text-style-size {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-primary);
+    background: var(--color-primary-light);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Slide-in Screen Styles */
+  .slide-screen {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 100%;
+    height: 100%;
+    background: white;
+    transition: left 0.3s ease;
+    z-index: 10;
+    overflow: hidden;
+    padding: var(--spacing-4);
+    box-sizing: border-box;
+  }
+
+  .slide-screen.active {
+    left: 0;
+  }
+
+  /* Visual Feedback for Applied Styles */
+  .validation-item-applied {
+    background: linear-gradient(90deg, #d4edda 0%, #ffffff 100%) !important;
+    border-color: #28a745 !important;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .validation-item-applied::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.1), transparent);
+    animation: shimmer 1.5s ease-in-out;
+  }
+
+  .update-btn-success {
+    background: #28a745 !important;
+    color: white !important;
+    border-color: #28a745 !important;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .update-btn-success::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    font-weight: bold;
+    opacity: 0;
+    animation: checkmark-appear 0.3s ease-in-out 0.2s forwards;
+  }
+
+  .update-btn-success .btn-text {
+    opacity: 0;
+    animation: text-fade-out 0.3s ease-in-out forwards;
+  }
+
+  .success-flash {
+    animation: success-flash 0.6s ease-in-out;
+  }
+
+  @keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+
+  @keyframes checkmark-appear {
+    0% { 
+      opacity: 0; 
+      transform: translate(-50%, -50%) scale(0.5);
+    }
+    100% { 
+      opacity: 1; 
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  @keyframes text-fade-out {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes success-flash {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(40, 167, 69, 0.1); }
+    100% { background-color: transparent; }
+  }
+
+  /* Pulse animation for successful updates */
+  .success-pulse {
+    animation: success-pulse 0.8s ease-in-out;
+  }
+
+  @keyframes success-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 480px) {
+    body {
+      padding: var(--spacing-3) 16px;
+    }
+
+    .title {
+      font-size: var(--font-size-xl);
+    }
+
+    .btn,
+    .primary-button,
+    .secondary-button {
+      padding: var(--spacing-3) var(--spacing-4);
+    }
+  }
+</style>
+
+<!-- Export Screen -->
+<div id="export-screen" class="screen">
+  <div class="header">
+    <h1 class="title">Library Export</h1>
+    <p class="subtitle">To enable automatic style detection, run this step from your design system file.</p>
+  </div>
+
+  <div class="section">
+    <ol style="margin: 0; padding-left: 20px; color: #666; line-height: 1.6;">
+      <li>If you’re already there, click Export below.</li>
+      <li>If not, open your design system file, launch this plugin, and return here to export the library.</li>
+    </ol>
+  </div>
+
+  <div id="export-status" class="status-message">
+    Ready to export from: <strong id="file-name">Loading...</strong>
+  </div>
+
+  <div class="button-row">
+    <button id="cancel-export-btn" class="gray-button">
+      <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M6 18L18 6M6 6l12 12" />
+      </svg>
+      Cancel
+    </button>
+    <button id="export-btn" class="primary-button">
+      <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M7 16a4 4 0 0 1-.88-7.903A5 5 0 1 1 15.9 6L16 6a5 5 0 0 1 1 9.9M9 19l3 3m0 0 3-3m-3 3V10" />
+      </svg>
+      Export Library
+    </button>
+
+  </div>
+</div>
+
+<!-- Link Screen (No JSON files) -->
+<div id="link-screen" class="screen">
+  <div class="header">
+    <h1 class="title">Design System Validator</h1>
+    <p class="subtitle">Connect your design system to bring in official text styles and design tokens ensuring
+      consistency across every file.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">How it works</div>
+    <div class="subtitle">
+      First, we capture all published text styles from your design system. This allows the DSValidator to recognize and
+      import them when you return to your working file.
+    </div>
+    <button id="large-add-button" class="large-add-button">
+      <svg class="icon icon-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M7 16a4 4 0 0 1-.88-7.903A5 5 0 1 1 15.9 6L16 6a5 5 0 0 1 1 9.9M15 13l-3-3m0 0-3 3m3-3v12" />
+      </svg>
+      Library Export
+    </button>
+  </div>
+</div>
+
+<!-- Selection Screen (Has JSON files, none selected) -->
+<div id="selection-screen" class="screen">
+  <div class="header">
+    <h1 class="title">Token Validation</h1>
+    <p class="subtitle">Attach a design system to automatically import text styles and access design tokens.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Design System</div>
+    <div class="subtitle">Select a design system to validate your design tokens against.</div>
+    <div class="custom-dropdown" id="library-dropdown" style="margin-top: 8px;">
+      <div class="dropdown-selected" id="library-selected">
+        <span id="library-selected-text">Select a library...</span>
+        <svg class="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </div>
+      <div class="dropdown-options" id="library-options">
+        <!-- Options will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+      <button id="reset-libraries-btn"
+        style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+        <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+          <path d="M21 3v5h-5" />
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+          <path d="M8 16H3v5" />
+        </svg>
+        Reset
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Home Screen (Has JSON file selected) -->
+<div id="home-screen" class="screen">
+  <div class="header">
+    <h1 class="title">Token Validation</h1>
+    <p class="subtitle">Attach a design system to automatically import text styles and access design tokens.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Design System:</div>
+    <div class="subtitle">Select a design system to validate your design tokens against.</div>
+    <div class="custom-dropdown attached" id="home-library-dropdown" style="margin-top: 8px;">
+      <div class="dropdown-selected" id="home-library-selected">
+        <span id="selected-library-name">No Library Selected</span>
+        <svg class="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </div>
+      <div class="dropdown-options" id="home-library-options">
+        <!-- Options will be populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Validation Options</div>
+    <div class="subtitle" style="margin-bottom: var(--spacing-4);">Select what you'd like to validate from your attached
+      design system.</div>
+
+    <label class="checkbox-group" for="text-styles-checkbox">
+      <input type="checkbox" id="text-styles-checkbox">
+      <div class="checkbox-content">
+        <div class="checkbox-title">Text Styles</div>
+        <div class="checkbox-description">Validate text styles usage from the design system</div>
+        <div class="checkbox-meta">
+          <span class="count" id="text-styles-count">0 Styles Available</span>
+          <a href="#" id="view-text-styles" class="link">View Tokens</a>
+        </div>
+      </div>
+    </label>
+
+    <label class="checkbox-group" for="spacing-checkbox">
+      <input type="checkbox" id="spacing-checkbox">
+      <div class="checkbox-content">
+        <div class="checkbox-title">Spacing</div>
+        <div class="checkbox-description">Validate spacing tokens and layout consistency</div>
+        <div class="checkbox-meta">
+          <span class="count" id="spacing-variables-count">0 Variables Available</span>
+          <a href="#" id="view-spacing-tokens" class="link">View Tokens</a>
+        </div>
+      </div>
+    </label>
+
+    <div style="margin-bottom: var(--spacing-4); padding: var(--spacing-3); background: #f8f9fa; border-radius: var(--radius-md); font-size: 13px; color: #666; line-height: 1.4;">
+      💡 <strong>Tip:</strong> Select a frame to validate specific content, or run validation without selection to check the entire page.
+    </div>
+
+    <button id="run-validation" class="primary-button" disabled>
+      Run Validation
+    </button>
+  </div>
+
+  <!-- Hidden for now -->
+  <button id="apply" class="primary-button" style="display: none;">
+    <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path d="M5 13l4 4L19 7" />
+    </svg>
+    Apply to Selected Text
+  </button>
+</div>
+
+<!-- Export Instructions Screen -->
+<div id="export-instructions-screen" class="screen">
+  <div class="header">
+    <h1 class="title">Export Library Styles</h1>
+    <p class="subtitle">Follow the steps below to prepare your design system for validation.</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Instructions</div>
+    <ol style="margin: 0; padding-left: 20px; color: #666; line-height: 1.8; margin-bottom: 20px;">
+      <li><strong>Go to your Design System Figma file</strong> (the file containing your text styles)</li>
+      <li><strong>Launch this plugin</strong> in that file</li>
+    </ol>
+
+    <div class="status-message"
+      style="background: #fff3cd; border-color: #ffc107; color: #856404; display: flex; align-items: flex-start; gap: 8px;">
+      <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        style="color: #ffc107; margin-top: 2px; flex-shrink: 0;">
+        <path
+          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+      </svg>
+      <div>
+        <strong>Tip:</strong> Make sure you're in your main Design System file that contains all your published text
+        styles before running the export.
+      </div>
+    </div>
+
+    <button id="got-it-btn" class="primary-button">
+      <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      </svg>
+      Got It - I'll Go to My Design System File
+    </button>
+  </div>
+</div>
+
+<!-- Text Styles View Screen -->
+<div id="text-styles-view-screen"
+  style="position: absolute; top: 0; left: 100%; width: 100%; height: 100%; background: white; transition: left 0.3s ease; z-index: 10; overflow: hidden; padding: 16px; box-sizing: border-box;">
+  <div class="header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+    <button id="back-to-home"
+      style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #666;">
+      <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M19 12H5m7-7l-7 7 7 7" />
+      </svg>
+      Back
+    </button>
+
+  </div>
+
+  <div id="text-styles-content" style="height: calc(100% - 60px); overflow-y: auto;">
+    <!-- Text styles will be populated here -->
+  </div>
+</div>
+
+<!-- Spacing Variables View Screen -->
+<div id="spacing-variables-view-screen"
+  style="position: absolute; top: 0; left: 100%; width: 100%; height: 100%; background: white; transition: left 0.3s ease; z-index: 10; overflow: hidden; padding: 16px; box-sizing: border-box;">
+  <div class="header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+    <button id="back-to-home-from-spacing"
+      style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #666;">
+      <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M19 12H5m7-7l-7 7 7 7" />
+      </svg>
+      Back
+    </button>
+
+  </div>
+
+  <div id="spacing-variables-content" style="height: calc(100% - 60px); overflow-y: auto;">
+    <!-- Spacing variables will be populated here -->
+  </div>
+</div>
+
+<!-- Validation Results Screen -->
+<div id="validation-results-screen" class="screen">
+  <div style="background: white; min-height: 100vh;">
+    <!-- Tabs -->
+    <div id="tab-navigation-container" style="background: white; padding: 12px 16px; border-bottom: 1px solid #e9ecef;">
+      <div id="tab-content-wrapper" style="display: flex; justify-content: space-between; align-items: center;">
+        <div id="tabs-container" style="display: flex; gap: 24px;">
+          <button id="all-tab" class="tab-button active" data-tab="all">All (14)</button>
+          <button id="text-styles-tab" class="tab-button" data-tab="text-styles">Text Styles (3)</button>
+          <button id="spacing-tab" class="tab-button" data-tab="spacing">Spacing (11)</button>
+        </div>
+        <div id="icons-container" style="display: flex; gap: 8px; align-items: center;">
+          <button id="minimize-btn" class="btn-icon" title="Minimize">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M6 12h12" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button id="hamburger-menu-btn" class="btn-icon" title="Menu">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M3 12h18M3 6h18M3 18h18" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results List -->
+    <div style="background: white;">
+      <div id="validation-results-content" style="height: calc(100vh - 200px); overflow-y: auto;">
+        <!-- Sample validation items will be populated here by JavaScript -->
+      </div>
+      
+      <!-- Collapsed View Content (shown when minimized and node is selected) -->
+      <div id="collapsed-view-content" style="display: none; background: white;">
+        <div id="selected-node-issues">
+          <!-- Selected node issues will be shown here -->
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<!-- Export Confirmation Screen -->
+<div id="export-confirmation-screen" class="screen">
+  <div class="header">
+    <h1 class="title">Library Export Complete</h1>
+    <p class="subtitle">Your design system has been successfully exported and is ready to use.</p>
+  </div>
+
+  <div class="section">
+    <div class="status-message"
+      style="background: #e8f5e8; border-color: #4CAF50; color: #2e7d32; display: flex; align-items: flex-start; gap: 8px;">
+      <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        style="color: #4CAF50; margin-top: 2px; flex-shrink: 0;">
+        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+        <strong>Export Successful!</strong><br>
+        <span id="export-details">Your library has been exported and saved.</span>
+      </div>
+    </div>
+
+    <div class="section-title">Next Steps</div>
+    <div class="subtitle" style="margin-bottom: 16px;">
+      Now you can return to your design files and run Design System Validation to ensure your designs match your
+      exported library standards.
+    </div>
+
+    <button id="return-to-files" class="primary-button">
+      <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M9 11l-6 6v-6h6zm0 0l6 6m-6-6v6" />
+      </svg>
+      Return to Design Files
+    </button>
+  </div>
+</div>
+
+<script>
+  // Request UI mode on startup
+  console.log('🚀 UI starting up, requesting mode...')
+
+  // Ensure slide-in screens are hidden on startup
+  const textStylesSlideScreen = document.getElementById('text-styles-view-screen')
+  if (textStylesSlideScreen) {
+    textStylesSlideScreen.style.left = '100%'
+  }
+
+  const spacingSlideScreen = document.getElementById('spacing-variables-view-screen')
+  if (spacingSlideScreen) {
+    spacingSlideScreen.style.left = '100%'
+  }
+
+  parent.postMessage({ pluginMessage: { type: 'get-ui-mode' } }, '*')
+
+  // Checkbox interaction for selected state styling
+  function setupCheckboxInteractions() {
+    const checkboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]')
+
+    checkboxes.forEach(checkbox => {
+      const checkboxGroup = checkbox.closest('.checkbox-group')
+
+      // Set initial state
+      if (checkbox.checked) {
+        checkboxGroup.classList.add('selected')
+      }
+
+      // Handle checkbox changes
+      checkbox.addEventListener('change', function () {
+        if (this.checked) {
+          checkboxGroup.classList.add('selected')
+        } else {
+          checkboxGroup.classList.remove('selected')
+        }
+      })
+    })
+  }
+
+  // Initialize checkbox interactions when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupCheckboxInteractions)
+  } else {
+    setupCheckboxInteractions()
+  }
+
+  // Custom Dropdown Component
+  class CustomDropdown {
+    constructor(element) {
+      this.element = element
+      this.selected = element.querySelector('.dropdown-selected')
+      this.options = element.querySelector('.dropdown-options')
+
+      // Find the text element - try different selectors based on the dropdown
+      this.selectedText = element.querySelector('#selected-library-name') ||
+        element.querySelector('#library-selected-text') ||
+        element.querySelector('.dropdown-selected span')
+
+      this.isOpen = false
+      this.selectedValue = ''
+      this.libraries = []
+
+      this.init()
+    }
+
+    init() {
+      // Click to toggle dropdown
+      this.selected.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.toggle()
+      })
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', () => {
+        this.close()
+      })
+
+      // Prevent closing when clicking inside options
+      this.options.addEventListener('click', (e) => {
+        e.stopPropagation()
+      })
+    }
+
+    toggle() {
+      if (this.isOpen) {
+        this.close()
+      } else {
+        this.open()
+      }
+    }
+
+    open() {
+      this.element.classList.add('open')
+      this.isOpen = true
+    }
+
+    close() {
+      this.element.classList.remove('open')
+      this.isOpen = false
+    }
+
+    setLibraries(libraries) {
+      this.libraries = libraries
+      this.renderOptions()
+    }
+
+    renderOptions() {
+      this.options.innerHTML = ''
+
+      // Add default option
+      const defaultOption = document.createElement('div')
+      defaultOption.className = 'dropdown-option'
+      defaultOption.textContent = 'Select a library...'
+      defaultOption.dataset.value = ''
+      defaultOption.addEventListener('click', () => this.selectOption('', 'Select a library...'))
+      this.options.appendChild(defaultOption)
+
+      // Add library options
+      this.libraries.forEach(library => {
+        const option = document.createElement('div')
+        option.className = 'dropdown-option'
+        option.textContent = library.name
+        option.dataset.value = library.key
+        option.addEventListener('click', () => this.selectOption(library.key, library.name))
+        this.options.appendChild(option)
+      })
+    }
+
+    selectOption(value, text) {
+      this.selectedValue = value
+      if (this.selectedText) {
+        this.selectedText.textContent = text
+      }
+
+      // Update selected state
+      this.options.querySelectorAll('.dropdown-option').forEach(opt => {
+        opt.classList.remove('selected')
+      })
+
+      const selectedOption = this.options.querySelector(`[data-value="${value}"]`)
+      if (selectedOption) {
+        selectedOption.classList.add('selected')
+      }
+
+      // Update attached state
+      if (value) {
+        this.element.classList.add('attached')
+      } else {
+        this.element.classList.remove('attached')
+      }
+
+      this.close()
+
+      // Trigger library selection
+      parent.postMessage({
+        pluginMessage: {
+          type: 'select-library',
+          libraryKey: value || null
+        }
+      }, '*')
+    }
+
+    setValue(value, text) {
+      this.selectedValue = value
+      if (this.selectedText) {
+        this.selectedText.textContent = text
+      }
+
+      if (value) {
+        this.element.classList.add('attached')
+      } else {
+        this.element.classList.remove('attached')
+      }
+
+      // Update selected state in options
+      this.options.querySelectorAll('.dropdown-option').forEach(opt => {
+        opt.classList.remove('selected')
+      })
+
+      const selectedOption = this.options.querySelector(`[data-value="${value}"]`)
+      if (selectedOption) {
+        selectedOption.classList.add('selected')
+      }
+    }
+  }
+
+  // Initialize custom dropdowns
+  let homeLibraryDropdown = null
+  let selectionLibraryDropdown = null
+
+  // Validation Dropdown Component
+  class ValidationDropdown {
+    constructor(element, nodeId) {
+      this.element = element
+      this.nodeId = nodeId
+      this.sanitizedNodeId = nodeId.replace(/[^a-zA-Z0-9-_]/g, '-')
+      this.selected = element.querySelector('.dropdown-selected')
+      this.options = element.querySelector('.dropdown-options')
+      this.selectedText = element.querySelector(`#validation-text-${this.sanitizedNodeId}`)
+      this.isOpen = false
+      this.selectedValue = ''
+
+
+      this.init()
+    }
+
+    init() {
+      // Click to toggle dropdown
+      this.selected.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.toggle()
+      })
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', () => {
+        this.close()
+      })
+
+      // Prevent closing when clicking inside options
+      this.options.addEventListener('click', (e) => {
+        e.stopPropagation()
+      })
+    }
+
+    toggle() {
+      if (this.isOpen) {
+        this.close()
+      } else {
+        this.open()
+      }
+    }
+
+    open() {
+      // Close other validation dropdowns
+      document.querySelectorAll('.validation-dropdown.open').forEach(dd => {
+        dd.classList.remove('open')
+      })
+
+      this.element.classList.add('open')
+      this.options.style.display = 'block'
+      this.isOpen = true
+    }
+
+    close() {
+      this.element.classList.remove('open')
+      this.options.style.display = 'none'
+      this.isOpen = false
+    }
+
+    setOptions(optionsArray) {
+      console.log('ValidationDropdown setOptions called with:', optionsArray)
+      this.options.innerHTML = ''
+
+      // Add default option
+      const defaultOption = document.createElement('div')
+      defaultOption.className = 'dropdown-option'
+      defaultOption.style.cssText = 'padding: var(--spacing-2) var(--spacing-3); cursor: pointer; font-size: 13px; color: var(--color-gray-700); transition: background-color 0.2s ease;'
+      defaultOption.textContent = 'Select a style...'
+      defaultOption.dataset.value = ''
+      defaultOption.addEventListener('click', () => this.selectOption('', 'Select a style...'))
+      defaultOption.addEventListener('mouseenter', () => defaultOption.style.background = 'var(--color-gray-50)')
+      defaultOption.addEventListener('mouseleave', () => defaultOption.style.background = 'white')
+      this.options.appendChild(defaultOption)
+
+      // Add style options
+      optionsArray.forEach(option => {
+        const optionElement = document.createElement('div')
+        optionElement.className = 'dropdown-option'
+        optionElement.style.cssText = 'padding: var(--spacing-2) var(--spacing-3); cursor: pointer; font-size: 13px; color: var(--color-gray-700); transition: background-color 0.2s ease;'
+        optionElement.textContent = option.text
+        optionElement.dataset.value = option.value
+        optionElement.addEventListener('click', () => this.selectOption(option.value, option.text))
+        optionElement.addEventListener('mouseenter', () => optionElement.style.background = 'var(--color-gray-50)')
+        optionElement.addEventListener('mouseleave', () => optionElement.style.background = 'white')
+        this.options.appendChild(optionElement)
+      })
+    }
+
+    selectOption(value, text) {
+      this.selectedValue = value
+      if (this.selectedText) {
+        this.selectedText.textContent = text
+      }
+
+      // Update selected state
+      this.options.querySelectorAll('.dropdown-option').forEach(opt => {
+        opt.style.background = 'white'
+        opt.style.fontWeight = 'normal'
+      })
+
+      const selectedOption = this.options.querySelector(`[data-value="${value}"]`)
+      if (selectedOption) {
+        selectedOption.style.background = 'var(--color-primary-light)'
+        selectedOption.style.color = 'var(--color-primary)'
+        selectedOption.style.fontWeight = '600'
+      }
+
+      this.close()
+
+      // Trigger update button state change
+      this.updateButtonState()
+    }
+
+    updateButtonState() {
+      const updateBtn = document.querySelector(`.update-btn[data-node-id="${this.nodeId}"]`)
+      if (updateBtn) {
+        if (this.selectedValue && this.selectedValue !== '') {
+          // Enable update button - CSS classes handle the styling
+          updateBtn.disabled = false
+        } else {
+          // Disable update button - CSS classes handle the styling
+          updateBtn.disabled = true
+        }
+      }
+    }
+
+    getValue() {
+      return this.selectedValue
+    }
+  }
+
+  function initializeCustomDropdown() {
+    const homeDropdownElement = document.getElementById('home-library-dropdown')
+    if (homeDropdownElement && !homeLibraryDropdown) {
+      homeLibraryDropdown = new CustomDropdown(homeDropdownElement)
+    }
+
+    const selectionDropdownElement = document.getElementById('library-dropdown')
+    if (selectionDropdownElement && !selectionLibraryDropdown) {
+      selectionLibraryDropdown = new CustomDropdown(selectionDropdownElement)
+    }
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCustomDropdown)
+  } else {
+    initializeCustomDropdown()
+  }
+
+  // Fallback: show home screen after a short delay if no screen is shown
+  setTimeout(() => {
+    const activeScreen = document.querySelector('.screen.active')
+    if (!activeScreen) {
+      console.log('⚠️ No screen active, showing home screen as fallback')
+      showScreen('home')
+    }
+  }, 1000)
+
+  // Function to show only one screen
+  function showScreen(mode) {
+    console.log('🖥️ showScreen called with mode:', mode)
+
+    // Hide all screens
+    document.querySelectorAll('.screen').forEach(screen => {
+      screen.classList.remove('active')
+    })
+
+    // Show the requested screen
+    const screenMap = {
+      'export': 'export-screen',
+      'link': 'link-screen',
+      'selection': 'selection-screen',
+      'home': 'home-screen',
+      'export-instructions': 'export-instructions-screen',
+      'export-confirmation': 'export-confirmation-screen',
+      'validation-results': 'validation-results-screen'
+    }
+
+    const screenId = screenMap[mode]
+    console.log('🖥️ Mapped to screenId:', screenId)
+
+    if (screenId) {
+      const screen = document.getElementById(screenId)
+      if (screen) {
+        screen.classList.add('active')
+        console.log('🖥️ Successfully activated screen:', screenId)
+      } else {
+        console.log('❌ Screen element not found:', screenId)
+      }
+    } else {
+      console.log('❌ No mapping found for mode:', mode)
+    }
+  }
+
+  // Function to go back to home screen
+  function goBackToHome() {
+    parent.postMessage({
+      pluginMessage: {
+        type: 'back-to-validation'
+      }
+    }, '*')
+    showScreen('home')
+  }
+
+  // Track successfully updated items
+  window.updatedItems = window.updatedItems || new Set()
+
+  // Visual feedback functions for applied styles
+  function showStyleAppliedFeedback(nodeId, styleName, targetType) {
+    if (!nodeId) {
+      // For selection-based applications, show a general success message
+      showSuccessNotification(`Applied "${styleName}" to selection`)
+      return
+    }
+
+    // Mark this item as updated
+    window.updatedItems.add(nodeId)
+
+    // Find the validation item for this node
+    const validationItem = document.querySelector(`[data-node-id="${nodeId}"]`)?.closest('div[style*="display: flex"]')
+    const updateButton = document.querySelector(`button[data-node-id="${nodeId}"].update-btn`)
+    
+    if (validationItem) {
+      // Add success styling to the entire validation item
+      validationItem.classList.add('validation-item-applied', 'success-pulse')
+      
+      // Remove the styling after animation completes
+      setTimeout(() => {
+        validationItem.classList.remove('success-pulse')
+      }, 800)
+    }
+
+    if (updateButton) {
+      // Transform the update button to show success
+      const originalText = updateButton.innerHTML
+      updateButton.innerHTML = '<span class="btn-text">Update</span>'
+      updateButton.classList.add('update-btn-success')
+      updateButton.disabled = true
+      
+      // Show success state for 2 seconds, then hide the item
+      setTimeout(() => {
+        if (validationItem) {
+          // Fade out the validation item
+          validationItem.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out'
+          validationItem.style.opacity = '0'
+          validationItem.style.transform = 'translateX(20px)'
+          
+          // Remove from DOM after fade
+          setTimeout(() => {
+            validationItem.remove()
+            updateValidationCounts()
+          }, 500)
+        }
+      }, 2000)
+    }
+
+    // Show success notification with more details
+    const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`)
+    const nodeName = nodeElement?.closest('div[style*="display: flex"]')?.querySelector('div[style*="color:"]')?.textContent || 'element'
+    showSuccessNotification(`Applied "${styleName}" to ${nodeName}`)
+  }
+
+  function showUpdateButtonLoading(button, styleName) {
+    const nodeId = button.getAttribute('data-node-id')
+    const validationItem = button.closest('div[style*="display: flex"]')
+    
+    // Add loading state to the entire validation item
+    if (validationItem) {
+      validationItem.style.background = 'linear-gradient(90deg, #fff3cd 0%, #ffffff 100%)'
+      validationItem.style.borderColor = '#ffc107'
+      validationItem.style.transition = 'all 0.3s ease'
+    }
+    
+    // Update button to show loading state
+    button.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="width: 12px; height: 12px; border: 2px solid transparent; border-top: 2px solid currentColor; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <span>Applying...</span>
+      </div>
+    `
+    button.disabled = true
+    button.style.opacity = '0.8'
+    
+    // Add spin animation if not already present
+    if (!document.getElementById('spin-animation')) {
+      const style = document.createElement('style')
+      style.id = 'spin-animation'
+      style.textContent = `
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `
+      document.head.appendChild(style)
+    }
+  }
+
+  function resetUpdateButton(nodeId) {
+    const updateButton = document.querySelector(`button[data-node-id="${nodeId}"].update-btn`)
+    if (updateButton) {
+      updateButton.classList.remove('update-btn-success')
+      updateButton.disabled = false
+      updateButton.innerHTML = 'Update'
+      updateButton.style.opacity = '1'
+    }
+  }
+
+  function showSuccessNotification(message) {
+    // Create or update success notification
+    let notification = document.getElementById('success-notification')
+    if (!notification) {
+      notification = document.createElement('div')
+      notification.id = 'success-notification'
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        z-index: 10000;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      `
+      document.body.appendChild(notification)
+    }
+
+    notification.innerHTML = `
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+      </svg>
+      ${message}
+    `
+
+    // Show notification
+    setTimeout(() => {
+      notification.style.transform = 'translateX(0)'
+    }, 100)
+
+    // Hide notification after 3 seconds
+    setTimeout(() => {
+      notification.style.transform = 'translateX(100%)'
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification)
+        }
+      }, 300)
+    }, 3000)
+  }
+
+  function updateValidationCounts() {
+    // Update tab counts after items are removed
+    const allItems = document.querySelectorAll('#validation-results-content > div[style*="display: flex"]')
+    const textStyleItems = Array.from(allItems).filter(item => 
+      item.querySelector('[data-result-type="text-style"]')
+    )
+    const spacingItems = Array.from(allItems).filter(item => 
+      item.querySelector('[data-result-type="spacing"]')
+    )
+
+    const allTab = document.getElementById('all-tab')
+    const textStylesTab = document.getElementById('text-styles-tab')
+    const spacingTab = document.getElementById('spacing-tab')
+
+    if (allTab) allTab.textContent = `All (${allItems.length})`
+    if (textStylesTab) textStylesTab.textContent = `Text Styles (${textStyleItems.length})`
+    if (spacingTab) spacingTab.textContent = `Spacing (${spacingItems.length})`
+
+    // Show success message if no issues remain
+    if (allItems.length === 0) {
+      const content = document.getElementById('validation-results-content')
+      if (content) {
+        content.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #28a745;">
+            <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">All Issues Resolved!</div>
+            <div style="color: #666;">Your design is now compliant with the design system.</div>
+          </div>
+        `
+      }
+    }
+  }
+
+  // Export screen handlers
+  const exportBtn = document.getElementById('export-btn')
+  if (exportBtn) {
+    exportBtn.onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'export-keys' } }, '*')
+    }
+  }
+
+  const cancelExportBtn = document.getElementById('cancel-export-btn')
+  if (cancelExportBtn) {
+    cancelExportBtn.onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'cancel-export-instructions' } }, '*')
+    }
+  }
+
+  // Link screen handlers
+  const largeAddBtn = document.getElementById('large-add-button')
+  if (largeAddBtn) {
+    largeAddBtn.onclick = () => {
+      showScreen('export-instructions')
+    }
+  }
+
+  // Selection screen handlers - now handled by custom dropdown
+
+  // Home screen handlers
+  document.getElementById('apply').onclick = () => {
+    parent.postMessage({ pluginMessage: { type: 'apply-text-style', styleName: 'Display/Large' } }, '*')
+  }
+
+  // Validation option handlers
+  function updateRunValidationButton() {
+    const textStylesChecked = document.getElementById('text-styles-checkbox').checked
+    const spacingChecked = document.getElementById('spacing-checkbox').checked
+    const runButton = document.getElementById('run-validation')
+
+    if (textStylesChecked || spacingChecked) {
+      runButton.disabled = false
+      runButton.style.background = '#4CAF50'
+      runButton.style.cursor = 'pointer'
+    } else {
+      runButton.disabled = true
+      runButton.style.background = '#999'
+      runButton.style.cursor = 'not-allowed'
+    }
+  }
+
+  document.getElementById('text-styles-checkbox').onchange = updateRunValidationButton
+  document.getElementById('spacing-checkbox').onchange = updateRunValidationButton
+
+  document.getElementById('run-validation').onclick = () => {
+    if (!document.getElementById('run-validation').disabled) {
+      console.log('Running validation...')
+
+      // Check which validation options are selected
+      const textStylesChecked = document.getElementById('text-styles-checkbox').checked
+      const spacingChecked = document.getElementById('spacing-checkbox').checked
+
+      if (!textStylesChecked && !spacingChecked) {
+        alert('Please select at least one validation option.')
+        return
+      }
+
+      // Show validation results screen immediately
+      showScreen('validation-results')
+
+      // Tell plugin to resize for validation results
+      parent.postMessage({
+        pluginMessage: {
+          type: 'switch-mode',
+          mode: 'validation-results'
+        }
+      }, '*')
+
+      // Add loading message with progress indicator
+      const content = document.getElementById('validation-results-content')
+      if (content) {
+        content.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #666;">
+            <div style="font-size: 18px; margin-bottom: 16px;">🔍 Running validation...</div>
+            <div style="width: 200px; height: 4px; background: #e0e0e0; border-radius: 2px; margin: 0 auto; overflow: hidden;">
+              <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #10b981, #059669); animation: progress 2s ease-in-out infinite;"></div>
+            </div>
+            <div style="margin-top: 16px; font-size: 14px; color: #999;">This may take a few moments...</div>
+          </div>
+          <style>
+            @keyframes progress {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(100%); }
+            }
+          </style>
+        `
+      }
+
+      // Send validation request to plugin
+      console.log('🚀 Sending validation request with options:', { textStyles: textStylesChecked, spacing: spacingChecked })
+      parent.postMessage({
+        pluginMessage: {
+          type: 'run-validation',
+          options: {
+            textStyles: textStylesChecked,
+            spacing: spacingChecked
+          }
+        }
+      }, '*')
+    }
+  }
+
+  // Reset button handler
+  const resetBtn = document.getElementById('reset-libraries-btn')
+  if (resetBtn) {
+    resetBtn.onclick = () => {
+      if (confirm('Are you sure you want to delete all saved design systems? This cannot be undone.')) {
+        parent.postMessage({ pluginMessage: { type: 'clear-all-libraries' } }, '*')
+      }
+    }
+  }
+
+  // Text styles view handlers
+  document.getElementById('view-text-styles').onclick = (e) => {
+    e.preventDefault()
+
+    // Show loading state immediately
+    const slideScreen = document.getElementById('text-styles-view-screen')
+    const content = document.getElementById('text-styles-content')
+
+    content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 200px; color: #666;">Loading text styles...</div>'
+    slideScreen.style.left = '0'
+
+    // Request text styles data
+    parent.postMessage({ pluginMessage: { type: 'get-text-styles' } }, '*')
+  }
+
+  document.getElementById('back-to-home').onclick = () => {
+    // Hide slide-in screen
+    const slideScreen = document.getElementById('text-styles-view-screen')
+    slideScreen.style.left = '100%'
+  }
+
+  document.getElementById('back-to-home-from-spacing').onclick = () => {
+    // Hide slide-in screen
+    const slideScreen = document.getElementById('spacing-variables-view-screen')
+    slideScreen.style.left = '100%'
+  }
+
+  // Spacing variables view handlers
+  document.getElementById('view-spacing-tokens').onclick = (e) => {
+    e.preventDefault()
+
+    // Show loading state immediately
+    const slideScreen = document.getElementById('spacing-variables-view-screen')
+    const content = document.getElementById('spacing-variables-content')
+
+    content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 200px; color: #666;">Loading spacing variables...</div>'
+    slideScreen.style.left = '0'
+
+    // Request spacing variables data
+    parent.postMessage({ pluginMessage: { type: 'get-spacing-variables' } }, '*')
+  }
+
+  function showTextStylesScreen(textStyles) {
+    const slideScreen = document.getElementById('text-styles-view-screen')
+    const content = document.getElementById('text-styles-content')
+
+    // Group styles by category (Body, Display, Headline, etc.)
+    const groups = {}
+    Object.entries(textStyles).forEach(([name, styleData]) => {
+      const parts = name.split('/')
+      const category = parts[0] || 'Other'
+      const styleName = parts.slice(1).join('/') || name
+
+      if (!groups[category]) {
+        groups[category] = []
+      }
+      groups[category].push({
+        name: styleName,
+        fullName: name,
+        data: styleData
+      })
+    })
+
+    // Generate HTML for grouped styles
+    let html = ''
+    Object.entries(groups).forEach(([category, styles]) => {
+      html += `<div class="text-style-group">
+        <div class="text-style-group-title">${category}</div>`
+
+      styles.forEach((style, index) => {
+        const data = style.data
+        const fontSize = data.fontSize !== undefined ? `${data.fontSize}px` : ''
+        const fontInfo = data.fontFamily && data.fontWeight ?
+          `${data.fontFamily} ${data.fontWeight}` : style.fullName
+        const lineHeight = data.lineHeight && typeof data.lineHeight === 'object' && data.lineHeight.unit === 'PIXELS' ?
+          `/${Math.round(data.lineHeight.value)}` :
+          data.lineHeight && typeof data.lineHeight === 'object' && data.lineHeight.unit === 'PERCENT' ?
+            `/${Math.round(data.fontSize * data.lineHeight.value / 100)}` : ''
+
+        html += `<div class="text-style-item">
+          <div class="text-style-info">
+            <h4>${style.name}</h4>
+            <p>${fontInfo}${lineHeight ? ` (${fontSize}${lineHeight})` : ''}</p>
+          </div>
+          <div class="text-style-size">${fontSize}</div>
+        </div>`
+      })
+
+      html += '</div>'
+    })
+
+    content.innerHTML = html
+
+    // Show slide-in screen
+    slideScreen.style.left = '0'
+  }
+
+  function showSpacingVariablesScreen(spacingVariables) {
+    const slideScreen = document.getElementById('spacing-variables-view-screen')
+    const content = document.getElementById('spacing-variables-content')
+
+    if (Object.keys(spacingVariables).length === 0) {
+      content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 200px; color: #666;">No spacing variables found in this library.</div>'
+      slideScreen.style.left = '0'
+      return
+    }
+
+    // Generate HTML for spacing variables
+    let html = '<div class="text-style-group">'
+    html += '<div class="text-style-group-title">Spacing Variables</div>'
+
+    Object.entries(spacingVariables).forEach(([name, data]) => {
+      // Extract the pixel value from the variable data
+      let pixelValue = 'Unknown'
+      if (data.values && typeof data.values === 'object') {
+        const firstModeValues = Object.values(data.values)[0]
+        if (typeof firstModeValues === 'number') {
+          pixelValue = `${firstModeValues}px`
+        }
+      }
+
+      html += `<div class="text-style-item">
+        <div class="text-style-info">
+          <h4>${name}</h4>
+          <p>Spacing token for consistent layout</p>
+        </div>
+        <div class="text-style-size">${pixelValue}</div>
+      </div>`
+    })
+
+    html += '</div>'
+
+    content.innerHTML = html
+
+    // Show slide-in screen
+    slideScreen.style.left = '0'
+  }
+
+  function showValidationResults(results, library, targetName, targetType) {
+    console.log('🔍 showValidationResults called with:', results)
+    console.log('📚 Library data:', library)
+    console.log('🎯 Target:', targetName, 'Type:', targetType)
+
+    // Reset updated items when new validation results are shown
+    window.updatedItems = new Set()
+    console.log('🔄 Reset updated items for new validation results')
+
+    // Filter out updated items for counting
+    const updatedItems = window.updatedItems || new Set()
+    const activeResults = results.filter(result => {
+      const nodeId = result.node?.id
+      return !nodeId || !updatedItems.has(nodeId)
+    })
+
+    // Count results by type (excluding updated items)
+    const textStylesIssues = activeResults.filter(r => r.type === 'text-style')
+    const spacingIssues = activeResults.filter(r => r.type === 'spacing')
+
+    console.log('📊 Active issues - Text style:', textStylesIssues.length, 'Spacing:', spacingIssues.length, 'Total:', activeResults.length)
+
+    // Update tab counts
+    const allTab = document.getElementById('all-tab')
+    const textStylesTab = document.getElementById('text-styles-tab')
+    const spacingTab = document.getElementById('spacing-tab')
+
+    if (allTab) allTab.textContent = `All (${activeResults.length})`
+    if (textStylesTab) textStylesTab.textContent = `Text Styles (${textStylesIssues.length})`
+    if (spacingTab) spacingTab.textContent = `Spacing (${spacingIssues.length})`
+
+    // Store results and library globally for filtering
+    window.validationResults = results
+    window.validationLibrary = library
+
+    // Show all results by default
+    displayValidationResults(results)
+
+    // Show the results screen
+    showScreen('validation-results')
+  }
+
+  function getTextStyleOptions() {
+    const library = window.validationLibrary
+    if (!library || !library.items) return ''
+
+    let options = ''
+    Object.keys(library.items).forEach(styleName => {
+      options += `<option value="${styleName}">${styleName}</option>`
+    })
+    return options
+  }
+
+  function getTextStyleOptionsArray() {
+    const library = window.validationLibrary
+    console.log('getTextStyleOptionsArray called, library:', library)
+
+    if (!library || !library.items) {
+      console.log('No library or items found')
+      return []
+    }
+
+    const options = Object.keys(library.items).map(styleName => ({
+      value: styleName,
+      text: styleName
+    }))
+
+    console.log('Generated options:', options)
+    return options
+  }
+
+  // Create custom dropdown for validation results
+  function createValidationDropdown(nodeId, isSpacing = false) {
+    // Sanitize nodeId for use in CSS selectors (replace invalid characters)
+    const sanitizedNodeId = nodeId.replace(/[^a-zA-Z0-9-_]/g, '-')
+    const dropdownId = `validation-dropdown-${sanitizedNodeId}`
+    const textId = `validation-text-${sanitizedNodeId}`
+    const optionsId = `validation-options-${sanitizedNodeId}`
+
+    return `
+      <div class="custom-dropdown validation-dropdown" id="${dropdownId}" data-node-id="${nodeId}" style="min-width: 140px;">
+        <button class="btn btn-primary validation-dropdown-selected" style="border: 2px solid red; background: white !important; color: var(--color-gray-700) !important; display: flex; align-items: center; justify-content: space-between; min-width: 140px; padding-right: 24px !important;">
+          <span id="${textId}">Select a style...</span>
+          <svg class="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; transition: transform 0.2s ease; flex-shrink: 0; color: var(--color-gray-500);">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+        <div class="dropdown-options" id="${optionsId}" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-gray-300); border-top: none; border-radius: 0 0 var(--radius-md) var(--radius-md); box-shadow: var(--shadow-lg); z-index: 1000; max-height: 200px; overflow-y: auto; display: none;">
+          <!-- Options will be populated by JavaScript -->
+        </div>
+      </div>
+    `
+  }
+
+  function getSpacingTokensArray() {
+    const library = window.validationLibrary
+    console.log('getSpacingTokensArray called, library:', library)
+
+    if (!library || !library.variables) {
+      console.log('No library or variables found')
+      return []
+    }
+
+    let spacingVariables = {}
+    
+    // Check if using new structure (organized by collection)
+    if (library.variables.spacing) {
+      spacingVariables = library.variables.spacing
+    } else {
+      // Handle old structure (flat with collection names in keys)
+      for (const key in library.variables) {
+        if (key.toLowerCase().startsWith('spacing/')) {
+          const variableName = key.replace(/^spacing\//i, '')
+          spacingVariables[variableName] = library.variables[key]
+        }
+      }
+    }
+
+    const options = Object.entries(spacingVariables).map(([name, data]) => {
+      // Extract the pixel value from the variable data
+      let pixelValue = 'Unknown'
+      if (data && data.values && typeof data.values === 'object') {
+        const firstModeValues = Object.values(data.values)[0]
+        if (typeof firstModeValues === 'number') {
+          pixelValue = `${firstModeValues}px`
+        }
+      }
+
+      return {
+        value: name,
+        text: `${name} (${pixelValue})`,
+        pixelValue: pixelValue
+      }
+    })
+
+    console.log('Generated spacing options:', options)
+    return options
+  }
+
+  function setupValidationEventHandlers() {
+    console.log('Setting up simple dropdown handlers')
+    
+    // Setup simple dropdown functionality
+    document.querySelectorAll('.simple-dropdown').forEach(dropdown => {
+      // Skip if already has event handlers
+      if (dropdown.hasAttribute('data-handlers-attached')) {
+        return
+      }
+      
+      // Mark as having handlers attached
+      dropdown.setAttribute('data-handlers-attached', 'true')
+      const trigger = dropdown.querySelector('.dropdown-trigger')
+      const optionsContainer = dropdown.querySelector('.dropdown-options')
+      const text = dropdown.querySelector('.dropdown-text')
+      const arrow = dropdown.querySelector('.dropdown-arrow')
+      const nodeId = dropdown.getAttribute('data-node-id')
+      const resultType = dropdown.getAttribute('data-result-type')
+      
+      // Determine if this is a spacing or text style dropdown
+      const isSpacing = resultType === 'spacing'
+      
+      // Get appropriate options based on type
+      const optionsList = isSpacing ? getSpacingTokensArray() : getTextStyleOptionsArray()
+      const defaultText = isSpacing ? 'Select token...' : 'Select a style...'
+      
+      optionsContainer.innerHTML = ''
+      
+      // Add default option
+      const defaultOption = document.createElement('div')
+      defaultOption.style.cssText = 'padding: 8px 12px; cursor: pointer; color: var(--color-gray-700); transition: background-color 0.2s ease;'
+      defaultOption.textContent = defaultText
+      defaultOption.addEventListener('click', () => selectOption('', defaultText))
+      defaultOption.addEventListener('mouseenter', () => defaultOption.style.background = 'var(--color-gray-50)')
+      defaultOption.addEventListener('mouseleave', () => defaultOption.style.background = 'white')
+      optionsContainer.appendChild(defaultOption)
+      
+      // Add options (text styles or spacing tokens)
+      optionsList.forEach(option => {
+        const optionElement = document.createElement('div')
+        optionElement.style.cssText = 'padding: 8px 12px; cursor: pointer; color: var(--color-gray-700); transition: background-color 0.2s ease;'
+        optionElement.textContent = option.text
+        optionElement.addEventListener('click', () => selectOption(option.value, option.text))
+        optionElement.addEventListener('mouseenter', () => optionElement.style.background = 'var(--color-gray-50)')
+        optionElement.addEventListener('mouseleave', () => optionElement.style.background = 'white')
+        optionsContainer.appendChild(optionElement)
+      })
+      
+      // Toggle dropdown
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const isOpen = optionsContainer.style.display === 'block'
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.simple-dropdown .dropdown-options').forEach(opt => {
+          opt.style.display = 'none'
+        })
+        document.querySelectorAll('.simple-dropdown .dropdown-arrow').forEach(arr => {
+          arr.style.transform = 'rotate(0deg)'
+        })
+        
+        // Toggle this dropdown
+        if (!isOpen) {
+          optionsContainer.style.display = 'block'
+          arrow.style.transform = 'rotate(180deg)'
+        } else {
+          optionsContainer.style.display = 'none'
+          arrow.style.transform = 'rotate(0deg)'
+        }
+      })
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', () => {
+        optionsContainer.style.display = 'none'
+        arrow.style.transform = 'rotate(0deg)'
+      })
+      
+      // Select option function
+      function selectOption(value, displayText) {
+        text.textContent = displayText
+        optionsContainer.style.display = 'none'
+        arrow.style.transform = 'rotate(0deg)'
+        
+        // Update button state
+        const updateBtn = document.querySelector(`.update-btn[data-node-id="${nodeId}"]`)
+        if (updateBtn) {
+          if (value && value !== '') {
+            updateBtn.disabled = false
+          } else {
+            updateBtn.disabled = true
+          }
+        }
+        
+        // Store selected value for later use
+        dropdown.selectedValue = value
+      }
+    })
+    
+    // Setup view button handlers
+    document.querySelectorAll('.view-node-btn').forEach(btn => {
+      // Skip if already has event handlers
+      if (btn.hasAttribute('data-handlers-attached')) {
+        return
+      }
+      
+      // Mark as having handlers attached
+      btn.setAttribute('data-handlers-attached', 'true')
+      
+      btn.addEventListener('click', function() {
+        const nodeId = this.getAttribute('data-node-id')
+        if (nodeId) {
+          console.log('View button clicked for node:', nodeId)
+          
+          // First, select the node in Figma
+          parent.postMessage({
+            pluginMessage: {
+              type: 'select-node',
+              nodeId: nodeId
+            }
+          }, '*')
+          
+          // Set the current selected node for collapsed view
+          window.currentSelectedNodeId = nodeId
+          
+          // Trigger collapsed mode if not already minimized
+          if (!window.isValidationMinimized) {
+            console.log('Switching to collapsed mode via minimize button')
+            const minimizeBtn = document.getElementById('minimize-btn')
+            if (minimizeBtn) {
+              // Trigger the minimize button click to enter collapsed mode
+              minimizeBtn.click()
+            }
+          } else {
+            // If already in collapsed mode, just update the view for the selected node
+            updateCollapsedViewForSelectedNode()
+          }
+        }
+      })
+    })
+    
+    // Setup update button handlers
+    document.querySelectorAll('.update-btn').forEach(btn => {
+      // Skip if already has event handlers
+      if (btn.hasAttribute('data-handlers-attached')) {
+        return
+      }
+      
+      // Mark as having handlers attached
+      btn.setAttribute('data-handlers-attached', 'true')
+      
+      btn.addEventListener('click', function() {
+        if (this.disabled) return
+        
+        const nodeId = this.getAttribute('data-node-id')
+        const resultType = this.getAttribute('data-result-type')
+        
+        // Find the corresponding dropdown to get the selected style
+        const dropdown = document.querySelector(`.simple-dropdown[data-node-id="${nodeId}"]`)
+        const selectedStyle = dropdown ? dropdown.selectedValue : null
+        
+        if (selectedStyle && resultType === 'text-style' && nodeId) {
+          console.log(`Applying text style "${selectedStyle}" to node ${nodeId}`)
+          
+          // Show loading state
+          showUpdateButtonLoading(this, selectedStyle)
+          
+          parent.postMessage({
+            pluginMessage: {
+              type: 'apply-text-style',
+              nodeId: nodeId,
+              styleName: selectedStyle
+            }
+          }, '*')
+        } else if (selectedStyle && resultType === 'spacing' && nodeId) {
+          console.log(`Applying spacing token "${selectedStyle}" to node ${nodeId}`)
+          
+          // Show loading state
+          showUpdateButtonLoading(this, selectedStyle)
+          
+          parent.postMessage({
+            pluginMessage: {
+              type: 'apply-spacing-token',
+              nodeId: nodeId,
+              tokenName: selectedStyle
+            }
+          }, '*')
+        } else {
+          console.log('Cannot apply: missing selection, node ID, or unsupported type')
+        }
+      })
+    })
+  }
+
+  function displayValidationResults(results) {
+    console.log('📋 displayValidationResults called with:', results)
+    const content = document.getElementById('validation-results-content')
+    console.log('📋 Content element:', content)
+
+    // Filter out items that have been successfully updated
+    const updatedItems = window.updatedItems || new Set()
+    const filteredResults = results.filter(result => {
+      const nodeId = result.node?.id
+      return !nodeId || !updatedItems.has(nodeId)
+    })
+
+    console.log(`📋 Filtered results: ${results.length} -> ${filteredResults.length} (${updatedItems.size} items updated)`)
+
+    if (filteredResults.length === 0) {
+      content.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No issues found! Your design is compliant with the design system.</div>'
+      return
+    }
+
+    let html = ''
+    filteredResults.forEach((result, index) => {
+      const isSpacing = result.type === 'spacing'
+
+      // Use blue for text issues, orange for spacing issues
+      const frameNameColor = isSpacing ? '#ff8c00' : '#007bff'
+
+      // Different dropdown text based on result type
+      const dropdownText = isSpacing ? 'Select token...' : 'Select a style...'
+      
+      html += `
+        <div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f1f3f4; background: white;">
+          <div style="color: ${frameNameColor}; font-weight: 500; font-size: 13px; min-width: 80px;">${result.frameName}</div>
+
+          <div style="flex: 1; color: #6c757d; font-size: 14px; margin-right: 16px;">- ${result.issue}</div>
+          <div style="display: flex; gap: 8px; margin-right: 12px; position: relative;">
+            <div class="simple-dropdown" data-node-id="${result.node?.id || ''}" data-result-type="${result.type}" style="position: relative;">
+              <button class="btn btn-primary dropdown-trigger" style="background: white !important; color: #6c757d !important;">
+                <span class="dropdown-text">${dropdownText}</span>
+                <svg class="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; color: #6c757d; transition: transform 0.2s ease;">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </button>
+              <div class="dropdown-options" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-gray-300); border-radius: 0 0 6px 6px; box-shadow: var(--shadow-lg); z-index: 1000; max-height: 200px; overflow-y: auto; display: none;">
+                <!-- Options will be populated by JavaScript -->
+              </div>
+            </div>
+            <button class="btn btn-primary update-btn" data-node-id="${result.node?.id || ''}" data-result-type="${result.type}" disabled>Update</button>
+            <button class="btn-danger">Ignore</button>
+          </div>
+          <button class="btn btn-icon view-node-btn" data-node-id="${result.node?.id || ''}">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>`
+    })
+
+    content.innerHTML = html
+
+    // Add event handlers for dropdowns and update buttons
+    setupValidationEventHandlers()
+  }
+
+  // Tab handlers
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('tab-button')) {
+      console.log('Tab clicked:', e.target.dataset.tab)
+      
+      // Remove active class from all tabs (CSS will handle styling)
+      document.querySelectorAll('.tab-button').forEach(tab => {
+        tab.classList.remove('active')
+        // Remove any inline styles that might override CSS
+        tab.style.borderBottomColor = ''
+        tab.style.color = ''
+      })
+
+      // Add active class to clicked tab (CSS will handle styling)
+      e.target.classList.add('active')
+
+      // Filter results based on tab
+      const tabType = e.target.dataset.tab
+      let allResults = window.validationResults || []
+      
+      // First filter out updated items
+      const updatedItems = window.updatedItems || new Set()
+      let filteredResults = allResults.filter(result => {
+        const nodeId = result.node?.id
+        return !nodeId || !updatedItems.has(nodeId)
+      })
+
+      console.log('Filtering for tab type:', tabType)
+      console.log('Total results before filtering:', allResults.length)
+      console.log('Results after removing updated items:', filteredResults.length)
+
+      // Then filter by tab type
+      if (tabType === 'text-styles') {
+        filteredResults = filteredResults.filter(r => r.type === 'text-style')
+      } else if (tabType === 'spacing') {
+        filteredResults = filteredResults.filter(r => r.type === 'spacing')
+      }
+      // For 'all' tab, we keep all results (no additional filtering)
+
+      console.log('Final filtered results:', filteredResults.length)
+      displayValidationResults(filteredResults)
+    }
+  })
+
+  // Hover effects are handled by CSS (.tab-button:hover)
+
+  // Back to validation handler
+  const backToValidationBtn = document.getElementById('back-to-validation')
+  if (backToValidationBtn) {
+    backToValidationBtn.onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'back-to-validation' } }, '*')
+      showScreen('home')
+    }
+  }
+
+  // Export instructions screen handlers
+  const gotItBtn = document.getElementById('got-it-btn')
+  if (gotItBtn) {
+    gotItBtn.onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'user-going-to-design-system' } }, '*')
+    }
+  }
+
+  // Export confirmation screen handlers
+  const returnToFilesBtn = document.getElementById('return-to-files')
+  if (returnToFilesBtn) {
+    returnToFilesBtn.onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'close-plugin' } }, '*')
+    }
+  }
+
+  // Handle messages from plugin
+  window.onmessage = (event) => {
+    const msg = event.data.pluginMessage
+
+    if (msg.type === 'ui-mode') {
+      console.log('🖥️ UI received mode:', msg.mode)
+      showScreen(msg.mode)
+      if (msg.mode === 'export') {
+        document.getElementById('file-name').textContent = msg.fileName
+      }
+      if (msg.mode === 'selection') {
+        // Initialize custom dropdown and request saved libraries when showing selection screen
+        setTimeout(() => {
+          initializeCustomDropdown()
+        }, 100)
+        parent.postMessage({ pluginMessage: { type: 'get-saved-libraries' } }, '*')
+      }
+      if (msg.mode === 'home') {
+        // Setup checkbox interactions when home screen is shown
+        setTimeout(() => {
+          setupCheckboxInteractions()
+          initializeCustomDropdown()
+        }, 100)
+      }
+    }
+
+    if (msg.type === 'keys-exported') {
+      // Update export details and show confirmation screen
+      const textStylesCount = msg.textStylesCount || msg.count
+      const variablesCount = msg.variablesCount || 0
+
+      let exportMessage = `Exported ${textStylesCount} text style keys`
+      if (variablesCount > 0) {
+        exportMessage += ` and ${variablesCount} variables`
+      }
+      exportMessage += ` from <strong>${msg.libraryName}</strong><br>Saved as: ${msg.fileName}`
+
+      document.getElementById('export-details').innerHTML = exportMessage
+      showScreen('export-confirmation')
+    }
+
+    if (msg.type === 'saved-libraries') {
+      const librariesWithCount = msg.libraries.map(lib => ({
+        key: lib.key,
+        name: `${lib.name} (${lib.count} styles)`
+      }))
+
+      // Update custom dropdown for home screen
+      if (homeLibraryDropdown) {
+        homeLibraryDropdown.setLibraries(librariesWithCount)
+      }
+
+      // Update custom dropdown for selection screen
+      if (selectionLibraryDropdown) {
+        selectionLibraryDropdown.setLibraries(librariesWithCount)
+      }
+    }
+
+    if (msg.type === 'library-selected') {
+      // Update home screen with selected library info
+      const libraryNameElement = document.getElementById('selected-library-name')
+      const textStylesCountElement = document.getElementById('text-styles-count')
+      const spacingVariablesCountElement = document.getElementById('spacing-variables-count')
+
+      if (msg.library) {
+        // Update custom dropdown
+        if (homeLibraryDropdown) {
+          homeLibraryDropdown.setValue(msg.library.key, `${msg.library.name} Attached`)
+        }
+
+        // Fallback for native select if it exists
+        if (libraryNameElement) {
+          libraryNameElement.textContent = `${msg.library.name} Attached`
+        }
+      }
+
+      if (textStylesCountElement && msg.library) {
+        textStylesCountElement.textContent = `${msg.library.textStylesCount || msg.library.count} Styles Available`
+      }
+
+      if (spacingVariablesCountElement && msg.library) {
+        spacingVariablesCountElement.textContent = `${msg.library.spacingVariablesCount || 0} Variables Available`
+      }
+    }
+
+    if (msg.type === 'libraries-cleared') {
+      showScreen('link')
+    }
+
+    if (msg.type === 'text-styles-data') {
+      showTextStylesScreen(msg.textStyles)
+    }
+
+    if (msg.type === 'spacing-variables-data') {
+      showSpacingVariablesScreen(msg.spacingVariables)
+    }
+
+    if (msg.type === 'validation-results') {
+      showValidationResults(msg.results, msg.library, msg.targetName, msg.targetType)
+    }
+
+    if (msg.type === 'selection-changed') {
+      console.log('Selection changed:', msg.nodeId)
+      window.currentSelectedNodeId = msg.nodeId
+      
+      // Update collapsed view if we're in minimized state
+      if (window.isValidationMinimized) {
+        updateCollapsedViewForSelectedNode()
+      }
+    }
+
+    if (msg.type === 'validation-error') {
+      console.error('Validation error received:', msg.error)
+      const content = document.getElementById('validation-results-content')
+      if (content) {
+        content.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #dc3545;">
+            <div style="font-size: 18px; margin-bottom: 16px;">⚠️ Validation Failed</div>
+            <div style="color: #666; margin-bottom: 24px;">${msg.error}</div>
+            <button onclick="goBackToHome()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              Try Again
+            </button>
+          </div>
+        `
+      }
+    }
+
+    if (msg.type === 'applied') {
+      if (msg.ok) {
+        // Success - show visual feedback
+        console.log('✅ Style applied successfully:', msg)
+        showStyleAppliedFeedback(msg.nodeId, msg.styleName, msg.targetType)
+      } else {
+        // Error - show error message
+        console.error('❌ Style application failed:', msg.error)
+        alert(`Error: ${msg.error}`)
+        
+        // Reset button state if we have nodeId
+        if (msg.nodeId) {
+          resetUpdateButton(msg.nodeId)
+        }
+      }
+    }
+  }
+
+  // Track current selected node and minimized state
+  window.currentSelectedNodeId = null
+  window.isValidationMinimized = false
+
+  // Function to update collapsed view for selected node (global scope)
+  function updateCollapsedViewForSelectedNode() {
+      const collapsedContent = document.getElementById('selected-node-issues')
+      const validationResults = window.validationResults || []
+      const updatedItems = window.updatedItems || new Set()
+      
+      if (!collapsedContent) return
+      
+      if (!window.currentSelectedNodeId) {
+        collapsedContent.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 60px; color: #999; font-style: italic;">Select an asset in Figma to see its validation issues</div>'
+        return
+      }
+      
+      // Find issues for the selected node (excluding updated items)
+      const nodeIssues = validationResults.filter(result => {
+        const nodeId = result.node?.id
+        return nodeId === window.currentSelectedNodeId && !updatedItems.has(nodeId)
+      })
+      
+      if (nodeIssues.length === 0) {
+        collapsedContent.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 60px; color: #28a745; font-weight: 500;">✓ No issues found for selected asset</div>'
+        return
+      }
+      
+      // Display the issues in the exact same format as expanded view
+      let html = ''
+      
+      nodeIssues.forEach((result, index) => {
+        const isSpacing = result.type === 'spacing'
+        const frameNameColor = isSpacing ? '#ff8c00' : '#007bff'
+        const dropdownText = isSpacing ? 'Select token...' : 'Select a style...'
+        
+        html += `
+          <div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f1f3f4; background: white;">
+            <div style="color: ${frameNameColor}; font-weight: 500; font-size: 13px; min-width: 80px;">${result.frameName}</div>
+
+            <div style="flex: 1; color: #6c757d; font-size: 14px; margin-right: 16px;">- ${result.issue}</div>
+            <div style="display: flex; gap: 8px; margin-right: 12px; position: relative;">
+              <div class="simple-dropdown" data-node-id="${result.node?.id || ''}" data-result-type="${result.type}" style="position: relative;">
+                <button class="btn btn-primary dropdown-trigger" style="background: white !important; color: #6c757d !important;">
+                  <span class="dropdown-text">${dropdownText}</span>
+                  <svg class="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; color: #6c757d; transition: transform 0.2s ease;">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </button>
+                <div class="dropdown-options" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-gray-300); border-radius: 0 0 6px 6px; box-shadow: var(--shadow-lg); z-index: 1000; max-height: 200px; overflow-y: auto; display: none;">
+                  <!-- Options will be populated by JavaScript -->
+                </div>
+              </div>
+              <button class="btn btn-primary update-btn" data-node-id="${result.node?.id || ''}" data-result-type="${result.type}" disabled>Update</button>
+              <button class="btn-danger">Ignore</button>
+            </div>
+            <button class="btn btn-icon view-node-btn" data-node-id="${result.node?.id || ''}">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>`
+      })
+      
+      collapsedContent.innerHTML = html
+      
+      // After setting the HTML, we need to set up the event handlers for the dropdowns and buttons
+      // This is important because the collapsed view now has the same interactive elements
+      setTimeout(() => {
+        setupValidationEventHandlers()
+      }, 100)
+    }
+
+  // Validation Results Screen Tab Functionality
+  document.addEventListener('DOMContentLoaded', function () {
+    // Tab switching for validation results - moved to main tab handler below
+
+    // Add event handlers for tab navigation icons
+    const minimizeBtn = document.getElementById('minimize-btn')
+    const hamburgerBtn = document.getElementById('hamburger-menu-btn')
+
+    if (minimizeBtn) {
+      // Track minimize state
+      let isMinimized = false
+      
+      minimizeBtn.addEventListener('click', function() {
+        console.log('Minimize/Expand button clicked, current state:', isMinimized)
+        
+        if (!isMinimized) {
+          // Minimize: resize to collapsed validation results size
+          console.log('Minimizing to collapsed size')
+          parent.postMessage({
+            pluginMessage: {
+              type: 'resize-ui',
+              sizeMode: 'validation-results-collapsed'
+            }
+          }, '*')
+          
+          // Enable selection tracking for collapsed view
+          parent.postMessage({
+            pluginMessage: {
+              type: 'enable-selection-tracking'
+            }
+          }, '*')
+          
+          // Change icon to expand (diagonal arrows pointing outward)
+          minimizeBtn.innerHTML = `
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          `
+          minimizeBtn.title = "Expand"
+          
+          // Hide the validation results content and show collapsed view
+          const resultsContent = document.getElementById('validation-results-content')
+          const collapsedContent = document.getElementById('collapsed-view-content')
+          
+          // Hide the tab buttons and right-align the icons
+          const tabsContainer = document.getElementById('tabs-container')
+          const contentWrapper = document.getElementById('tab-content-wrapper')
+          
+          if (tabsContainer) {
+            tabsContainer.style.display = 'none'
+          }
+          
+          if (contentWrapper) {
+            contentWrapper.style.justifyContent = 'flex-end'
+          }
+          
+          if (resultsContent) {
+            resultsContent.style.display = 'none'
+          }
+          
+          if (collapsedContent) {
+            collapsedContent.style.display = 'block'
+            // Check if there's a currently selected node and show its issues
+            updateCollapsedViewForSelectedNode()
+          }
+          
+          isMinimized = true
+          window.isValidationMinimized = true
+        } else {
+          // Expand: resize back to full validation results screen size
+          console.log('Expanding back to full size')
+          parent.postMessage({
+            pluginMessage: {
+              type: 'resize-ui',
+              sizeMode: 'validation-results'
+            }
+          }, '*')
+          
+          // Disable selection tracking when expanded
+          parent.postMessage({
+            pluginMessage: {
+              type: 'disable-selection-tracking'
+            }
+          }, '*')
+          
+          // Change icon back to minimize (horizontal line)
+          minimizeBtn.innerHTML = `
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M6 12h12" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          `
+          minimizeBtn.title = "Minimize"
+          
+          // Show the validation results content and hide collapsed view
+          const resultsContent = document.getElementById('validation-results-content')
+          const collapsedContent = document.getElementById('collapsed-view-content')
+          
+          // Show the tab buttons and restore space-between layout
+          const tabsContainer = document.getElementById('tabs-container')
+          const contentWrapper = document.getElementById('tab-content-wrapper')
+          
+          if (tabsContainer) {
+            tabsContainer.style.display = 'flex'
+          }
+          
+          if (contentWrapper) {
+            contentWrapper.style.justifyContent = 'space-between'
+          }
+          
+          if (resultsContent) {
+            resultsContent.style.display = 'block'
+          }
+          
+          if (collapsedContent) {
+            collapsedContent.style.display = 'none'
+          }
+          
+          isMinimized = false
+          window.isValidationMinimized = false
+        }
+      })
+    }
+
+    if (hamburgerBtn) {
+      // Create dropdown menu
+      const menuDropdown = document.createElement('div')
+      menuDropdown.id = 'hamburger-menu-dropdown'
+      menuDropdown.style.cssText = `
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border: 1px solid var(--color-gray-300);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        z-index: 1000;
+        min-width: 150px;
+        display: none;
+      `
+      
+      // Add menu items
+      menuDropdown.innerHTML = `
+        <div class="menu-item" data-action="start-over" style="padding: 12px 16px; cursor: pointer; color: var(--color-gray-700); transition: background-color 0.2s ease; border-bottom: 1px solid var(--color-gray-100);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 3v5h-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 16H3v5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Start Over</span>
+          </div>
+        </div>
+      `
+      
+      // Position the dropdown relative to the hamburger button
+      hamburgerBtn.style.position = 'relative'
+      hamburgerBtn.appendChild(menuDropdown)
+      
+      // Toggle dropdown on button click
+      hamburgerBtn.addEventListener('click', function(e) {
+        e.stopPropagation()
+        console.log('Hamburger menu button clicked')
+        
+        const isVisible = menuDropdown.style.display === 'block'
+        if (isVisible) {
+          menuDropdown.style.display = 'none'
+        } else {
+          menuDropdown.style.display = 'block'
+        }
+      })
+      
+      // Handle menu item clicks
+      menuDropdown.addEventListener('click', function(e) {
+        e.stopPropagation()
+        const menuItem = e.target.closest('.menu-item')
+        if (menuItem) {
+          const action = menuItem.getAttribute('data-action')
+          console.log('Menu item clicked:', action)
+          
+          // Hide the dropdown
+          menuDropdown.style.display = 'none'
+          
+          // Handle the action
+          if (action === 'start-over') {
+            console.log('Starting over - going to home screen')
+            
+            // Clear updated items to reset validation state
+            window.updatedItems = new Set()
+            
+            // Go back to home screen (one more screen back)
+            parent.postMessage({
+              pluginMessage: {
+                type: 'switch-mode',
+                mode: 'home'
+              }
+            }, '*')
+          }
+        }
+      })
+      
+      // Add hover effects to menu items
+      const menuItems = menuDropdown.querySelectorAll('.menu-item')
+      menuItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+          this.style.background = 'var(--color-gray-50)'
+        })
+        item.addEventListener('mouseleave', function() {
+          this.style.background = 'white'
+        })
+      })
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function() {
+        menuDropdown.style.display = 'none'
+      })
+    }
+
+    // Item hover effects
+    const items = document.querySelectorAll('#validation-results-screen .item')
+    items.forEach(item => {
+      item.addEventListener('mouseenter', function () {
+        this.style.background = '#fafafa'
+      })
+
+      item.addEventListener('mouseleave', function () {
+        this.style.background = 'transparent'
+      })
+    })
+
+    // Button hover effects
+    // Update buttons now use CSS hover states via .btn-primary class
+
+    // Ignore buttons now use CSS hover states via .btn-danger class
+
+    // Select dropdown effects
+    const selects = document.querySelectorAll('#validation-results-screen select')
+    selects.forEach(select => {
+      select.addEventListener('mouseenter', function () {
+        this.style.borderColor = '#999'
+      })
+
+      select.addEventListener('mouseleave', function () {
+        if (!this.matches(':focus')) {
+          this.style.borderColor = '#ddd'
+        }
+      })
+
+      select.addEventListener('focus', function () {
+        this.style.borderColor = '#1a73e8'
+        this.style.outline = 'none'
+      })
+
+      select.addEventListener('blur', function () {
+        this.style.borderColor = '#ddd'
+      })
+    })
+
+    // Eye icon hover effects
+    const eyeIcons = document.querySelectorAll('#validation-results-screen .eye-icon')
+    eyeIcons.forEach(icon => {
+      icon.addEventListener('mouseenter', function () {
+        this.style.color = '#333'
+      })
+
+      icon.addEventListener('mouseleave', function () {
+        this.style.color = '#666'
+      })
+    })
+
+
+  })
+</script>
