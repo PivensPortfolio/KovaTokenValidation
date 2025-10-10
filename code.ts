@@ -461,26 +461,17 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
   let nodeCount = 0;
   const MAX_NODES = 1000; // Prevent processing too many nodes
 
-  // Helper function to check if spacing value matches library tokens
-  function isValidSpacingValue(value: number, library: SavedLibrary): boolean {
+  // Helper function to check if spacing property is bound to a design system variable
+  function isSpacingBoundToToken(node: FrameNode, property: string): boolean {
     try {
-      if (!library.variables || !library.variables.spacing) return false;
-
-      // Check if the value matches any spacing token
-      for (const tokenName in library.variables.spacing) {
-        const tokenData = library.variables.spacing[tokenName];
-        if (tokenData && tokenData.values) {
-          for (const modeKey in tokenData.values) {
-            const tokenValue = tokenData.values[modeKey];
-            if (typeof tokenValue === 'number' && tokenValue === value) {
-              return true;
-            }
-          }
-        }
-      }
-      return false;
+      // Check if the property has a bound variable
+      const boundVariables = node.boundVariables;
+      if (!boundVariables) return false;
+      
+      const propertyBinding = boundVariables[property as keyof typeof boundVariables];
+      return propertyBinding !== undefined && propertyBinding !== null;
     } catch (error) {
-      console.log('Error checking spacing value:', error);
+      // Property might not support variables or node might not support the property
       return false;
     }
   }
@@ -524,10 +515,10 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
         try {
           if ('paddingLeft' in containerNode && containerNode.paddingLeft && containerNode.paddingLeft > 0) {
             const paddingValue = containerNode.paddingLeft;
-            if (!isValidSpacingValue(paddingValue, library)) {
+            if (!isSpacingBoundToToken(containerNode, 'paddingLeft')) {
               results.push({
                 type: 'spacing',
-                issue: `Hardcoded padding (${paddingValue}px)`,
+                issue: `Hardcoded padding (${paddingValue}px) - not using design token`,
                 node: {
                   id: containerNode.id,
                   name: containerNode.name
@@ -547,10 +538,10 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
           if ('layoutMode' in containerNode && 'itemSpacing' in containerNode &&
             containerNode.layoutMode !== 'NONE' && containerNode.itemSpacing > 0) {
             const gapValue = containerNode.itemSpacing;
-            if (!isValidSpacingValue(gapValue, library)) {
+            if (!isSpacingBoundToToken(containerNode, 'itemSpacing')) {
               results.push({
                 type: 'spacing',
-                issue: `Hardcoded gap (${gapValue}px)`,
+                issue: `Hardcoded gap (${gapValue}px) - not using design token`,
                 node: {
                   id: containerNode.id,
                   name: containerNode.name
