@@ -466,12 +466,24 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
     try {
       // Check if the property has a bound variable
       const boundVariables = node.boundVariables;
-      if (!boundVariables) return false;
+      console.log(`Checking ${property} on node "${node.name}":`, {
+        hasBoundVariables: !!boundVariables,
+        boundVariables: boundVariables,
+        propertyValue: (node as any)[property]
+      });
+      
+      if (!boundVariables) {
+        console.log(`No boundVariables found for node "${node.name}"`);
+        return false;
+      }
       
       const propertyBinding = boundVariables[property as keyof typeof boundVariables];
-      return propertyBinding !== undefined && propertyBinding !== null;
+      const isBound = propertyBinding !== undefined && propertyBinding !== null;
+      console.log(`Property ${property} binding result:`, { propertyBinding, isBound });
+      
+      return isBound;
     } catch (error) {
-      // Property might not support variables or node might not support the property
+      console.log(`Error checking spacing binding for ${property}:`, error);
       return false;
     }
   }
@@ -510,12 +522,15 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
       // Spacing validation
       if (options.spacing && (node.type === 'FRAME' || node.type === 'GROUP')) {
         const containerNode = node as FrameNode;
+        console.log(`Checking spacing for node: "${containerNode.name}" (${containerNode.type})`);
 
         // Check padding (only if it exists and is accessible)
         try {
           if ('paddingLeft' in containerNode && containerNode.paddingLeft && containerNode.paddingLeft > 0) {
             const paddingValue = containerNode.paddingLeft;
+            console.log(`Found padding: ${paddingValue}px on "${containerNode.name}"`);
             if (!isSpacingBoundToToken(containerNode, 'paddingLeft')) {
+              console.log(`Adding padding issue for "${containerNode.name}"`);
               results.push({
                 type: 'spacing',
                 issue: `Hardcoded padding (${paddingValue}px) - not using design token`,
@@ -527,10 +542,12 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
                 nodeType: 'SPACING',
                 value: paddingValue
               });
+            } else {
+              console.log(`Padding is properly bound to token for "${containerNode.name}"`);
             }
           }
         } catch (error) {
-          // Ignore padding errors - node might not support padding
+          console.log(`Error checking padding for "${containerNode.name}":`, error);
         }
 
         // Check gaps in auto layout
@@ -538,7 +555,9 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
           if ('layoutMode' in containerNode && 'itemSpacing' in containerNode &&
             containerNode.layoutMode !== 'NONE' && containerNode.itemSpacing > 0) {
             const gapValue = containerNode.itemSpacing;
+            console.log(`Found gap: ${gapValue}px on "${containerNode.name}"`);
             if (!isSpacingBoundToToken(containerNode, 'itemSpacing')) {
+              console.log(`Adding gap issue for "${containerNode.name}"`);
               results.push({
                 type: 'spacing',
                 issue: `Hardcoded gap (${gapValue}px) - not using design token`,
@@ -550,10 +569,12 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
                 nodeType: 'SPACING',
                 value: gapValue
               });
+            } else {
+              console.log(`Gap is properly bound to token for "${containerNode.name}"`);
             }
           }
         } catch (error) {
-          // Ignore layout errors - node might not support auto layout
+          console.log(`Error checking gap for "${containerNode.name}":`, error);
         }
       }
 
