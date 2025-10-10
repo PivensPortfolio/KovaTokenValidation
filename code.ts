@@ -397,22 +397,14 @@ async function applySpacingTokenToNode(tokenName: string, nodeId: string): Promi
     }
 
     const tokenData = spacingVariables[tokenName];
-    if (!tokenData || !tokenData.values) {
+    if (!tokenData || !tokenData.id) {
       throw new Error(`Spacing token "${tokenName}" not found in library.`);
     }
 
-    // Get the pixel value from the token
-    let pixelValue: number | null = null;
-    for (const modeKey in tokenData.values) {
-      const value = tokenData.values[modeKey];
-      if (typeof value === 'number') {
-        pixelValue = value;
-        break;
-      }
-    }
-
-    if (pixelValue === null) {
-      throw new Error(`Could not extract pixel value from token "${tokenName}".`);
+    // Get the variable by ID to bind it to the node
+    const variable = await figma.variables.getVariableByIdAsync(tokenData.id);
+    if (!variable) {
+      throw new Error(`Variable with ID "${tokenData.id}" not found. The variable may have been deleted.`);
     }
 
     // Get the node and apply the spacing
@@ -429,23 +421,23 @@ async function applySpacingTokenToNode(tokenName: string, nodeId: string): Promi
       // Priority 1: If it has auto layout with existing gap, apply to itemSpacing (gap)
       if ('layoutMode' in containerNode && containerNode.layoutMode !== 'NONE' &&
         'itemSpacing' in containerNode && containerNode.itemSpacing > 0) {
-        containerNode.itemSpacing = pixelValue;
-        figma.notify(`Applied spacing token "${tokenName}" (${pixelValue}px) as gap to "${containerNode.name}".`);
+        containerNode.setBoundVariable('itemSpacing', variable);
+        figma.notify(`Applied spacing token "${tokenName}" as gap to "${containerNode.name}".`);
         applied = true;
       }
       // Priority 2: If it has padding, apply to padding
       else if ('paddingLeft' in containerNode && containerNode.paddingLeft !== undefined) {
-        containerNode.paddingLeft = pixelValue;
-        containerNode.paddingRight = pixelValue;
-        containerNode.paddingTop = pixelValue;
-        containerNode.paddingBottom = pixelValue;
-        figma.notify(`Applied spacing token "${tokenName}" (${pixelValue}px) as padding to "${containerNode.name}".`);
+        containerNode.setBoundVariable('paddingLeft', variable);
+        containerNode.setBoundVariable('paddingRight', variable);
+        containerNode.setBoundVariable('paddingTop', variable);
+        containerNode.setBoundVariable('paddingBottom', variable);
+        figma.notify(`Applied spacing token "${tokenName}" as padding to "${containerNode.name}".`);
         applied = true;
       }
       // Priority 3: If it has auto layout but no existing gap, apply to itemSpacing
       else if ('layoutMode' in containerNode && containerNode.layoutMode !== 'NONE' && 'itemSpacing' in containerNode) {
-        containerNode.itemSpacing = pixelValue;
-        figma.notify(`Applied spacing token "${tokenName}" (${pixelValue}px) as gap to "${containerNode.name}".`);
+        containerNode.setBoundVariable('itemSpacing', variable);
+        figma.notify(`Applied spacing token "${tokenName}" as gap to "${containerNode.name}".`);
         applied = true;
       }
 
