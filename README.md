@@ -10,84 +10,84 @@
 
 *Maintain design system consistency by validating compliance and applying text styles and spacing tokens from external design system libraries.*
 
-[Features](#-features) • [Installation](#-installation--setup) • [Usage](#-usage-guide) • [Contributing](#-contributing)
+[Features](#features) • [Installation](#installation--setup) • [Usage](#usage-guide) • [Contributing](#contributing)
 
 </div>
 
 ---
 
-## ✨ Features
+## Features
 
 <table>
 <tr>
 <td width="50%">
 
-### 🎯 **Design System Validation**
-- ✅ **Text Style Validation** - Identifies text layers without applied text styles
-- 📏 **Spacing Validation** - Detects hardcoded spacing values (padding, gaps)
-- ⚡ **Real-time Results** - Instant validation feedback with detailed reporting
-- 🔍 **Collapsed View** - Focus mode for individual asset validation
+### **Design System Validation**
+- **Text Style Validation** - Identifies text layers without applied text styles
+- **Spacing Validation** - Detects hardcoded spacing values (padding, gaps)
+- **Real-time Results** - Instant validation feedback with detailed reporting
+- **Collapsed View** - Focus mode for individual asset validation
 
-### 📚 **External Library Integration**
-- 📤 **Library Export** - Export text styles and variables from any Figma file
-- 🔗 **Cross-file Application** - Apply styles from external design system files
-- 🎛️ **Variable Support** - Full support for Figma variables including spacing tokens
-- 📋 **Multiple Libraries** - Manage and switch between multiple design systems
+### **External Library Integration**
+- **Library Export** - Export text styles and variables from any Figma file
+- **Cross-file Application** - Apply styles from external design system files
+- **Variable Support** - Full support for Figma variables including spacing tokens
+- **Multiple Libraries** - Manage and switch between multiple design systems
 
 </td>
 <td width="50%">
 
-### 🔧 **Smart Application Tools**
-- 🎯 **One-click Style Application** - Apply text styles directly to validation issues
-- 📐 **Spacing Token Application** - Replace hardcoded spacing with design tokens
-- ⚡ **Bulk Operations** - Apply styles to multiple text layers at once
-- 🎪 **Node Selection** - Automatic node selection and highlighting
+### **Smart Application Tools**
+- **One-click Style Application** - Apply text styles directly to validation issues
+- **Spacing Token Application** - Replace hardcoded spacing with design tokens
+- **Bulk Operations** - Apply styles to multiple text layers at once
+- **Node Selection** - Automatic node selection and highlighting
 
-### 🎨 **Intuitive Interface**
-- 🔄 **Multi-screen Workflow** - Guided process from export to validation
-- 📱 **Responsive UI** - Adaptive interface that resizes based on current mode
-- 📊 **Visual Feedback** - Clear indicators for validation status and progress
-- 📦 **Collapsed Mode** - Minimized view for focused validation work
+### **Intuitive Interface**
+- **Multi-screen Workflow** - Guided process from export to validation
+- **Responsive UI** - Adaptive interface that resizes based on current mode
+- **Visual Feedback** - Clear indicators for validation status and progress
+- **Collapsed Mode** - Minimized view for focused validation work
 
 </td>
 </tr>
 </table>
 
-## 🚀 How It Works
+## How It Works
 
 <div align="center">
 
 ```mermaid
 graph LR
-    A[📁 Design System File] --> B[📤 Export Tokens]
-    B --> C[💾 Save Library]
-    C --> D[🎨 Design File]
-    D --> E[🔍 Run Validation]
-    E --> F[📋 Review Issues]
-    F --> G[✅ Apply Fixes]
-    G --> H[🎉 Compliant Design]
+    A[Design System File] --> B[Export Tokens]
+    B --> C[Save Library]
+    C --> D[Design File]
+    D --> E[Run Validation]
+    E --> F[Review Issues]
+    F --> G[Apply Fixes]
+    G --> H[Compliant Design]
 ```
 
 </div>
 
-### 1️⃣ **Export Design System**
+### 1. **Export Design System**
 ```
-🎨 Open design system file → 🚀 Launch plugin → 📤 Export keys → 💾 Save locally
-```
-
-### 2️⃣ **Validate Designs** 
-```
-📁 Open design file → 📚 Select library → ⚙️ Choose options → 🔍 Run validation
+Open design system file → Launch plugin → Export keys → Save locally
 ```
 
-### 3️⃣ **Fix Issues**
+### 2. **Validate Designs** 
 ```
-📋 Review results → 🎯 Select fixes → ⚡ Apply updates → 👁️ Focus view
+Open design file → Select library → Choose options → Run validation
 ```
 
-## 🛠️ Installation & Setup
+### 3. **Fix Issues**
+```
+Review results → Select fixes → Apply updates → Focus view
+```
 
-### 📋 Prerequisites
+## Installation & Setup
+
+### Prerequisites
 
 <table>
 <tr>
@@ -108,7 +108,7 @@ graph LR
 </tr>
 </table>
 
-### 🔧 Development Setup
+### Development Setup
 
 ```bash
 # 1. Clone the repository
@@ -128,10 +128,10 @@ npm run build
 npm run watch
 ```
 
-### 🎨 Installing in Figma
+### Installing in Figma
 
 <details>
-<summary><strong>📱 Step-by-step installation</strong></summary>
+<summary><strong>Step-by-step installation</strong></summary>
 
 1. **Open Figma Desktop App**
 2. **Navigate to Plugins**
@@ -147,64 +147,64 @@ npm run watch
 
 </details>
 
-## 📖 Usage Guide
+## Usage Guide
 
-### 📤 **Exporting a Design System**
+### **Exporting a Design System**
 
 <details>
 <summary><strong>Step-by-step export process</strong></summary>
 
-1. **🎨 Open your design system file** in Figma
-2. **🚀 Launch the plugin** from the Plugins menu  
-3. **📤 Click "Export Keys"** - this will:
-   - ✅ Extract all local text styles
-   - ✅ Export all local variables (including spacing tokens)
-   - ✅ Save the data with your file name as the library key
-4. **🎉 Confirmation** - you'll see a success message with the count of exported items
+1. **Open your design system file** in Figma
+2. **Launch the plugin** from the Plugins menu  
+3. **Click "Export Keys"** - this will:
+   - Extract all local text styles
+   - Export all local variables (including spacing tokens)
+   - Save the data with your file name as the library key
+4. **Confirmation** - you'll see a success message with the count of exported items
 
-> **💡 Pro Tip:** Export from your main design system file to ensure all teams use the same source of truth.
+> **Pro Tip:** Export from your main design system file to ensure all teams use the same source of truth.
 
 </details>
 
-### 🔍 **Validating a Design File**
+### **Validating a Design File**
 
 <details>
 <summary><strong>Run validation on any design</strong></summary>
 
-1. **📁 Open the file** you want to validate
-2. **🚀 Launch the plugin** and select your exported design system library
-3. **⚙️ Choose validation options**:
-   - 📝 **Text Styles**: Find text without applied styles
-   - 📏 **Spacing**: Find hardcoded padding and gaps
-4. **⚡ Run validation** - results appear instantly
-5. **📋 Review issues** in the detailed report
+1. **Open the file** you want to validate
+2. **Launch the plugin** and select your exported design system library
+3. **Choose validation options**:
+   - **Text Styles**: Find text without applied styles
+   - **Spacing**: Find hardcoded padding and gaps
+4. **Run validation** - results appear instantly
+5. **Review issues** in the detailed report
 
-> **⚠️ Note:** Validation is optimized for files up to 1000 nodes for best performance.
+> **Note:** Validation is optimized for files up to 1000 nodes for best performance.
 
 </details>
 
-### ✅ **Fixing Validation Issues**
+### **Fixing Validation Issues**
 
 <details>
 <summary><strong>Apply fixes with one click</strong></summary>
 
-1. **🎯 Select appropriate fixes** using the dropdown menus next to each issue
-2. **⚡ Click "Update"** to apply the selected style or token
-3. **👁️ Use "View" button** to switch to collapsed mode and focus on specific assets
-4. **📊 Track progress** - fixed items are automatically removed from the list
+1. **Select appropriate fixes** using the dropdown menus next to each issue
+2. **Click "Update"** to apply the selected style or token
+3. **Use "View" button** to switch to collapsed mode and focus on specific assets
+4. **Track progress** - fixed items are automatically removed from the list
 
-> **🎪 Collapsed Mode Features:**
-> - 🔄 **Automatic activation** when clicking "View" buttons
-> - 🎯 **Focused validation** showing only issues for the selected asset
-> - 📱 **Minimize/expand** toggle for switching between full and collapsed views
-> - 🎪 **Selection tracking** automatically updates when you select different assets
+> **Collapsed Mode Features:**
+> - **Automatic activation** when clicking "View" buttons
+> - **Focused validation** showing only issues for the selected asset
+> - **Minimize/expand** toggle for switching between full and collapsed views
+> - **Selection tracking** automatically updates when you select different assets
 
 </details>
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 <details>
-<summary><strong>🔧 Core Components</strong></summary>
+<summary><strong>Core Components</strong></summary>
 
 | Component | Purpose | Technology |
 |-----------|---------|------------|
@@ -215,17 +215,17 @@ npm run watch
 </details>
 
 <details>
-<summary><strong>⚡ Key Features Implementation</strong></summary>
+<summary><strong>Key Features Implementation</strong></summary>
 
-- **🔄 Duplicate Prevention**: Event handlers use `data-handlers-attached` attributes
-- **💾 State Management**: Persistent storage for libraries and UI state  
-- **🔍 Validation Engine**: Recursive node traversal with safety checks
-- **🔗 Cross-file Integration**: Figma's `importStyleByKeyAsync` API for external styles
+- **Duplicate Prevention**: Event handlers use `data-handlers-attached` attributes
+- **State Management**: Persistent storage for libraries and UI state  
+- **Validation Engine**: Recursive node traversal with safety checks
+- **Cross-file Integration**: Figma's `importStyleByKeyAsync` API for external styles
 
 </details>
 
 <details>
-<summary><strong>📊 Data Structure</strong></summary>
+<summary><strong>Data Structure</strong></summary>
 
 ```typescript
 type SavedLibrary = {
@@ -241,10 +241,10 @@ type SavedLibrary = {
 
 </details>
 
-## 📡 API Reference
+## API Reference
 
 <details>
-<summary><strong>🔌 Plugin Messages</strong></summary>
+<summary><strong>Plugin Messages</strong></summary>
 
 | Message | Purpose |
 |---------|---------|
@@ -257,7 +257,7 @@ type SavedLibrary = {
 </details>
 
 <details>
-<summary><strong>💾 Storage</strong></summary>
+<summary><strong>Storage</strong></summary>
 
 | Key | Purpose |
 |-----|---------|
@@ -266,12 +266,12 @@ type SavedLibrary = {
 
 </details>
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Here's how to get started:
 
 <details>
-<summary><strong>🚀 Quick Start</strong></summary>
+<summary><strong>Quick Start</strong></summary>
 
 ```bash
 # 1. Fork the repository
@@ -294,21 +294,21 @@ git push origin feature/amazing-feature
 </details>
 
 <details>
-<summary><strong>📋 Development Guidelines</strong></summary>
+<summary><strong>Development Guidelines</strong></summary>
 
-- ✅ Follow TypeScript best practices
-- ✅ Maintain backward compatibility for saved libraries
-- ✅ Test with multiple design system configurations
-- ✅ Ensure UI responsiveness across different screen sizes
-- ✅ Add tests for new features
-- ✅ Update documentation as needed
+- Follow TypeScript best practices
+- Maintain backward compatibility for saved libraries
+- Test with multiple design system configurations
+- Ensure UI responsiveness across different screen sizes
+- Add tests for new features
+- Update documentation as needed
 
 </details>
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 <details>
-<summary><strong>❓ Common Issues</strong></summary>
+<summary><strong>Common Issues</strong></summary>
 
 | Issue | Solution |
 |-------|----------|
@@ -320,12 +320,12 @@ git push origin feature/amazing-feature
 </details>
 
 <details>
-<summary><strong>⚡ Performance Tips</strong></summary>
+<summary><strong>Performance Tips</strong></summary>
 
-- 🎯 Validation is limited to 1000 nodes for optimal performance
-- ⏱️ Large files may take longer to process
-- 📦 Use collapsed mode for focused work on specific assets
-- 🔄 Refresh the plugin if it becomes unresponsive
+- Validation is limited to 1000 nodes for optimal performance
+- Large files may take longer to process
+- Use collapsed mode for focused work on specific assets
+- Refresh the plugin if it becomes unresponsive
 
 </details>
 
@@ -333,33 +333,33 @@ git push origin feature/amazing-feature
 
 <div align="center">
 
-## 📄 License
+## License
 
 This project is open source under the [MIT License](LICENSE).
 
-## 💬 Support & Community
+## Support & Community
 
 <table>
 <tr>
 <td align="center">
-<strong>🐛 Issues</strong><br>
+<strong>Issues</strong><br>
 <a href="https://github.com/PivensPortfolio/Figma-Token-Validator/issues">Report bugs</a>
 </td>
 <td align="center">
-<strong>💡 Feature Requests</strong><br>
+<strong>Feature Requests</strong><br>
 <a href="https://github.com/PivensPortfolio/Figma-Token-Validator/issues">Suggest features</a>
 </td>
 <td align="center">
-<strong>❓ Questions</strong><br>
+<strong>Questions</strong><br>
 <a href="https://github.com/PivensPortfolio/Figma-Token-Validator/discussions">Ask questions</a>
 </td>
 </tr>
 </table>
 
 **When reporting issues, please include:**
-- 📝 Steps to reproduce any bugs
-- 📁 Sample files when possible
-- 🖥️ Your Figma version and OS
+- Steps to reproduce any bugs
+- Sample files when possible
+- Your Figma version and OS
 
 ---
 
