@@ -471,16 +471,16 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
         boundVariables: boundVariables,
         propertyValue: (node as any)[property]
       });
-      
+
       if (!boundVariables) {
         console.log(`No boundVariables found for node "${node.name}"`);
         return false;
       }
-      
+
       const propertyBinding = boundVariables[property as keyof typeof boundVariables];
       const isBound = propertyBinding !== undefined && propertyBinding !== null;
       console.log(`Property ${property} binding result:`, { propertyBinding, isBound });
-      
+
       return isBound;
     } catch (error) {
       console.log(`Error checking spacing binding for ${property}:`, error);
@@ -498,6 +498,22 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
 
       visitedNodes.add(node.id);
       nodeCount++;
+
+      console.log(`Processing node: "${node.name}" (${node.type})`);
+      
+      // Log spacing-related properties for FRAME and GROUP nodes
+      if (node.type === 'FRAME' || node.type === 'GROUP') {
+        const containerNode = node as FrameNode;
+        console.log(`Container node "${node.name}" properties:`, {
+          type: node.type,
+          hasLayoutMode: 'layoutMode' in containerNode,
+          layoutMode: (containerNode as any).layoutMode,
+          hasItemSpacing: 'itemSpacing' in containerNode,
+          itemSpacing: (containerNode as any).itemSpacing,
+          hasPaddingLeft: 'paddingLeft' in containerNode,
+          paddingLeft: (containerNode as any).paddingLeft
+        });
+      }
 
       // Text style validation
       if (options.textStyles && node.type === 'TEXT') {
