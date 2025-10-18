@@ -1,97 +1,127 @@
 // View Transition Controller with Animation Support
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 export class ViewTransitionController {
     constructor(stateManager) {
         this.isTransitioning = false;
         this.transitionCallbacks = new Map();
+        this.navigationIndicator = null;
         this.stateManager = stateManager;
     }
+    // Set navigation indicator for visual feedback
+    setNavigationIndicator(indicator) {
+        this.navigationIndicator = indicator;
+    }
     // Main transition method
-    switchToView(targetView_1) {
-        return __awaiter(this, arguments, void 0, function* (targetView, options = {}) {
-            if (this.isTransitioning) {
-                console.warn('Transition already in progress, ignoring request');
-                return;
+    async switchToView(targetView, options = {}) {
+        if (this.isTransitioning) {
+            console.warn('Transition already in progress, ignoring request');
+            return;
+        }
+        const currentView = this.stateManager.getCurrentView();
+        if (currentView === targetView) {
+            console.log(`Already in ${targetView} view, no transition needed`);
+            return;
+        }
+        this.isTransitioning = true;
+        try {
+            const transition = {
+                from: currentView,
+                to: targetView,
+                animation: options.animation || this.getDefaultAnimation(currentView, targetView),
+                duration: options.duration || this.getDefaultDuration(currentView, targetView),
+                preserveData: options.preserveData !== false // Default to true
+            };
+            // Preserve current state if requested
+            if (transition.preserveData) {
+                this.preserveCurrentState();
             }
-            const currentView = this.stateManager.getCurrentView();
-            if (currentView === targetView) {
-                console.log(`Already in ${targetView} view, no transition needed`);
-                return;
-            }
-            this.isTransitioning = true;
-            try {
-                const transition = {
-                    from: currentView,
-                    to: targetView,
-                    animation: options.animation || this.getDefaultAnimation(currentView, targetView),
-                    duration: options.duration || this.getDefaultDuration(currentView, targetView),
-                    preserveData: options.preserveData !== false // Default to true
-                };
-                // Preserve current state if requested
-                if (transition.preserveData) {
-                    this.preserveCurrentState();
-                }
-                // Execute the transition
-                yield this.executeTransition(transition, options.data);
-                // Update state manager
-                this.stateManager.setCurrentView(targetView, true);
-                console.log(`Successfully transitioned from ${currentView} to ${targetView}`);
-            }
-            catch (error) {
-                console.error('Transition failed:', error);
-                throw error;
-            }
-            finally {
-                this.isTransitioning = false;
-            }
-        });
+            // Execute the transition
+            await this.executeTransition(transition, options.data);
+            // Update state manager
+            this.stateManager.setCurrentView(targetView, true);
+            console.log(`Successfully transitioned from ${currentView} to ${targetView}`);
+        }
+        catch (error) {
+            console.error('Transition failed:', error);
+            throw error;
+        }
+        finally {
+            this.isTransitioning = false;
+        }
     }
     // Execute the actual transition with animations
-    executeTransition(transition, data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // Send transition start message to UI
-            this.sendTransitionMessage('transition-start', {
-                from: transition.from,
-                to: transition.to,
-                animation: transition.animation,
-                duration: transition.duration
-            });
-            // Handle window resizing for different views
-            yield this.handleWindowResize(transition);
-            // Send view change message to UI
-            this.sendViewChangeMessage(transition.to, data);
-            // Wait for animation to complete
-            yield this.waitForAnimation(transition.duration);
-            // Send transition complete message
-            this.sendTransitionMessage('transition-complete', {
-                from: transition.from,
-                to: transition.to
-            });
+    async executeTransition(transition, data) {
+        // Send transition start message to UI for visual feedback
+        this.sendTransitionMessage('transition-start', {
+            from: transition.from,
+            to: transition.to,
+            animation: transition.animation,
+            duration: transition.duration
         });
+        // Add loading indicator for visual feedback during transition
+        this.showTransitionFeedback(transition);
+        // Handle window resizing for different views with smooth animation
+        await this.handleWindowResize(transition);
+        // Send view change message to UI
+        this.sendViewChangeMessage(transition.to, data);
+        // Wait for animation to complete
+        await this.waitForAnimation(transition.duration);
+        // Hide loading indicator
+        this.hideTransitionFeedback();
+        // Send transition complete message
+        this.sendTransitionMessage('transition-complete', {
+            from: transition.from,
+            to: transition.to
+        });
+        // Execute any registered callbacks
+        this.executeTransitionCallbacks();
     }
-    // Handle window resizing based on view transitions
-    handleWindowResize(transition) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const sizes = this.getViewSizes();
-            const fromSize = sizes[transition.from];
-            const toSize = sizes[transition.to];
-            if (fromSize.width !== toSize.width || fromSize.height !== toSize.height) {
-                // Animate resize
-                figma.ui.resize(toSize.width, toSize.height);
-                // Reposition UI for collapsed view
-                if (transition.to === 'collapsed') {
-                    this.repositionUITopCenter(toSize);
-                }
+    // Handle window resizing based on view transitions with smooth animation
+    async handleWindowResize(transition) {
+        const sizes = this.getViewSizes();
+        const fromSize = sizes[transition.from];
+        const toSize = sizes[transition.to];
+        if (fromSize.width !== toSize.width || fromSize.height !== toSize.height) {
+            // Animate resize smoothly based on transition type
+            if (transition.animation === 'resize') {
+                // For collapse/expand, use smooth resize animation
+                await this.animateResize(fromSize, toSize, transition.duration);
             }
-        });
+            else {
+                // For other transitions, resize immediately
+                figma.ui.resize(toSize.width, toSize.height);
+            }
+            // Reposition UI for collapsed view to top center
+            if (transition.to === 'collapsed') {
+                this.repositionUITopCenter(toSize);
+            }
+            // Restore position for expanded views
+            if (transition.from === 'collapsed' && transition.to !== 'collapsed') {
+                this.restoreUIPosition();
+            }
+        }
+    }
+    // Animate resize smoothly for better visual feedback
+    async animateResize(fromSize, toSize, duration) {
+        const steps = Math.max(10, Math.floor(duration / 20)); // 20ms per step
+        const stepDuration = duration / steps;
+        const widthStep = (toSize.width - fromSize.width) / steps;
+        const heightStep = (toSize.height - fromSize.height) / steps;
+        for (let i = 1; i <= steps; i++) {
+            const currentWidth = Math.round(fromSize.width + (widthStep * i));
+            const currentHeight = Math.round(fromSize.height + (heightStep * i));
+            figma.ui.resize(currentWidth, currentHeight);
+            if (i < steps) {
+                await new Promise(resolve => setTimeout(resolve, stepDuration));
+            }
+        }
+    }
+    // Restore UI position when expanding from collapsed view
+    restoreUIPosition() {
+        // Reset to default position (center of viewport)
+        const { bounds } = figma.viewport;
+        const x = bounds.x + bounds.width / 2;
+        const y = bounds.y + bounds.height / 2;
+        figma.ui.reposition(x, y);
     }
     // Get view-specific window sizes
     getViewSizes() {
@@ -150,42 +180,26 @@ export class ViewTransitionController {
         if (data) {
             message.data = data;
         }
+        console.log('=== SENDING VIEW CHANGE MESSAGE ===');
+        console.log('Message:', JSON.stringify(message, null, 2));
         figma.ui.postMessage(message);
-    }
-    // Preserve current state before transition
-    preserveCurrentState() {
-        // This method can be extended to save specific state data
-        // For now, the StateManager handles state preservation
-        console.log('Preserving current state before transition');
-    }
-    // Restore previous state
-    restorePreviousState() {
-        const previousView = this.stateManager.getPreviousView();
-        if (previousView) {
-            this.switchToView(previousView, { preserveData: true });
-        }
-        else {
-            console.warn('No previous view to restore');
-        }
+        console.log('Message sent to UI');
     }
     // Quick transition methods for common scenarios
-    goToForm(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.switchToView('form', { data });
+    async goToForm(data) {
+        await this.switchToView('form', { data });
+    }
+    async goToResults(data) {
+        await this.switchToView('results', {
+            animation: 'slide',
+            data
         });
     }
-    goToResults(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.switchToView('results', { data });
-        });
-    }
-    goToCollapsed(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.switchToView('collapsed', {
-                animation: 'resize',
-                duration: 200,
-                data
-            });
+    async goToCollapsed(data) {
+        await this.switchToView('collapsed', {
+            animation: 'resize',
+            duration: 200,
+            data
         });
     }
     // Check if transition is in progress
@@ -199,6 +213,62 @@ export class ViewTransitionController {
     // Remove transition callback
     removeTransitionCallback(id) {
         this.transitionCallbacks.delete(id);
+    }
+    // Show visual feedback during transition (Requirement 4.1)
+    showTransitionFeedback(transition) {
+        // Use navigation indicator if available, otherwise send message to UI
+        if (this.navigationIndicator) {
+            this.navigationIndicator.showTransitionFeedback(transition.from, transition.to, transition.animation);
+        }
+        else {
+            this.sendTransitionMessage('show-loading', {
+                message: `Switching to ${transition.to} view...`,
+                animation: transition.animation
+            });
+        }
+    }
+    // Hide visual feedback after transition
+    hideTransitionFeedback() {
+        if (this.navigationIndicator) {
+            this.navigationIndicator.hideLoading();
+        }
+        else {
+            this.sendTransitionMessage('hide-loading', {});
+        }
+    }
+    // Enhanced preserve current state with better data preservation (Requirement 4.2)
+    preserveCurrentState() {
+        const currentState = this.stateManager.getState();
+        // Store current view as previous view for navigation
+        this.stateManager.setPreviousView(currentState.currentView);
+        // Log state preservation for debugging
+        console.log('Preserving current state:', {
+            view: currentState.currentView,
+            hasFormData: !!currentState.formData,
+            hasResults: !!currentState.resultsData
+        });
+    }
+    // Enhanced restore previous state with validation (Requirement 4.4)
+    restorePreviousState() {
+        const previousView = this.stateManager.getPreviousView();
+        const currentState = this.stateManager.getState();
+        if (previousView) {
+            console.log(`Restoring previous view: ${previousView}`);
+            // Ensure we have the necessary data for the target view
+            if (previousView === 'results' && !currentState.resultsData) {
+                console.warn('Cannot restore results view: no results data available');
+                this.switchToView('form', { preserveData: true });
+                return;
+            }
+            this.switchToView(previousView, {
+                preserveData: true,
+                animation: 'fade' // Use gentle animation for back navigation
+            });
+        }
+        else {
+            console.warn('No previous view to restore, going to form view');
+            this.switchToView('form', { preserveData: true });
+        }
     }
     // Execute transition callbacks
     executeTransitionCallbacks() {

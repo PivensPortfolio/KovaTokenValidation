@@ -40,6 +40,10 @@ export class StateManager {
         this.state.currentView = view;
         this.notifyListeners();
     }
+    setPreviousView(view) {
+        this.state.previousView = view;
+        this.notifyListeners();
+    }
     updateFormData(updates) {
         this.state.formData = Object.assign(Object.assign({}, this.state.formData), updates);
         this.notifyListeners();

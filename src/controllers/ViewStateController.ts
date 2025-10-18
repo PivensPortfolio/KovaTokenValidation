@@ -4,7 +4,7 @@ import { StateManager } from '../state/StateManager';
 import { PersistenceManager } from '../state/PersistenceManager';
 import { ViewTransitionController } from './ViewTransitionController';
 import { ViewType, DesignSystemInfo, ValidationIssue, ResultsData } from '../types/ViewState';
-import { FormView, CollapsedView } from '../components';
+import { FormView, CollapsedView } from '../components/index';
 import { NavigationIndicator } from '../components/NavigationIndicator';
 
 export class ViewStateController {

@@ -1,3 +1,8 @@
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
   /* CSS Custom Properties (Design Tokens) */
   :root {
@@ -27,7 +32,7 @@
     --color-gray-900: #111827;
 
     /* Typography */
-    --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     --font-size-xs: 11px;
     --font-size-sm: 12px;
     --font-size-base: 14px;
@@ -85,11 +90,11 @@
 
   /* Screen Management */
   .screen {
-    display: none;
+    display: none !important;
   }
 
   .screen.active {
-    display: block;
+    display: block !important;
   }
 
   /* Typography */
@@ -532,23 +537,87 @@
   }
 
   /* Tab System */
-  .tab-button {
-    background: none;
-    border: none;
-    padding: 0 var(--spacing-4);
-    cursor: pointer;
-    font-size: var(--font-size-base);
+  .category-tab-button {
+    padding: 6px 12px;
+    font-size: 13px;
     font-weight: 500;
-    color: var(--color-gray-500);
-    transition: all 0.2s ease;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    margin: 0;
   }
 
-  .tab-button:hover {
-    color: var(--color-gray-700);
+  .category-tab-button:hover {
+    color: #374151;
+    background: rgba(0, 0, 0, 0.05);
   }
 
-  .tab-button.active {
-    color: var(--color-primary);
+  .category-tab-button.active {
+    background: #3b82f6;
+    color: white;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .status-tab-button {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  .status-tab-button:hover {
+    color: #374151;
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .status-tab-button.active {
+    background: #3b82f6;
+    color: white;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  /* Tab container styling */
+  #category-tabs,
+  #status-tabs {
+    border: 1px solid #e5e7eb !important;
+    background: #f9fafb !important;
+    border-radius: 6px !important;
+    padding: 2px !important;
+  }
+
+  /* Dropdown styling */
+  .dropdown-trigger:hover {
+    background: #f9fafb !important;
+    border-color: #9ca3af !important;
+  }
+
+  /* Update button styling */
+  .update-btn:not(:disabled) {
+    background: #3b82f6 !important;
+    color: white !important;
+    cursor: pointer !important;
+  }
+
+  .update-btn:not(:disabled):hover {
+    background: #2563eb !important;
+    color: white !important;
+  }
+
+  /* Action button hover effects */
+  #minimize-btn:hover,
+  #hamburger-menu-btn:hover {
+    background: #f3f4f6 !important;
   }
 
   /* Validation Components */
@@ -1167,6 +1236,97 @@
     100% { transform: scale(1); }
   }
 
+  /* Sticky Footer */
+  .sticky-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid var(--color-gray-200);
+    padding: var(--spacing-4) 16px;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+
+  .footer-tip {
+    margin-bottom: var(--spacing-3);
+    padding: var(--spacing-3);
+    background: #f8f9fa;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  /* Fixed height layout */
+  body {
+    height: 900px;
+    overflow: hidden;
+  }
+
+  #home-screen {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 140px; /* Space for sticky footer */
+  }
+
+  /* Make sections that aren't validation options flex-shrink */
+  #home-screen .section:not(.validation-section) {
+    flex-shrink: 0;
+  }
+
+  /* Make the validation section take remaining space */
+  .validation-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Important for flex child to shrink */
+  }
+
+  .validation-header {
+    flex-shrink: 0; /* Don't shrink the header */
+  }
+
+  .validation-options-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px; /* Space for scrollbar */
+    margin-right: -8px; /* Offset the padding */
+    min-height: 0; /* Important for scrolling to work */
+    max-height: 400px; /* Force a maximum height to ensure scrolling */
+  }
+
+  /* Custom scrollbar styling */
+  .validation-options-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .validation-options-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .validation-options-scroll::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .validation-options-scroll::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  /* Hide sticky footer on other screens */
+  .sticky-footer {
+    display: none;
+  }
+
+  #home-screen.active .sticky-footer {
+    display: block;
+  }
+
   /* Responsive Design */
   @media (max-width: 480px) {
     body {
@@ -1181,6 +1341,14 @@
     .primary-button,
     .secondary-button {
       padding: var(--spacing-3) var(--spacing-4);
+    }
+
+    .sticky-footer {
+      padding: var(--spacing-3) 16px;
+    }
+
+    #home-screen {
+      padding-bottom: 120px; /* Smaller space on mobile */
     }
   }
 </style>
@@ -1303,15 +1471,26 @@
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Validation Options</div>
-    <div class="subtitle" style="margin-bottom: var(--spacing-4);">Select what you'd like to validate from your attached
-      design system.</div>
+  <div class="section validation-section">
+    <div class="validation-header">
+      <div class="section-title">Validation Options</div>
+      <div class="subtitle" style="margin-bottom: var(--spacing-4);">Select what you'd like to validate from your attached
+        design system.</div>
+    </div>
+    
+    <div class="validation-options-scroll" id="validation-options-scroll">
 
     <label class="checkbox-group" for="text-styles-checkbox">
       <input type="checkbox" id="text-styles-checkbox">
       <div class="checkbox-content">
-        <div class="checkbox-title">Text Styles</div>
+        <div class="checkbox-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="display: inline-block; margin-right: 8px;">
+            <rect x="3" y="3" width="18" height="18" rx="3" fill="#3B82F6" opacity="0.1"/>
+            <path d="M7 7h10M7 12h7M7 17h4" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="18" cy="7" r="2" fill="#3B82F6"/>
+          </svg>
+          Text Styles
+        </div>
         <div class="checkbox-description">Validate text styles usage from the design system</div>
         <div class="checkbox-meta">
           <span class="count" id="text-styles-count">0 Styles Available</span>
@@ -1323,7 +1502,16 @@
     <label class="checkbox-group" for="spacing-checkbox">
       <input type="checkbox" id="spacing-checkbox">
       <div class="checkbox-content">
-        <div class="checkbox-title">Spacing</div>
+        <div class="checkbox-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="display: inline-block; margin-right: 8px;">
+            <rect x="4" y="4" width="6" height="6" rx="1" fill="#10B981" opacity="0.2"/>
+            <rect x="14" y="4" width="6" height="6" rx="1" fill="#10B981" opacity="0.2"/>
+            <rect x="4" y="14" width="6" height="6" rx="1" fill="#10B981" opacity="0.2"/>
+            <rect x="14" y="14" width="6" height="6" rx="1" fill="#10B981" opacity="0.2"/>
+            <path d="M11 7h2M11 17h2M7 11v2M17 11v2" stroke="#10B981" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Spacing
+        </div>
         <div class="checkbox-description">Validate spacing tokens and layout consistency</div>
         <div class="checkbox-meta">
           <span class="count" id="spacing-variables-count">0 Variables Available</span>
@@ -1332,14 +1520,169 @@
       </div>
     </label>
 
-    <div style="margin-bottom: var(--spacing-4); padding: var(--spacing-3); background: #f8f9fa; border-radius: var(--radius-md); font-size: 13px; color: #666; line-height: 1.4;">
+    <label class="checkbox-group" for="colors-checkbox">
+      <input type="checkbox" id="colors-checkbox">
+      <div class="checkbox-content">
+        <div class="checkbox-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="display: inline-block; margin-right: 8px;">
+            <circle cx="12" cy="12" r="10" fill="url(#colorGradient)"/>
+            <circle cx="8" cy="8" r="2" fill="#FF6B6B"/>
+            <circle cx="16" cy="8" r="2" fill="#4ECDC4"/>
+            <circle cx="8" cy="16" r="2" fill="#45B7D1"/>
+            <circle cx="16" cy="16" r="2" fill="#96CEB4"/>
+            <defs>
+              <linearGradient id="colorGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:0.1"/>
+                <stop offset="100%" style="stop-color:#4ECDC4;stop-opacity:0.1"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          Colors
+        </div>
+        <div class="checkbox-description">Validate color token usage and consistency</div>
+        <div class="checkbox-meta">
+          <span class="count" id="colors-count">0 Colors Available</span>
+          <a href="#" id="view-colors" class="link">View Tokens</a>
+        </div>
+      </div>
+    </label>
+
+    <label class="checkbox-group" for="corner-radius-checkbox">
+      <input type="checkbox" id="corner-radius-checkbox">
+      <div class="checkbox-content">
+        <div class="checkbox-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="display: inline-block; margin-right: 8px;">
+            <rect x="4" y="4" width="16" height="16" rx="2" fill="#F59E0B" opacity="0.1" stroke="#F59E0B" stroke-width="2"/>
+            <rect x="6" y="6" width="4" height="4" rx="1" fill="#F59E0B" opacity="0.3"/>
+            <rect x="14" y="6" width="4" height="4" rx="2" fill="#F59E0B" opacity="0.5"/>
+            <rect x="6" y="14" width="4" height="4" rx="0.5" fill="#F59E0B" opacity="0.3"/>
+            <rect x="14" y="14" width="4" height="4" rx="3" fill="#F59E0B" opacity="0.7"/>
+          </svg>
+          Corner Radius
+        </div>
+        <div class="checkbox-description">Validate border radius tokens and consistency</div>
+        <div class="checkbox-meta">
+          <span class="count" id="corner-radius-count">0 Radius Tokens Available</span>
+          <a href="#" id="view-corner-radius" class="link">View Tokens</a>
+        </div>
+      </div>
+    </label>
+
+    <label class="checkbox-group" for="typography-checkbox">
+      <input type="checkbox" id="typography-checkbox">
+      <div class="checkbox-content">
+        <div class="checkbox-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="display: inline-block; margin-right: 8px;">
+            <rect x="2" y="2" width="20" height="20" rx="3" fill="#8B5CF6" opacity="0.1"/>
+            <text x="12" y="9" text-anchor="middle" fill="#8B5CF6" font-size="8" font-weight="bold">Aa</text>
+            <rect x="4" y="12" width="16" height="2" rx="1" fill="#8B5CF6" opacity="0.3"/>
+            <rect x="4" y="16" width="12" height="1.5" rx="0.75" fill="#8B5CF6" opacity="0.5"/>
+            <rect x="4" y="19" width="8" height="1" rx="0.5" fill="#8B5CF6" opacity="0.4"/>
+          </svg>
+          Typography
+        </div>
+        <div class="checkbox-description">Validate font sizes, weights, and line heights</div>
+        <div class="checkbox-meta">
+          <span class="count" id="typography-count">0 Typography Tokens Available</span>
+          <a href="#" id="view-typography" class="link">View Tokens</a>
+        </div>
+      </div>
+    </label>
+
+    <label class="checkbox-group" for="shadows-checkbox">
+      <input type="checkbox" id="shadows-checkbox">
+      <div class="checkbox-content">
+        <div class="checkbox-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="display: inline-block; margin-right: 8px;">
+            <rect x="6" y="6" width="10" height="10" rx="2" fill="#6B7280" opacity="0.2"/>
+            <rect x="4" y="4" width="10" height="10" rx="2" fill="#EF4444" opacity="0.1" stroke="#EF4444" stroke-width="1"/>
+            <rect x="5" y="5" width="8" height="8" rx="1.5" fill="#EF4444" opacity="0.8"/>
+            <circle cx="7" cy="7" r="1" fill="#FFFFFF" opacity="0.6"/>
+          </svg>
+          Shadows
+        </div>
+        <div class="checkbox-description">Validate shadow and elevation tokens</div>
+        <div class="checkbox-meta">
+          <span class="count" id="shadows-count">0 Shadow Tokens Available</span>
+          <a href="#" id="view-shadows" class="link">View Tokens</a>
+        </div>
+      </div>
+    </label>
+
+    <label class="checkbox-group" for="borders-checkbox">
+      <input type="checkbox" id="borders-checkbox">
+      <div class="checkbox-content">
+        <div class="checkbox-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="display: inline-block; margin-right: 8px;">
+            <rect x="4" y="4" width="16" height="16" rx="2" fill="#06B6D4" opacity="0.1"/>
+            <rect x="4" y="4" width="16" height="16" rx="2" stroke="#06B6D4" stroke-width="2" stroke-dasharray="2,2"/>
+            <rect x="6" y="6" width="12" height="12" rx="1" stroke="#06B6D4" stroke-width="1"/>
+            <rect x="8" y="8" width="8" height="8" rx="1" stroke="#06B6D4" stroke-width="3"/>
+          </svg>
+          Borders
+        </div>
+        <div class="checkbox-description">Validate border width and style tokens</div>
+        <div class="checkbox-meta">
+          <span class="count" id="borders-count">0 Border Tokens Available</span>
+          <a href="#" id="view-borders" class="link">View Tokens</a>
+        </div>
+      </div>
+    </label>
+
+    <label class="checkbox-group" for="opacity-checkbox">
+      <input type="checkbox" id="opacity-checkbox">
+      <div class="checkbox-content">
+        <div class="checkbox-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="display: inline-block; margin-right: 8px;">
+            <circle cx="12" cy="12" r="8" fill="#EC4899" opacity="1"/>
+            <circle cx="12" cy="12" r="6" fill="#EC4899" opacity="0.7"/>
+            <circle cx="12" cy="12" r="4" fill="#EC4899" opacity="0.4"/>
+            <circle cx="12" cy="12" r="2" fill="#EC4899" opacity="0.2"/>
+            <text x="12" y="13" text-anchor="middle" fill="white" font-size="6" font-weight="bold">%</text>
+          </svg>
+          Opacity
+        </div>
+        <div class="checkbox-description">Validate opacity and transparency tokens</div>
+        <div class="checkbox-meta">
+          <span class="count" id="opacity-count">0 Opacity Tokens Available</span>
+          <a href="#" id="view-opacity" class="link">View Tokens</a>
+        </div>
+      </div>
+    </label>
+
+    <label class="checkbox-group" for="sizing-checkbox">
+      <input type="checkbox" id="sizing-checkbox">
+      <div class="checkbox-content">
+        <div class="checkbox-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="display: inline-block; margin-right: 8px;">
+            <rect x="3" y="3" width="18" height="18" rx="2" fill="#14B8A6" opacity="0.1" stroke="#14B8A6" stroke-width="1"/>
+            <path d="M8 12h8M12 8v8" stroke="#14B8A6" stroke-width="2" stroke-linecap="round"/>
+            <path d="M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2" stroke="#14B8A6" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="1.5" fill="#14B8A6"/>
+          </svg>
+          Sizing
+        </div>
+        <div class="checkbox-description">Validate width, height, and dimension tokens</div>
+        <div class="checkbox-meta">
+          <span class="count" id="sizing-count">0 Sizing Tokens Available</span>
+          <a href="#" id="view-sizing" class="link">View Tokens</a>
+        </div>
+      </div>
+    </label>
+
+    </div> <!-- End validation-options-scroll -->
+  </div>
+
+  <!-- Sticky Footer for Home Screen -->
+  <div class="sticky-footer" id="home-sticky-footer">
+    <div class="footer-tip">
       💡 <strong>Tip:</strong> Select a frame to validate specific content, or run validation without selection to check the entire page.
     </div>
-
     <button id="run-validation" class="primary-button" disabled>
       Run Validation
     </button>
   </div>
+</div>
 
   <!-- Hidden for now -->
   <button id="apply" class="primary-button" style="display: none;">
@@ -1405,6 +1748,44 @@
   </div>
 </div>
 
+<!-- Colors View Screen -->
+<div id="colors-view-screen"
+  style="position: absolute; top: 0; left: 100%; width: 100%; height: 100%; background: white; transition: left 0.3s ease; z-index: 10; overflow: hidden; padding: 16px; box-sizing: border-box;">
+  <div class="header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+    <button id="back-to-home-from-colors"
+      style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #666;">
+      <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M19 12H5m7-7l-7 7 7 7" />
+      </svg>
+      Back
+    </button>
+    <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #333;">Color Tokens</h2>
+  </div>
+
+  <div id="colors-content" style="height: calc(100% - 60px); overflow-y: auto;">
+    <!-- Colors will be populated here -->
+  </div>
+</div>
+
+<!-- Corner Radius View Screen -->
+<div id="corner-radius-view-screen"
+  style="position: absolute; top: 0; left: 100%; width: 100%; height: 100%; background: white; transition: left 0.3s ease; z-index: 10; overflow: hidden; padding: 16px; box-sizing: border-box;">
+  <div class="header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+    <button id="back-to-home-from-corner-radius"
+      style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #666;">
+      <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M19 12H5m7-7l-7 7 7 7" />
+      </svg>
+      Back
+    </button>
+    <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #333;">Corner Radius Tokens</h2>
+  </div>
+
+  <div id="corner-radius-content" style="height: calc(100% - 60px); overflow-y: auto;">
+    <!-- Corner radius tokens will be populated here -->
+  </div>
+</div>
+
 <!-- Spacing Variables View Screen -->
 <div id="spacing-variables-view-screen"
   style="position: absolute; top: 0; left: 100%; width: 100%; height: 100%; background: white; transition: left 0.3s ease; z-index: 10; overflow: hidden; padding: 16px; box-sizing: border-box;">
@@ -1427,33 +1808,62 @@
 <!-- Validation Results Screen -->
 <div id="validation-results-screen" class="screen">
   <div style="background: white; min-height: 100vh;">
-    <!-- Tabs -->
-    <div id="tab-navigation-container" style="background: white; padding: 12px 16px; border-bottom: 1px solid #e9ecef;">
-      <div id="tab-content-wrapper" style="display: flex; justify-content: space-between; align-items: center;">
-        <div id="tabs-container" style="display: flex; gap: 24px;">
-          <button id="all-tab" class="tab-button active" data-tab="all">All (14)</button>
-          <button id="text-styles-tab" class="tab-button" data-tab="text-styles">Text Styles (3)</button>
-          <button id="spacing-tab" class="tab-button" data-tab="spacing">Spacing (11)</button>
+    <!-- Header with tab groups -->
+    <div style="background: white; border-bottom: 1px solid #e5e7eb;">
+      <div style="display: flex; align-items: center; padding: 16px 24px 16px 24px; max-width: 1200px; margin: 0 auto;">
+        <!-- Left side: Category and Status tabs close together -->
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+          <!-- Category tabs -->
+          <div id="category-tabs" style="display: flex; align-items: center; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 6px; padding: 2px;">
+            <!-- Dynamic tabs will be inserted here -->
+          </div>
+          
+          <!-- Vertical separator -->
+          <div style="width: 1px; height: 20px; background: #e5e7eb;"></div>
+          
+          <!-- Status tabs -->
+          <div id="status-tabs" style="display: flex; align-items: center; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 6px; padding: 2px;">
+            <button id="active-tab" class="status-tab-button active" data-status="active">
+              Active (0)
+            </button>
+            <button id="resolved-tab" class="status-tab-button" data-status="resolved">
+              Resolved (0)
+            </button>
+            <button id="ignored-tab" class="status-tab-button" data-status="ignored">
+              Ignored (0)
+            </button>
+          </div>
         </div>
-        <div id="icons-container" style="display: flex; gap: 8px; align-items: center;">
-          <button id="minimize-btn" class="btn-icon" title="Minimize">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        
+        <!-- Action buttons (right) -->
+        <div style="display: flex; align-items: center; gap: 2px;">
+          <button id="minimize-btn" style="padding: 4px; background: transparent; border: none; border-radius: 3px; cursor: pointer; transition: background-color 0.15s;" title="Minimize">
+            <svg style="width: 14px; height: 14px; color: #6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path d="M6 12h12" stroke-width="2" stroke-linecap="round"/>
             </svg>
           </button>
-          <button id="hamburger-menu-btn" class="btn-icon" title="Menu">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button id="hamburger-menu-btn" style="padding: 4px; background: transparent; border: none; border-radius: 3px; cursor: pointer; transition: background-color 0.15s;" title="Menu">
+            <svg style="width: 14px; height: 14px; color: #6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path d="M3 12h18M3 6h18M3 18h18" stroke-width="2" stroke-linecap="round"/>
             </svg>
           </button>
         </div>
       </div>
     </div>
+    
+    <!-- Issues count header -->
+    <div style="background: white; border-bottom: 1px solid #e5e7eb;">
+      <div style="max-width: 1200px; margin: 0 auto; padding: 12px 24px;">
+        <h2 id="issues-count" style="font-size: 15px; font-weight: 600; color: #111827; margin: 0;">Found 0 issues</h2>
+      </div>
+    </div>
 
     <!-- Results List -->
     <div style="background: white;">
-      <div id="validation-results-content" style="height: calc(100vh - 200px); overflow-y: auto;">
-        <!-- Sample validation items will be populated here by JavaScript -->
+      <div style="max-width: 1200px; margin: 0 auto;">
+        <div id="validation-results-content" style="min-height: calc(100vh - 200px);">
+          <!-- Validation items will be populated here by JavaScript -->
+        </div>
       </div>
       
       <!-- Collapsed View Content (shown when minimized and node is selected) -->
@@ -1516,6 +1926,16 @@
   const spacingSlideScreen = document.getElementById('spacing-variables-view-screen')
   if (spacingSlideScreen) {
     spacingSlideScreen.style.left = '100%'
+  }
+
+  const colorsSlideScreen = document.getElementById('colors-view-screen')
+  if (colorsSlideScreen) {
+    colorsSlideScreen.style.left = '100%'
+  }
+
+  const cornerRadiusSlideScreen = document.getElementById('corner-radius-view-screen')
+  if (cornerRadiusSlideScreen) {
+    cornerRadiusSlideScreen.style.left = '100%'
   }
 
   parent.postMessage({ pluginMessage: { type: 'get-ui-mode' } }, '*')
@@ -1855,12 +2275,21 @@
 
   // Function to show only one screen
   function showScreen(mode) {
-    console.log('showScreen called with mode:', mode)
+    console.log('🎬 showScreen called with mode:', mode)
 
-    // Hide all screens
+    // Debug: Log currently active screens before hiding
+    const currentlyActive = document.querySelectorAll('.screen.active')
+    console.log('Currently active screens:', Array.from(currentlyActive).map(s => s.id))
+
+    // AGGRESSIVELY hide all screens
     document.querySelectorAll('.screen').forEach(screen => {
       screen.classList.remove('active')
+      screen.style.display = 'none' // Force hide with inline style
+      console.log('🚫 Forcibly hidden screen:', screen.id)
     })
+
+    // Small delay to ensure clearing is complete
+    setTimeout(() => {
 
     // Show the requested screen
     const screenMap = {
@@ -1880,13 +2309,19 @@
       const screen = document.getElementById(screenId)
       if (screen) {
         screen.classList.add('active')
-        console.log('Successfully activated screen:', screenId)
+        screen.style.display = 'block' // Force show with inline style
+        console.log('✅ Successfully activated screen:', screenId)
+        
+        // Debug: Verify only one screen is active
+        const allActiveScreens = document.querySelectorAll('.screen.active')
+        console.log('All active screens after switch:', Array.from(allActiveScreens).map(s => s.id))
       } else {
-        console.log('Screen element not found:', screenId)
+        console.log('❌ Screen element not found:', screenId)
       }
     } else {
-      console.log('No mapping found for mode:', mode)
+      console.log('❌ No mapping found for mode:', mode)
     }
+    }, 50) // Close the setTimeout with 50ms delay
   }
 
   // Function to go back to home screen
@@ -1910,8 +2345,14 @@
       return
     }
 
-    // Mark this item as updated
-    window.updatedItems.add(nodeId)
+    // Mark as resolved in the issue states (don't add to updatedItems to keep it visible in resolved tab)
+    const issueStates = window.issueStates || new Map()
+    issueStates.set(nodeId, 'resolved')
+    window.issueStates = issueStates
+    
+    // Update tab counts immediately
+    updateStatusTabCounts()
+    updateCategoryTabCounts()
 
     // Find the validation item for this node
     const validationItem = document.querySelector(`[data-node-id="${nodeId}"]`)?.closest('div[style*="display: flex"]')
@@ -1934,21 +2375,11 @@
       updateButton.classList.add('update-btn-success')
       updateButton.disabled = true
       
-      // Show success state for 2 seconds, then hide the item
+      // Show success state briefly, then refresh the view
       setTimeout(() => {
-        if (validationItem) {
-          // Fade out the validation item
-          validationItem.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out'
-          validationItem.style.opacity = '0'
-          validationItem.style.transform = 'translateX(20px)'
-          
-          // Remove from DOM after fade
-          setTimeout(() => {
-            validationItem.remove()
-            updateValidationCounts()
-          }, 500)
-        }
-      }, 2000)
+        // Refresh the current view to remove resolved items from active tab
+        applyFilters()
+      }, 900)
     }
 
     // Show success notification with more details
@@ -2052,33 +2483,62 @@
     }, 3000)
   }
 
-  function updateValidationCounts() {
-    // Update tab counts after items are removed
-    const allItems = document.querySelectorAll('#validation-results-content > div[style*="display: flex"]')
-    const textStyleItems = Array.from(allItems).filter(item => 
-      item.querySelector('[data-result-type="text-style"]')
-    )
-    const spacingItems = Array.from(allItems).filter(item => 
-      item.querySelector('[data-result-type="spacing"]')
-    )
-
+  function updateCategoryTabCounts() {
+    // Update category tab counts based on current status filter
+    const currentStatusFilter = window.currentStatusFilter || 'active'
+    const allResults = window.validationResults || []
+    const issueStates = window.issueStates || new Map()
+    
+    // Filter results by current status
+    const statusFilteredResults = allResults.filter(result => {
+      const nodeId = result.node?.id
+      const issueState = nodeId ? (issueStates.get(nodeId) || 'active') : 'active'
+      return issueState === currentStatusFilter
+    })
+    
+    // Update "All" tab for current status
     const allTab = document.getElementById('all-tab')
-    const textStylesTab = document.getElementById('text-styles-tab')
-    const spacingTab = document.getElementById('spacing-tab')
+    if (allTab) allTab.textContent = `All (${statusFilteredResults.length})`
 
-    if (allTab) allTab.textContent = `All (${allItems.length})`
-    if (textStylesTab) textStylesTab.textContent = `Text Styles (${textStyleItems.length})`
-    if (spacingTab) spacingTab.textContent = `Spacing (${spacingItems.length})`
+    // Update category tabs for current status
+    const categoryTabs = document.querySelectorAll('.category-tab-button:not(#all-tab)')
+    categoryTabs.forEach(tab => {
+      const tabType = tab.dataset.tab
+      const itemsOfType = statusFilteredResults.filter(result => result.type === tabType)
+      
+      // Extract the label from the current tab text
+      const currentText = tab.textContent
+      const labelMatch = currentText.match(/^(.+?)\s*\(\d+\)$/)
+      const label = labelMatch ? labelMatch[1] : tabType
+      
+      tab.textContent = `${label} (${itemsOfType.length})`
+    })
+  }
 
-    // Show success message if no issues remain
-    if (allItems.length === 0) {
+  function updateValidationCounts() {
+    // Use the new status-aware counting system
+    updateStatusTabCounts()
+    updateCategoryTabCounts()
+
+    // Check if current status has no issues for success message
+    const currentStatusFilter = window.currentStatusFilter || 'active'
+    const allResults = window.validationResults || []
+    const issueStates = window.issueStates || new Map()
+    
+    const statusFilteredResults = allResults.filter(result => {
+      const nodeId = result.node?.id
+      const issueState = nodeId ? (issueStates.get(nodeId) || 'active') : 'active'
+      return issueState === currentStatusFilter
+    })
+
+    if (statusFilteredResults.length === 0 && currentStatusFilter === 'active') {
       const content = document.getElementById('validation-results-content')
       if (content) {
         content.innerHTML = `
-          <div style="text-align: center; padding: 40px; color: #28a745;">
-            <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
-            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">All Issues Resolved!</div>
-            <div style="color: #666;">Your design is now compliant with the design system.</div>
+          <div style="text-align: center; padding: 40px 16px; color: #28a745;">
+            <div style="font-size: 32px; margin-bottom: 12px;">🎉</div>
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 6px; color: #111827;">All Issues Resolved!</div>
+            <div style="font-size: 14px; color: #6b7280;">Your design is now compliant with the design system.</div>
           </div>
         `
       }
@@ -2117,36 +2577,100 @@
 
   // Validation option handlers
   function updateRunValidationButton() {
-    const textStylesChecked = document.getElementById('text-styles-checkbox').checked
-    const spacingChecked = document.getElementById('spacing-checkbox').checked
+    const checkboxes = [
+      'text-styles-checkbox',
+      'spacing-checkbox', 
+      'colors-checkbox',
+      'corner-radius-checkbox',
+      'typography-checkbox',
+      'shadows-checkbox',
+      'borders-checkbox',
+      'opacity-checkbox',
+      'sizing-checkbox'
+    ]
+    
+    const anyChecked = checkboxes.some(id => {
+      const checkbox = document.getElementById(id)
+      const checkboxGroup = document.querySelector(`label[for="${id}"]`)
+      // Only count checkboxes that are visible and checked
+      return checkbox && checkbox.checked && checkboxGroup && checkboxGroup.style.display !== 'none'
+    })
+    
     const runButton = document.getElementById('run-validation')
-
-    if (textStylesChecked || spacingChecked) {
-      runButton.disabled = false
-      runButton.style.background = '#4CAF50'
-      runButton.style.cursor = 'pointer'
-    } else {
-      runButton.disabled = true
-      runButton.style.background = '#999'
-      runButton.style.cursor = 'not-allowed'
+    if (runButton) {
+      if (anyChecked) {
+        runButton.disabled = false
+        runButton.style.background = '#4CAF50'
+        runButton.style.cursor = 'pointer'
+      } else {
+        runButton.disabled = true
+        runButton.style.background = '#999'
+        runButton.style.cursor = 'not-allowed'
+      }
     }
   }
 
-  document.getElementById('text-styles-checkbox').onchange = updateRunValidationButton
-  document.getElementById('spacing-checkbox').onchange = updateRunValidationButton
+  // Add event listeners for all validation checkboxes
+  const validationCheckboxIds = [
+    'text-styles-checkbox',
+    'spacing-checkbox', 
+    'colors-checkbox',
+    'corner-radius-checkbox',
+    'typography-checkbox',
+    'shadows-checkbox',
+    'borders-checkbox',
+    'opacity-checkbox',
+    'sizing-checkbox'
+  ]
+  
+  validationCheckboxIds.forEach(id => {
+    const checkbox = document.getElementById(id)
+    if (checkbox) {
+      checkbox.onchange = updateRunValidationButton
+    }
+  })
 
-  document.getElementById('run-validation').onclick = () => {
-    if (!document.getElementById('run-validation').disabled) {
-      console.log('Running validation...')
+  // Ensure the button exists before attaching handler
+  const runValidationBtn = document.getElementById('run-validation')
+  if (runValidationBtn) {
+    console.log('✅ Run validation button found and handler attached')
+    runValidationBtn.onclick = () => {
+      console.log('🔥 Run validation button clicked!')
+      console.log('Button disabled state:', runValidationBtn.disabled)
+      
+      if (!runValidationBtn.disabled) {
+        console.log('Running validation...')
 
-      // Check which validation options are selected
-      const textStylesChecked = document.getElementById('text-styles-checkbox').checked
-      const spacingChecked = document.getElementById('spacing-checkbox').checked
+      // Check which validation options are selected (only visible ones)
+      const getVisibleCheckboxValue = (checkboxId) => {
+        const checkbox = document.getElementById(checkboxId)
+        const checkboxGroup = document.querySelector(`label[for="${checkboxId}"]`)
+        // Only return true if checkbox is checked AND visible
+        return checkbox && checkbox.checked && checkboxGroup && checkboxGroup.style.display !== 'none'
+      }
+      
+      const validationOptions = {
+        textStyles: getVisibleCheckboxValue('text-styles-checkbox'),
+        spacing: getVisibleCheckboxValue('spacing-checkbox'),
+        colors: getVisibleCheckboxValue('colors-checkbox'),
+        cornerRadius: getVisibleCheckboxValue('corner-radius-checkbox'),
+        typography: getVisibleCheckboxValue('typography-checkbox'),
+        shadows: getVisibleCheckboxValue('shadows-checkbox'),
+        borders: getVisibleCheckboxValue('borders-checkbox'),
+        opacity: getVisibleCheckboxValue('opacity-checkbox'),
+        sizing: getVisibleCheckboxValue('sizing-checkbox')
+      }
 
-      if (!textStylesChecked && !spacingChecked) {
+      // Check if at least one visible option is selected
+      const hasSelection = Object.values(validationOptions).some(checked => checked)
+      if (!hasSelection) {
         alert('Please select at least one validation option.')
         return
       }
+
+      // Backward compatibility - keep existing variables
+      const textStylesChecked = validationOptions.textStyles
+      const spacingChecked = validationOptions.spacing
 
       // Show validation results screen immediately
       showScreen('validation-results')
@@ -2192,6 +2716,32 @@
       }, '*')
     }
   }
+  } else {
+    console.log('❌ Run validation button not found during initial setup')
+    // Try again after a delay
+    setTimeout(() => {
+      const delayedBtn = document.getElementById('run-validation')
+      if (delayedBtn) {
+        console.log('✅ Run validation button found on retry')
+        delayedBtn.onclick = () => {
+          console.log('🔥 Run validation button clicked (delayed handler)!')
+          if (!delayedBtn.disabled) {
+            // Trigger validation
+            parent.postMessage({
+              pluginMessage: {
+                type: 'run-validation',
+                options: {
+                  textStyles: document.getElementById('text-styles-checkbox')?.checked || false,
+                  spacing: document.getElementById('spacing-checkbox')?.checked || false
+                }
+              }
+            }, '*')
+            showScreen('validation-results')
+          }
+        }
+      }
+    }, 1000)
+  }
 
   // Reset button handler
   const resetBtn = document.getElementById('reset-libraries-btn')
@@ -2227,6 +2777,48 @@
   document.getElementById('back-to-home-from-spacing').onclick = () => {
     // Hide slide-in screen
     const slideScreen = document.getElementById('spacing-variables-view-screen')
+    slideScreen.style.left = '100%'
+  }
+
+  // Colors view handlers
+  document.getElementById('view-colors').onclick = (e) => {
+    e.preventDefault()
+
+    // Show loading state immediately
+    const slideScreen = document.getElementById('colors-view-screen')
+    const content = document.getElementById('colors-content')
+
+    content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 200px; color: #666;">Loading color tokens...</div>'
+    slideScreen.style.left = '0'
+
+    // Request colors data
+    parent.postMessage({ pluginMessage: { type: 'get-colors' } }, '*')
+  }
+
+  document.getElementById('back-to-home-from-colors').onclick = () => {
+    // Hide slide-in screen
+    const slideScreen = document.getElementById('colors-view-screen')
+    slideScreen.style.left = '100%'
+  }
+
+  // Corner Radius view handlers
+  document.getElementById('view-corner-radius').onclick = (e) => {
+    e.preventDefault()
+
+    // Show loading state immediately
+    const slideScreen = document.getElementById('corner-radius-view-screen')
+    const content = document.getElementById('corner-radius-content')
+
+    content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 200px; color: #666;">Loading corner radius tokens...</div>'
+    slideScreen.style.left = '0'
+
+    // Request corner radius data
+    parent.postMessage({ pluginMessage: { type: 'get-corner-radius' } }, '*')
+  }
+
+  document.getElementById('back-to-home-from-corner-radius').onclick = () => {
+    // Hide slide-in screen
+    const slideScreen = document.getElementById('corner-radius-view-screen')
     slideScreen.style.left = '100%'
   }
 
@@ -2341,46 +2933,301 @@
     slideScreen.style.left = '0'
   }
 
-  function showValidationResults(results, library, targetName, targetType) {
+  function showColorsScreen(colors) {
+    const slideScreen = document.getElementById('colors-view-screen')
+    const content = document.getElementById('colors-content')
+
+    if (Object.keys(colors).length === 0) {
+      content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 200px; color: #666;">No color tokens found in this library.</div>'
+      slideScreen.style.left = '0'
+      return
+    }
+
+    // Generate HTML for color tokens
+    const colorItems = Object.entries(colors).map(([name, data]) => {
+      // Extract the color value from the variable data
+      let colorValue = '#000000'
+      let displayValue = 'Unknown'
+      
+      if (data.values && typeof data.values === 'object') {
+        const firstModeValues = Object.values(data.values)[0]
+        if (typeof firstModeValues === 'object' && firstModeValues.r !== undefined) {
+          // RGB color object
+          const r = Math.round(firstModeValues.r * 255)
+          const g = Math.round(firstModeValues.g * 255)
+          const b = Math.round(firstModeValues.b * 255)
+          colorValue = `rgb(${r}, ${g}, ${b})`
+          displayValue = colorValue
+        } else if (typeof firstModeValues === 'string') {
+          // Hex color string
+          colorValue = firstModeValues
+          displayValue = firstModeValues
+        }
+      }
+
+      return `<div class="text-style-item">
+        <div class="text-style-info">
+          <h4>${name}</h4>
+          <p>${displayValue}</p>
+        </div>
+        <div class="text-style-size" style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 20px; height: 20px; border-radius: 4px; background: ${colorValue}; border: 1px solid #ddd;"></div>
+        </div>
+      </div>`
+    }).join('')
+
+    const html = `<div class="text-style-group">
+      <div class="text-style-group-title">Color Tokens</div>
+      ${colorItems}
+    </div>`
+
+    content.innerHTML = html
+
+    // Show slide-in screen
+    slideScreen.style.left = '0'
+  }
+
+  function showCornerRadiusScreen(cornerRadiusVariables) {
+    const slideScreen = document.getElementById('corner-radius-view-screen')
+    const content = document.getElementById('corner-radius-content')
+
+    if (Object.keys(cornerRadiusVariables).length === 0) {
+      content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 200px; color: #666;">No corner radius tokens found in this library.</div>'
+      slideScreen.style.left = '0'
+      return
+    }
+
+    // Generate HTML for corner radius variables
+    const radiusItems = Object.entries(cornerRadiusVariables).map(([name, data]) => {
+      // Extract the pixel value from the variable data
+      let pixelValue = 'Unknown'
+      if (data.values && typeof data.values === 'object') {
+        const firstModeValues = Object.values(data.values)[0]
+        if (typeof firstModeValues === 'number') {
+          pixelValue = `${firstModeValues}px`
+        }
+      }
+
+      return `<div class="text-style-item">
+        <div class="text-style-info">
+          <h4>${name}</h4>
+          <p>Corner radius token for consistent rounded corners</p>
+        </div>
+        <div class="text-style-size">${pixelValue}</div>
+      </div>`
+    }).join('')
+
+    const html = `<div class="text-style-group">
+      <div class="text-style-group-title">Corner Radius Tokens</div>
+      ${radiusItems}
+    </div>`
+
+    content.innerHTML = html
+
+    // Show slide-in screen
+    slideScreen.style.left = '0'
+  }
+
+  function generateDynamicTabs(activeResults, options) {
+    const categoryTabsContainer = document.getElementById('category-tabs')
+    if (!categoryTabsContainer) return
+
+    // Clear existing tabs
+    categoryTabsContainer.innerHTML = ''
+
+    // Always show "All" tab
+    const allCount = activeResults.length
+    const allTab = document.createElement('button')
+    allTab.id = 'all-tab'
+    allTab.className = 'category-tab-button active'
+    allTab.setAttribute('data-tab', 'all')
+    allTab.textContent = `All (${allCount})`
+    categoryTabsContainer.appendChild(allTab)
+
+    // Define tab configurations with their display names and result types
+    const tabConfigs = [
+      { key: 'textStyles', label: 'Text Styles', type: 'text-style' },
+      { key: 'spacing', label: 'Spacing', type: 'spacing' },
+      { key: 'colors', label: 'Colors', type: 'color' },
+      { key: 'cornerRadius', label: 'Corner Radius', type: 'corner-radius' },
+      { key: 'typography', label: 'Typography', type: 'typography' },
+      { key: 'shadows', label: 'Shadows', type: 'shadow' },
+      { key: 'borders', label: 'Borders', type: 'border' },
+      { key: 'opacity', label: 'Opacity', type: 'opacity' },
+      { key: 'sizing', label: 'Sizing', type: 'sizing' }
+    ]
+
+    // Create tabs only for selected validation options that have results
+    tabConfigs.forEach(config => {
+      if (options && options[config.key]) {
+        const issueCount = activeResults.filter(r => r.type === config.type).length
+        if (issueCount > 0) {
+          const tab = document.createElement('button')
+          tab.id = `${config.key.toLowerCase()}-tab`
+          tab.className = 'category-tab-button'
+          tab.setAttribute('data-tab', config.type)
+          tab.textContent = `${config.label} (${issueCount})`
+          categoryTabsContainer.appendChild(tab)
+        }
+      }
+    })
+
+    // Update issues count
+    const issuesCountElement = document.getElementById('issues-count')
+    if (issuesCountElement) {
+      issuesCountElement.textContent = `Found ${allCount} issues`
+    }
+
+    console.log('Generated dynamic tabs based on validation options and results')
+  }
+
+  function showValidationResults(results, library, targetName, targetType, options) {
     console.log('showValidationResults called with:', results)
     console.log('Library data:', library)
     console.log('Target:', targetName, 'Type:', targetType)
+    console.log('Validation options:', options)
+
+    // Initialize issue state tracking
+    if (!window.issueStates) {
+      window.issueStates = new Map() // nodeId -> 'active' | 'resolved' | 'ignored'
+    }
 
     // Reset updated items when new validation results are shown
     window.updatedItems = new Set()
     console.log('Reset updated items for new validation results')
 
-    // Filter out updated items for counting
-    const updatedItems = window.updatedItems || new Set()
-    const activeResults = results.filter(result => {
-      const nodeId = result.node?.id
-      return !nodeId || !updatedItems.has(nodeId)
-    })
-
-    // Count results by type (excluding updated items)
-    const textStylesIssues = activeResults.filter(r => r.type === 'text-style')
-    const spacingIssues = activeResults.filter(r => r.type === 'spacing')
-
-    console.log('📊 Active issues - Text style:', textStylesIssues.length, 'Spacing:', spacingIssues.length, 'Total:', activeResults.length)
-
-    // Update tab counts
-    const allTab = document.getElementById('all-tab')
-    const textStylesTab = document.getElementById('text-styles-tab')
-    const spacingTab = document.getElementById('spacing-tab')
-
-    if (allTab) allTab.textContent = `All (${activeResults.length})`
-    if (textStylesTab) textStylesTab.textContent = `Text Styles (${textStylesIssues.length})`
-    if (spacingTab) spacingTab.textContent = `Spacing (${spacingIssues.length})`
-
     // Store results and library globally for filtering
     window.validationResults = results
     window.validationLibrary = library
 
-    // Show all results by default
-    displayValidationResults(results)
+    // Initialize filters
+    window.currentCategoryFilter = 'all'
+    window.currentStatusFilter = 'active'
+
+    // Generate dynamic tabs based on selected validation options and results
+    generateDynamicTabs(results, options)
+
+    // Apply initial filters and show results
+    applyFilters()
 
     // Show the results screen
     showScreen('validation-results')
+  }
+
+  function applyFilters() {
+    let allResults = window.validationResults || []
+    const categoryFilter = window.currentCategoryFilter || 'all'
+    const statusFilter = window.currentStatusFilter || 'active'
+    const issueStates = window.issueStates || new Map()
+
+    console.log('Applying filters:', { categoryFilter, statusFilter })
+
+    // Filter by category first
+    let filteredResults = allResults
+    if (categoryFilter !== 'all') {
+      filteredResults = filteredResults.filter(r => r.type === categoryFilter)
+    }
+
+    // Then filter by status
+    filteredResults = filteredResults.filter(result => {
+      const nodeId = result.node?.id
+      if (!nodeId) return statusFilter === 'active' // No nodeId means active by default
+      
+      const issueState = issueStates.get(nodeId) || 'active'
+      return issueState === statusFilter
+    })
+
+    console.log(`Filtered results: ${allResults.length} -> ${filteredResults.length}`)
+
+    // Update status tab counts
+    updateStatusTabCounts()
+
+    // Display filtered results
+    displayValidationResults(filteredResults)
+  }
+
+  function updateStatusTabCounts() {
+    const allResults = window.validationResults || []
+    const issueStates = window.issueStates || new Map()
+
+    let activeCounts = { all: 0, byType: {} }
+    let resolvedCounts = { all: 0, byType: {} }
+    let ignoredCounts = { all: 0, byType: {} }
+
+    allResults.forEach(result => {
+      const nodeId = result.node?.id
+      const issueState = nodeId ? (issueStates.get(nodeId) || 'active') : 'active'
+      const resultType = result.type
+
+      if (issueState === 'active') {
+        activeCounts.all++
+        activeCounts.byType[resultType] = (activeCounts.byType[resultType] || 0) + 1
+      } else if (issueState === 'resolved') {
+        resolvedCounts.all++
+        resolvedCounts.byType[resultType] = (resolvedCounts.byType[resultType] || 0) + 1
+      } else if (issueState === 'ignored') {
+        ignoredCounts.all++
+        ignoredCounts.byType[resultType] = (ignoredCounts.byType[resultType] || 0) + 1
+      }
+    })
+
+    // Update status tab labels
+    const activeTab = document.getElementById('active-tab')
+    const resolvedTab = document.getElementById('resolved-tab')
+    const ignoredTab = document.getElementById('ignored-tab')
+
+    if (activeTab) activeTab.textContent = `Active (${activeCounts.all})`
+    if (resolvedTab) resolvedTab.textContent = `Resolved (${resolvedCounts.all})`
+    if (ignoredTab) ignoredTab.textContent = `Ignored (${ignoredCounts.all})`
+
+    // Update issues count header
+    const currentStatusFilter = window.currentStatusFilter || 'active'
+    let currentCount = 0
+    if (currentStatusFilter === 'active') currentCount = activeCounts.all
+    else if (currentStatusFilter === 'resolved') currentCount = resolvedCounts.all
+    else if (currentStatusFilter === 'ignored') currentCount = ignoredCounts.all
+
+    const issuesCountElement = document.getElementById('issues-count')
+    if (issuesCountElement) {
+      const statusLabel = currentStatusFilter === 'active' ? 'issues' : `${currentStatusFilter} issues`
+      issuesCountElement.textContent = `Found ${currentCount} ${statusLabel}`
+    }
+  }
+
+  function resolveIssue(nodeId) {
+    console.log('Resolving issue for node:', nodeId)
+    const issueStates = window.issueStates || new Map()
+    issueStates.set(nodeId, 'resolved')
+    window.issueStates = issueStates
+    
+    // Refresh the current view
+    applyFilters()
+    
+    // Show success notification
+    showNotification('Issue resolved successfully', 'success')
+  }
+
+  function ignoreIssue(nodeId) {
+    console.log('Ignoring issue for node:', nodeId)
+    const issueStates = window.issueStates || new Map()
+    issueStates.set(nodeId, 'ignored')
+    window.issueStates = issueStates
+    
+    // Update tab counts immediately
+    updateStatusTabCounts()
+    updateCategoryTabCounts()
+    
+    // Refresh the current view
+    applyFilters()
+    
+    // Show success notification
+    showNotification('Issue ignored', 'info')
+  }
+
+  function showNotification(message, type = 'info') {
+    // Simple notification - you can enhance this later
+    console.log(`${type.toUpperCase()}: ${message}`)
+    // Could add a toast notification here in the future
   }
 
   function getTextStyleOptions() {
@@ -2621,24 +3468,39 @@
     })
     
     // Setup update button handlers
-    document.querySelectorAll('.update-btn').forEach(btn => {
+    const updateButtons = document.querySelectorAll('.update-btn')
+    console.log('🔧 Setting up event handlers for', updateButtons.length, 'update buttons')
+    
+    updateButtons.forEach((btn, index) => {
+      console.log(`🔧 Processing button ${index + 1}:`, btn)
+      
       // Skip if already has event handlers
       if (btn.hasAttribute('data-handlers-attached')) {
+        console.log(`🔧 Button ${index + 1} already has handlers, skipping`)
         return
       }
       
+      console.log(`🔧 Adding event handler to button ${index + 1}`)
       // Mark as having handlers attached
       btn.setAttribute('data-handlers-attached', 'true')
       
       btn.addEventListener('click', function() {
-        if (this.disabled) return
+        console.log('🚨🚨🚨 UPDATE BUTTON CLICKED! 🚨🚨🚨')
+        console.log('Button disabled:', this.disabled)
+        console.log('Button element:', this)
+        if (this.disabled) {
+          console.log('❌ Button is disabled, returning early')
+          return
+        }
         
         const nodeId = this.getAttribute('data-node-id')
         const resultType = this.getAttribute('data-result-type')
+        console.log('🚨 Node ID:', nodeId, 'Result Type:', resultType)
         
         // Find the corresponding dropdown to get the selected style
         const dropdown = document.querySelector(`.simple-dropdown[data-node-id="${nodeId}"]`)
         const selectedStyle = dropdown ? dropdown.selectedValue : null
+        console.log('🚨 Dropdown:', dropdown, 'Selected Style:', selectedStyle)
         
         if (selectedStyle && resultType === 'text-style' && nodeId) {
           console.log(`Applying text style "${selectedStyle}" to node ${nodeId}`)
@@ -2654,10 +3516,17 @@
             }
           }, '*')
         } else if (selectedStyle && resultType === 'spacing' && nodeId) {
+          console.log('🎯 SPACING UPDATE BUTTON CLICKED!')
           console.log(`Applying spacing token "${selectedStyle}" to node ${nodeId}`)
           
           // Show loading state
           showUpdateButtonLoading(this, selectedStyle)
+          
+          console.log('🔥 Sending apply-spacing-token message:', {
+            type: 'apply-spacing-token',
+            nodeId: nodeId,
+            tokenName: selectedStyle
+          });
           
           parent.postMessage({
             pluginMessage: {
@@ -2673,61 +3542,108 @@
     })
   }
 
+  function shouldShowIgnoreButton() {
+    const currentStatusFilter = window.currentStatusFilter || 'active'
+    // Only show ignore button for active issues
+    return currentStatusFilter === 'active'
+  }
+
   function displayValidationResults(results) {
     console.log('displayValidationResults called with:', results)
     const content = document.getElementById('validation-results-content')
     console.log('Content element:', content)
 
-    // Filter out items that have been successfully updated
-    const updatedItems = window.updatedItems || new Set()
-    const filteredResults = results.filter(result => {
-      const nodeId = result.node?.id
-      return !nodeId || !updatedItems.has(nodeId)
-    })
+    // Use the results as-is since filtering is handled by applyFilters
+    const filteredResults = results
 
-    console.log(`Filtered results: ${results.length} -> ${filteredResults.length} (${updatedItems.size} items updated)`)
+    console.log(`Displaying ${filteredResults.length} results`)
 
     if (filteredResults.length === 0) {
-      content.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No issues found! Your design is compliant with the design system.</div>'
+      const currentStatusFilter = window.currentStatusFilter || 'active'
+      let emptyMessage = ''
+      
+      if (currentStatusFilter === 'active') {
+        emptyMessage = `
+          <div style="text-align: center; padding: 40px 16px; color: #28a745;">
+            <div style="font-size: 32px; margin-bottom: 12px;">🎉</div>
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 6px; color: #111827;">All Issues Resolved!</div>
+            <div style="font-size: 14px; color: #6b7280;">Your design is now compliant with the design system.</div>
+          </div>`
+      } else if (currentStatusFilter === 'resolved') {
+        emptyMessage = `
+          <div style="text-align: center; padding: 40px 16px; color: #6b7280;">
+            <div style="font-size: 32px; margin-bottom: 12px;">📋</div>
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 6px; color: #111827;">No Resolved Issues</div>
+            <div style="font-size: 14px; color: #6b7280;">Issues you fix will appear here.</div>
+          </div>`
+      } else if (currentStatusFilter === 'ignored') {
+        emptyMessage = `
+          <div style="text-align: center; padding: 40px 16px; color: #6b7280;">
+            <div style="font-size: 32px; margin-bottom: 12px;">🙈</div>
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 6px; color: #111827;">No Ignored Issues</div>
+            <div style="font-size: 14px; color: #6b7280;">Issues you ignore will appear here.</div>
+          </div>`
+      }
+      
+      content.innerHTML = emptyMessage
       return
     }
 
     let html = ''
     filteredResults.forEach((result, index) => {
       const isSpacing = result.type === 'spacing'
+      const isLastItem = index === filteredResults.length - 1
 
-      // Use blue for text issues, orange for spacing issues
-      const frameNameColor = isSpacing ? '#ff8c00' : '#007bff'
+      // Component badge styling based on type - more compact
+      const badgeStyle = isSpacing 
+        ? 'background: #fed7aa; color: #c2410c; padding: 2px 6px; font-size: 11px; font-weight: 500; border-radius: 3px;'
+        : 'background: #dbeafe; color: #1d4ed8; padding: 2px 6px; font-size: 11px; font-weight: 500; border-radius: 3px;'
 
       // Different dropdown text based on result type
       const dropdownText = isSpacing ? 'Select token...' : 'Select a style...'
       
       html += `
-        <div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f1f3f4; background: white;">
-          <div style="color: ${frameNameColor}; font-weight: 500; font-size: 13px; min-width: 80px;">${result.frameName}</div>
-
-          <div style="flex: 1; color: #6c757d; font-size: 14px; margin-right: 16px;">- ${result.issue}</div>
-          <div style="display: flex; gap: 8px; margin-right: 12px; position: relative;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; ${!isLastItem ? 'border-bottom: 1px solid #e5e7eb;' : ''} transition: background-color 0.15s;" 
+             onmouseover="this.style.backgroundColor='#f9fafb'" 
+             onmouseout="this.style.backgroundColor='white'">
+          <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+            <span style="${badgeStyle}">${result.frameName}</span>
+            <span style="font-size: 14px; color: #374151; line-height: 1.4; flex: 1;">${result.issue}</span>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
             <div class="simple-dropdown" data-node-id="${result.node?.id || ''}" data-result-type="${result.type}" style="position: relative;">
-              <button class="btn btn-primary dropdown-trigger" style="background: white !important; color: #6c757d !important;">
+              <button class="dropdown-trigger" style="display: flex; align-items: center; gap: 6px; padding: 4px 12px; font-size: 13px; color: #6b7280; background: transparent; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer; transition: all 0.15s; min-width: 140px;">
                 <span class="dropdown-text">${dropdownText}</span>
-                <svg class="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; color: #6c757d; transition: transform 0.2s ease;">
-                  <path d="m6 9 6 6 6-6"/>
+                <svg class="dropdown-arrow" style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </button>
-              <div class="dropdown-options" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-gray-300); border-radius: 0 0 6px 6px; box-shadow: var(--shadow-lg); z-index: 1000; max-height: 200px; overflow-y: auto; display: none;">
+              <div class="dropdown-options" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); z-index: 1000; max-height: 200px; overflow-y: auto; display: none; margin-top: 2px;">
                 <!-- Options will be populated by JavaScript -->
               </div>
             </div>
-            <button class="btn btn-primary update-btn" data-node-id="${result.node?.id || ''}" data-result-type="${result.type}" disabled>Update</button>
-            <button class="btn-danger">Ignore</button>
+            <button class="update-btn" data-node-id="${result.node?.id || ''}" data-result-type="${result.type}" disabled 
+                    style="padding: 4px 12px; font-size: 13px; font-weight: 500; color: #6b7280; background: #f3f4f6; border: none; border-radius: 4px; cursor: not-allowed; transition: all 0.15s;">
+              Update
+            </button>
+            ${shouldShowIgnoreButton() ? `
+            <button class="ignore-btn" data-node-id="${result.node?.id || ''}" style="padding: 4px 12px; font-size: 13px; font-weight: 500; color: #dc2626; background: transparent; border: none; border-radius: 4px; cursor: pointer; transition: all 0.15s;"
+                    onmouseover="this.style.backgroundColor='#fef2f2'" 
+                    onmouseout="this.style.backgroundColor='transparent'">
+              Ignore
+            </button>
+            ` : ''}
+            <button class="view-node-btn" data-node-id="${result.node?.id || ''}" 
+                    style="padding: 4px; background: transparent; border: none; border-radius: 3px; cursor: pointer; transition: all 0.15s;"
+                    onmouseover="this.style.backgroundColor='#f3f4f6'" 
+                    onmouseout="this.style.backgroundColor='transparent'">
+              <svg style="width: 14px; height: 14px; color: #6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
           </div>
-          <button class="btn btn-icon view-node-btn" data-node-id="${result.node?.id || ''}">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-          </button>
         </div>`
     })
 
@@ -2735,49 +3651,56 @@
 
     // Add event handlers for dropdowns and update buttons
     setupValidationEventHandlers()
+    
+    // Add ignore button handlers (only if they exist)
+    document.querySelectorAll('.ignore-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const nodeId = this.dataset.nodeId
+        if (nodeId) {
+          ignoreIssue(nodeId)
+        }
+      })
+    })
   }
 
   // Tab handlers
   document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('tab-button')) {
-      console.log('Tab clicked:', e.target.dataset.tab)
+    // Category tab handler
+    if (e.target.classList.contains('category-tab-button')) {
+      console.log('Category tab clicked:', e.target.dataset.tab)
       
-      // Remove active class from all tabs (CSS will handle styling)
-      document.querySelectorAll('.tab-button').forEach(tab => {
+      // Remove active class from all category tabs
+      document.querySelectorAll('.category-tab-button').forEach(tab => {
         tab.classList.remove('active')
-        // Remove any inline styles that might override CSS
-        tab.style.borderBottomColor = ''
-        tab.style.color = ''
       })
 
-      // Add active class to clicked tab (CSS will handle styling)
+      // Add active class to clicked tab
       e.target.classList.add('active')
 
-      // Filter results based on tab
-      const tabType = e.target.dataset.tab
-      let allResults = window.validationResults || []
+      // Store current category filter
+      window.currentCategoryFilter = e.target.dataset.tab
+
+      // Apply both category and status filters
+      applyFilters()
+    }
+
+    // Status tab handler
+    if (e.target.classList.contains('status-tab-button')) {
+      console.log('Status tab clicked:', e.target.dataset.status)
       
-      // First filter out updated items
-      const updatedItems = window.updatedItems || new Set()
-      let filteredResults = allResults.filter(result => {
-        const nodeId = result.node?.id
-        return !nodeId || !updatedItems.has(nodeId)
+      // Remove active class from all status tabs
+      document.querySelectorAll('.status-tab-button').forEach(tab => {
+        tab.classList.remove('active')
       })
 
-      console.log('Filtering for tab type:', tabType)
-      console.log('Total results before filtering:', allResults.length)
-      console.log('Results after removing updated items:', filteredResults.length)
+      // Add active class to clicked tab
+      e.target.classList.add('active')
 
-      // Then filter by tab type
-      if (tabType === 'text-styles') {
-        filteredResults = filteredResults.filter(r => r.type === 'text-style')
-      } else if (tabType === 'spacing') {
-        filteredResults = filteredResults.filter(r => r.type === 'spacing')
-      }
-      // For 'all' tab, we keep all results (no additional filtering)
+      // Store current status filter
+      window.currentStatusFilter = e.target.dataset.status
 
-      console.log('Final filtered results:', filteredResults.length)
-      displayValidationResults(filteredResults)
+      // Apply both category and status filters
+      applyFilters()
     }
   })
 
@@ -2808,6 +3731,73 @@
     }
   }
 
+  // Function to dynamically resize window based on content height
+  function resizeWindowToContent() {
+    try {
+      // Get the main content container
+      const body = document.body
+      const activeScreen = document.querySelector('.screen.active')
+      
+      if (!activeScreen) return
+      
+      // Calculate the required height more accurately
+      const contentHeight = activeScreen.scrollHeight
+      const bodyHeight = body.scrollHeight
+      let windowHeight = Math.max(contentHeight, bodyHeight)
+      
+      // Account for sticky footer on home screen
+      const stickyFooter = document.getElementById('home-sticky-footer')
+      const isHomeScreen = activeScreen.id === 'home-screen'
+      if (isHomeScreen && stickyFooter) {
+        const footerHeight = 140 // Height of sticky footer area
+        windowHeight = Math.max(windowHeight, contentHeight + footerHeight)
+      }
+      
+      // More generous padding to account for margins, borders, etc.
+      const padding = 80 // Increased padding for better spacing
+      const minHeight = 500 // Increased minimum height
+      const maxHeight = 1200 // Increased maximum height for more content
+      
+      // Calculate optimal height with more generous constraints
+      let optimalHeight = Math.max(minHeight, Math.min(maxHeight, windowHeight + padding))
+      
+      // Get current width (maintain existing width)
+      const currentWidth = window.innerWidth || 400
+      
+      console.log(`📏 Resizing window - Content: ${contentHeight}px, Body: ${bodyHeight}px, Window: ${windowHeight}px, Optimal: ${optimalHeight}px, Home: ${isHomeScreen}`)
+      
+      // Send resize message to plugin
+      parent.postMessage({
+        pluginMessage: {
+          type: 'resize-ui',
+          width: currentWidth,
+          height: optimalHeight
+        }
+      }, '*')
+      
+    } catch (error) {
+      console.error('Error resizing window:', error)
+    }
+  }
+
+  // Immediately hide all screens on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('🧹 Clearing all screens on page load')
+    document.querySelectorAll('.screen').forEach(screen => {
+      screen.classList.remove('active')
+      console.log('Cleared screen:', screen.id)
+    })
+  })
+
+  // Also run immediately if DOM is already loaded
+  if (document.readyState !== 'loading') {
+    console.log('🧹 Clearing all screens immediately (DOM already loaded)')
+    document.querySelectorAll('.screen').forEach(screen => {
+      screen.classList.remove('active')
+      console.log('Cleared screen:', screen.id)
+    })
+  }
+
   // Handle messages from plugin
   window.onmessage = (event) => {
     const msg = event.data.pluginMessage
@@ -2815,6 +3805,9 @@
     if (msg.type === 'ui-mode') {
       console.log('UI received mode:', msg.mode)
       showScreen(msg.mode)
+      
+      // Fixed height - no dynamic resizing needed
+      // setTimeout(resizeWindowToContent, 300)
       if (msg.mode === 'export') {
         document.getElementById('file-name').textContent = msg.fileName
       }
@@ -2822,7 +3815,9 @@
         // Initialize custom dropdown and request saved libraries when showing selection screen
         setTimeout(() => {
           initializeCustomDropdown()
-        }, 100)
+          // Fixed height - no dynamic resizing needed
+          // resizeWindowToContent()
+        }, 200)
         parent.postMessage({ pluginMessage: { type: 'get-saved-libraries' } }, '*')
       }
       if (msg.mode === 'home') {
@@ -2830,7 +3825,9 @@
         setTimeout(() => {
           setupCheckboxInteractions()
           initializeCustomDropdown()
-        }, 100)
+          // Fixed height - no dynamic resizing needed
+          // resizeWindowToContent()
+        }, 200)
       }
     }
 
@@ -2852,7 +3849,7 @@
     if (msg.type === 'saved-libraries') {
       const librariesWithCount = msg.libraries.map(lib => ({
         key: lib.key,
-        name: `${lib.name} (${lib.count} styles)`
+        name: lib.displayName || `${lib.name} (${lib.count} styles)`
       }))
 
       // Update custom dropdown for home screen
@@ -2869,8 +3866,6 @@
     if (msg.type === 'library-selected') {
       // Update home screen with selected library info
       const libraryNameElement = document.getElementById('selected-library-name')
-      const textStylesCountElement = document.getElementById('text-styles-count')
-      const spacingVariablesCountElement = document.getElementById('spacing-variables-count')
 
       if (msg.library) {
         // Update custom dropdown
@@ -2882,14 +3877,82 @@
         if (libraryNameElement) {
           libraryNameElement.textContent = `${msg.library.name} Attached`
         }
-      }
 
-      if (textStylesCountElement && msg.library) {
-        textStylesCountElement.textContent = `${msg.library.textStylesCount || msg.library.count} Styles Available`
-      }
-
-      if (spacingVariablesCountElement && msg.library) {
-        spacingVariablesCountElement.textContent = `${msg.library.spacingVariablesCount || 0} Variables Available`
+        // Update all token counts if tokenCounts are available
+        if (msg.library.tokenCounts) {
+          const counts = msg.library.tokenCounts
+          
+          // Update existing counts
+          const textStylesElement = document.getElementById('text-styles-count')
+          if (textStylesElement) {
+            textStylesElement.textContent = `${counts.textStyles} Styles Available`
+          }
+          
+          const spacingElement = document.getElementById('spacing-variables-count')
+          if (spacingElement) {
+            spacingElement.textContent = `${counts.spacing} Variables Available`
+          }
+          
+          // Update token counts and show/hide validation options based on availability
+          const updateCountAndVisibility = (checkboxId, countId, count, label) => {
+            const countElement = document.getElementById(countId)
+            const checkboxGroup = document.querySelector(`label[for="${checkboxId}"]`)
+            
+            if (countElement) {
+              countElement.textContent = `${count} ${label}`
+            }
+            
+            // Show/hide the entire validation option based on token availability
+            if (checkboxGroup) {
+              if (count > 0) {
+                checkboxGroup.style.display = 'flex'
+              } else {
+                checkboxGroup.style.display = 'none'
+                // Uncheck the checkbox if hidden
+                const checkbox = document.getElementById(checkboxId)
+                if (checkbox) {
+                  checkbox.checked = false
+                }
+              }
+            }
+          }
+          
+          // Always show text styles and spacing (core functionality)
+          const coreTextStylesElement = document.getElementById('text-styles-count')
+          if (coreTextStylesElement) {
+            coreTextStylesElement.textContent = `${counts.textStyles} Styles Available`
+          }
+          
+          const coreSpacingElement = document.getElementById('spacing-variables-count')
+          if (coreSpacingElement) {
+            coreSpacingElement.textContent = `${counts.spacing} Variables Available`
+          }
+          
+          // Update other token types with visibility logic
+          updateCountAndVisibility('colors-checkbox', 'colors-count', counts.colors, 'Colors Available')
+          updateCountAndVisibility('corner-radius-checkbox', 'corner-radius-count', counts.cornerRadius, 'Radius Tokens Available')
+          updateCountAndVisibility('typography-checkbox', 'typography-count', counts.typography, 'Typography Tokens Available')
+          updateCountAndVisibility('shadows-checkbox', 'shadows-count', counts.shadows, 'Shadow Tokens Available')
+          updateCountAndVisibility('borders-checkbox', 'borders-count', counts.borders, 'Border Tokens Available')
+          updateCountAndVisibility('opacity-checkbox', 'opacity-count', counts.opacity, 'Opacity Tokens Available')
+          updateCountAndVisibility('sizing-checkbox', 'sizing-count', counts.sizing, 'Sizing Tokens Available')
+        } else {
+          // Fallback for older format
+          const fallbackTextStylesElement = document.getElementById('text-styles-count')
+          if (fallbackTextStylesElement) {
+            fallbackTextStylesElement.textContent = `${msg.library.textStylesCount || msg.library.count} Styles Available`
+          }
+          
+          const fallbackSpacingElement = document.getElementById('spacing-variables-count')
+          if (fallbackSpacingElement) {
+            fallbackSpacingElement.textContent = `${msg.library.spacingVariablesCount || 0} Variables Available`
+          }
+        }
+        
+        // Fixed height - no dynamic resizing needed
+        // setTimeout(resizeWindowToContent, 100)
+        // setTimeout(resizeWindowToContent, 300)
+        // setTimeout(resizeWindowToContent, 500)
       }
     }
 
@@ -2905,8 +3968,16 @@
       showSpacingVariablesScreen(msg.spacingVariables)
     }
 
+    if (msg.type === 'colors-data') {
+      showColorsScreen(msg.colors)
+    }
+
+    if (msg.type === 'corner-radius-data') {
+      showCornerRadiusScreen(msg.cornerRadius)
+    }
+
     if (msg.type === 'validation-results') {
-      showValidationResults(msg.results, msg.library, msg.targetName, msg.targetType)
+      showValidationResults(msg.results, msg.library, msg.targetName, msg.targetType, msg.options)
     }
 
     if (msg.type === 'selection-changed') {
@@ -2943,7 +4014,21 @@
       } else {
         // Error - show error message
         console.error('❌ Style application failed:', msg.error)
-        alert(`Error: ${msg.error}`)
+        
+        // Provide more helpful error messages for common issues
+        let errorMessage = msg.error;
+        if (msg.error.includes('Variable with ID') && msg.error.includes('not found')) {
+          errorMessage = `${msg.error}\n\n💡 This usually happens when:\n• The design system has been updated\n• Variables were deleted or recreated\n• You're in a different file than the design system\n\nTry re-exporting your design system or check if you're in the correct file.`;
+        } else if (msg.error.includes('not accessible in this file')) {
+          errorMessage = `${msg.error}\n\n💡 Make sure you're working in the same file as your design system, or that the design system is properly linked to this file.`;
+        }
+        
+        // Show error in a more user-friendly way
+        const shouldRetry = confirm(`${errorMessage}\n\nWould you like to try refreshing the design system data?`);
+        if (shouldRetry) {
+          // Suggest going back to export screen to refresh data
+          parent.postMessage({ pluginMessage: { type: 'switch-mode', mode: 'export' } }, '*');
+        }
         
         // Reset button state if we have nodeId
         if (msg.nodeId) {
@@ -2970,10 +4055,16 @@
         return
       }
       
-      // Find issues for the selected node (excluding updated items)
+      // Find issues for the selected node (based on current status filter)
+      const issueStates = window.issueStates || new Map()
+      const currentStatusFilter = window.currentStatusFilter || 'active'
+      
       const nodeIssues = validationResults.filter(result => {
         const nodeId = result.node?.id
-        return nodeId === window.currentSelectedNodeId && !updatedItems.has(nodeId)
+        if (nodeId !== window.currentSelectedNodeId) return false
+        
+        const issueState = issueStates.get(nodeId) || 'active'
+        return issueState === currentStatusFilter
       })
       
       if (nodeIssues.length === 0) {
@@ -3299,4 +4390,6 @@
 
 
   })
+
+
 </script>
