@@ -1,19 +1,20 @@
 "use strict";
 // Main plugin: uses saved library keys to apply external text styles
-// Start with fixed UI size
-figma.showUI(__html__, { width: 400, height: 900 });
+// Start with fixed loader size
+figma.showUI(__html__, { width: 380, height: 530 });
 // UI sizing functions for different states
 function resizeUI(width, height) {
     figma.ui.resize(width, height);
 }
 // UI sizes for different screens
 const UISizes = {
-    EXPORT_SCREEN: { width: 350, height: 400 },
-    LINK_SCREEN: { width: 380, height: 400 },
+    EXPORT_SCREEN: { width: 380, height: 530 },
+    LINK_SCREEN: { width: 380, height: 530 },
     SELECTION_SCREEN: { width: 400, height: 400 },
     HOME_SCREEN: { width: 400, height: 900 },
-    EXPORT_INSTRUCTIONS_SCREEN: { width: 400, height: 480 },
-    VALIDATION_RESULTS_SCREEN: { width: 1100, height: 900 },
+    EXPORT_INSTRUCTIONS_SCREEN: { width: 400, height: 500 },
+    EXPORT_CONFIRMATION_SCREEN: { width: 400, height: 550 },
+    VALIDATION_RESULTS_SCREEN: { width: 1100, height: 700 },
     VALIDATION_RESULTS_COLLAPSED: { width: 1100, height: 180 },
     CUSTOM: (width, height) => ({ width, height })
 };
@@ -31,8 +32,6 @@ function setScreenSize(screen) {
 let selectedLibraryKey = null;
 // Reset selectedLibraryKey on plugin start to ensure clean state
 selectedLibraryKey = null;
-// Simple initial setup - always start with selection screen
-setScreenSize('SELECTION_SCREEN');
 async function getAllSavedLibraries() {
     return (await figma.clientStorage.getAsync('savedLibraries') || {});
 }
@@ -622,6 +621,453 @@ async function applySpacingTokenToNode(tokenName, nodeId) {
         throw error;
     }
 }
+async function applyCornerRadiusTokenToNode(tokenName, nodeId) {
+    var _a, _b;
+    console.log('🎯 applyCornerRadiusTokenToNode called with:', { tokenName, nodeId, selectedLibraryKey });
+    if (!selectedLibraryKey) {
+        throw new Error('Please select a library first.');
+    }
+    try {
+        const library = await getSavedLibrary(selectedLibraryKey);
+        if (!library) {
+            throw new Error('Selected library not found.');
+        }
+        // Get corner radius token data from stored library
+        let cornerRadiusVariables = {};
+        if (((_a = library.variables) === null || _a === void 0 ? void 0 : _a['corner-radius']) || ((_b = library.variables) === null || _b === void 0 ? void 0 : _b.cornerRadius)) {
+            cornerRadiusVariables = library.variables['corner-radius'] || library.variables.cornerRadius;
+        }
+        else if (library.variables) {
+            // Handle old structure and search through all collections for corner radius-related variables
+            for (const [collectionKey, variables] of Object.entries(library.variables)) {
+                const collectionName = collectionKey.toLowerCase();
+                // Check if this collection contains corner radius
+                if (collectionName.includes('radius') || collectionName.includes('corner') ||
+                    collectionName.includes('border-radius') || collectionName.includes('rounded')) {
+                    // Add all variables from this collection
+                    Object.assign(cornerRadiusVariables, variables);
+                }
+                else {
+                    // Check individual variable names for corner radius-related terms
+                    for (const [varName, varData] of Object.entries(variables)) {
+                        const name = varName.toLowerCase();
+                        if (name.includes('radius') || name.includes('corner') || name.includes('rounded')) {
+                            cornerRadiusVariables[varName] = varData;
+                        }
+                    }
+                }
+            }
+        }
+        console.log(`Looking for corner radius token: "${tokenName}"`);
+        console.log('Available corner radius variables:', Object.keys(cornerRadiusVariables));
+        let tokenData = cornerRadiusVariables[tokenName];
+        // Try common variations if not found
+        if (!tokenData || !tokenData.key) {
+            const possibleKeys = [
+                tokenName,
+                `radius-${tokenName}`,
+                `corner-${tokenName}`,
+                `${tokenName}px`,
+                `radius/${tokenName}`,
+                `corner/${tokenName}`
+            ];
+            for (const key of possibleKeys) {
+                if (cornerRadiusVariables[key] && cornerRadiusVariables[key].key) {
+                    console.log(`Found corner radius token with key: "${key}"`);
+                    tokenData = cornerRadiusVariables[key];
+                    break;
+                }
+            }
+            // Try finding by variable name
+            if (!tokenData || !tokenData.key) {
+                for (const [key, data] of Object.entries(cornerRadiusVariables)) {
+                    if (data && data.name && (data.name === tokenName ||
+                        data.name.endsWith(`-${tokenName}`) ||
+                        data.name.endsWith(`/${tokenName}`) ||
+                        data.name.includes(tokenName))) {
+                        console.log(`Found corner radius token by name match: "${key}" -> "${data.name}"`);
+                        tokenData = data;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!tokenData || !tokenData.key) {
+            const availableTokens = Object.keys(cornerRadiusVariables).join(', ');
+            throw new Error(`Corner radius token "${tokenName}" not found in library. Available tokens: ${availableTokens}`);
+        }
+        console.log(`Found tokenData:`, { name: tokenData.name, key: tokenData.key, collection: tokenData.collection });
+        // Import the variable using the proper Team Library API
+        let importedVariable;
+        try {
+            // Try to import by key directly if we have it
+            if (tokenData.key) {
+                console.log(`🔄 Importing corner radius variable by key: ${tokenData.key}`);
+                importedVariable = await figma.variables.importVariableByKeyAsync(tokenData.key);
+                console.log(`✅ Successfully imported corner radius variable: "${importedVariable.name}" (ID: ${importedVariable.id})`);
+            }
+            else {
+                // Fallback: use the helper function to find and import by name
+                console.log(`🔄 Importing corner radius variable by name using Team Library API: ${tokenData.name}`);
+                importedVariable = await ensureVariableImportedByName(c => c.name.toLowerCase().includes('radius') || c.name.toLowerCase().includes('corner'), tokenData.name, 'FLOAT');
+                console.log(`✅ Successfully imported corner radius variable via Team Library: "${importedVariable.name}" (ID: ${importedVariable.id})`);
+            }
+        }
+        catch (importError) {
+            console.error('❌ Failed to import corner radius variable:', importError);
+            throw new Error(`Cannot import corner radius token "${tokenName}". Please ensure the design system library is enabled in the Variables panel. Error: ${importError}`);
+        }
+        // Get the node and apply the corner radius
+        const node = await figma.getNodeByIdAsync(nodeId);
+        if (!node) {
+            throw new Error('Node not found.');
+        }
+        // Apply corner radius based on node type
+        if (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE') {
+            const shapeNode = node;
+            let applied = false;
+            try {
+                // Try individual corner properties (this is the correct approach for Figma API)
+                const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
+                let cornersBound = 0;
+                for (const corner of corners) {
+                    if (corner in shapeNode) {
+                        try {
+                            shapeNode.setBoundVariable(corner, importedVariable);
+                            cornersBound++;
+                            console.log(`✅ Successfully bound ${corner} to variable`);
+                        }
+                        catch (cornerError) {
+                            console.error(`Failed to bind variable to ${corner}:`, cornerError);
+                        }
+                    }
+                }
+                if (cornersBound > 0) {
+                    figma.notify(`Applied corner radius token "${tokenName}" to ${cornersBound} corners of "${shapeNode.name}".`);
+                    applied = true;
+                }
+                else {
+                    console.log('No corner radius properties found or bindable on this node');
+                }
+            }
+            catch (bindError) {
+                console.error('Failed to bind corner radius variable:', bindError);
+            }
+            if (!applied) {
+                throw new Error(`Cannot apply corner radius to node "${node.name}" - no applicable corner radius properties found or variable binding failed.`);
+            }
+        }
+        else {
+            throw new Error(`Cannot apply corner radius to node type "${node.type}". Only frames, rectangles, and ellipses support corner radius.`);
+        }
+    }
+    catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        figma.notify(errorMsg, { error: true });
+        throw error;
+    }
+}
+async function applyCornerRadiusTokensToNode(cornerTokens, nodeId) {
+    var _a, _b;
+    console.log('🎯 applyCornerRadiusTokensToNode called with:', { cornerTokens, nodeId, selectedLibraryKey });
+    if (!selectedLibraryKey) {
+        throw new Error('Please select a library first.');
+    }
+    try {
+        const library = await getSavedLibrary(selectedLibraryKey);
+        if (!library) {
+            throw new Error('Selected library not found.');
+        }
+        // Get corner radius token data from stored library
+        let cornerRadiusVariables = {};
+        if (((_a = library.variables) === null || _a === void 0 ? void 0 : _a['corner-radius']) || ((_b = library.variables) === null || _b === void 0 ? void 0 : _b.cornerRadius)) {
+            cornerRadiusVariables = library.variables['corner-radius'] || library.variables.cornerRadius;
+        }
+        else if (library.variables) {
+            // Handle old structure and search through all collections for corner radius-related variables
+            for (const [collectionKey, variables] of Object.entries(library.variables)) {
+                const collectionName = collectionKey.toLowerCase();
+                // Check if this collection contains corner radius
+                if (collectionName.includes('radius') || collectionName.includes('corner') ||
+                    collectionName.includes('border-radius') || collectionName.includes('rounded')) {
+                    // Add all variables from this collection
+                    Object.assign(cornerRadiusVariables, variables);
+                }
+                else {
+                    // Check individual variable names for corner radius-related terms
+                    for (const [varName, varData] of Object.entries(variables)) {
+                        const name = varName.toLowerCase();
+                        if (name.includes('radius') || name.includes('corner') || name.includes('rounded')) {
+                            cornerRadiusVariables[varName] = varData;
+                        }
+                    }
+                }
+            }
+        }
+        console.log('Available corner radius variables:', Object.keys(cornerRadiusVariables));
+        // Get the node
+        const node = await figma.getNodeByIdAsync(nodeId);
+        if (!node) {
+            throw new Error('Node not found.');
+        }
+        // Apply corner radius based on node type
+        if (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE') {
+            const shapeNode = node;
+            let appliedCount = 0;
+            const appliedCorners = [];
+            // Map corner names to Figma property names
+            const cornerPropertyMap = {
+                'topLeft': 'topLeftRadius',
+                'topRight': 'topRightRadius',
+                'bottomLeft': 'bottomLeftRadius',
+                'bottomRight': 'bottomRightRadius'
+            };
+            // Apply each corner token
+            for (const [corner, tokenName] of Object.entries(cornerTokens)) {
+                console.log(`Applying ${corner}: ${tokenName}`);
+                // Get the correct Figma property name
+                const figmaProperty = cornerPropertyMap[corner];
+                if (!figmaProperty) {
+                    console.log(`Unknown corner "${corner}", skipping`);
+                    continue;
+                }
+                // Find token data
+                let tokenData = cornerRadiusVariables[tokenName];
+                if (!tokenData || !tokenData.key) {
+                    console.log(`Token "${tokenName}" not found, skipping ${corner}`);
+                    continue;
+                }
+                try {
+                    // Import the variable
+                    const importedVariable = await figma.variables.importVariableByKeyAsync(tokenData.key);
+                    console.log(`✅ Successfully imported variable: "${importedVariable.name}" for ${corner}`);
+                    // Apply to the specific corner using the correct property name
+                    shapeNode.setBoundVariable(figmaProperty, importedVariable);
+                    appliedCount++;
+                    appliedCorners.push(corner);
+                    console.log(`✅ Successfully bound ${figmaProperty} to variable`);
+                }
+                catch (error) {
+                    console.error(`Failed to apply ${corner}:`, error);
+                }
+            }
+            if (appliedCount > 0) {
+                figma.notify(`Applied corner radius tokens to ${appliedCount} corner${appliedCount > 1 ? 's' : ''} of "${shapeNode.name}".`);
+            }
+            else {
+                throw new Error(`Cannot apply corner radius tokens to node "${node.name}" - no tokens were successfully applied.`);
+            }
+        }
+        else {
+            throw new Error(`Cannot apply corner radius to node type "${node.type}". Only frames, rectangles, and ellipses support corner radius.`);
+        }
+    }
+    catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        figma.notify(errorMsg, { error: true });
+        throw error;
+    }
+}
+async function applyHardcodedCornerRadius(nodeId, corner, value) {
+    console.log('🎯 applyHardcodedCornerRadius called with:', { nodeId, corner, value });
+    try {
+        // Get the node
+        const node = await figma.getNodeByIdAsync(nodeId);
+        if (!node) {
+            throw new Error('Node not found.');
+        }
+        // Apply corner radius based on node type
+        if (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE') {
+            const shapeNode = node;
+            // Map corner names to Figma property names
+            const cornerPropertyMap = {
+                'topLeft': 'topLeftRadius',
+                'topRight': 'topRightRadius',
+                'bottomLeft': 'bottomLeftRadius',
+                'bottomRight': 'bottomRightRadius'
+            };
+            // Get the correct Figma property name
+            const figmaProperty = cornerPropertyMap[corner];
+            if (!figmaProperty) {
+                throw new Error(`Unknown corner "${corner}"`);
+            }
+            // Apply the hardcoded value
+            shapeNode[figmaProperty] = value;
+            console.log(`✅ Successfully set ${figmaProperty} to ${value} on "${shapeNode.name}"`);
+            figma.notify(`Set ${corner} corner radius to ${value} on "${shapeNode.name}".`);
+        }
+        else {
+            throw new Error(`Cannot apply corner radius to node type "${node.type}". Only frames, rectangles, and ellipses support corner radius.`);
+        }
+    }
+    catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        figma.notify(errorMsg, { error: true });
+        throw error;
+    }
+}
+async function applyColorTokenToNode(tokenName, nodeId) {
+    var _a, _b;
+    console.log('🎯 applyColorTokenToNode called with:', { tokenName, nodeId, selectedLibraryKey });
+    if (!selectedLibraryKey) {
+        throw new Error('Please select a library first.');
+    }
+    try {
+        const library = await getSavedLibrary(selectedLibraryKey);
+        if (!library) {
+            throw new Error('Selected library not found.');
+        }
+        // Get color token data from stored library
+        let colorVariables = {};
+        if (((_a = library.variables) === null || _a === void 0 ? void 0 : _a.colors) || ((_b = library.variables) === null || _b === void 0 ? void 0 : _b.color)) {
+            colorVariables = library.variables.colors || library.variables.color;
+        }
+        else if (library.variables) {
+            // Handle old structure and search through all collections for color-related variables
+            for (const [collectionKey, variables] of Object.entries(library.variables)) {
+                const collectionName = collectionKey.toLowerCase();
+                // Check if this collection contains colors
+                if (collectionName.includes('color') || collectionName.includes('colour') ||
+                    collectionName === 'colors' || collectionName === 'colours') {
+                    // Add all variables from this collection
+                    Object.assign(colorVariables, variables);
+                }
+                else {
+                    // Check individual variable names for color-related terms
+                    for (const [varName, varData] of Object.entries(variables)) {
+                        const name = varName.toLowerCase();
+                        if (name.includes('color') || name.includes('colour')) {
+                            colorVariables[varName] = varData;
+                        }
+                    }
+                }
+            }
+        }
+        console.log(`Looking for color token: "${tokenName}"`);
+        console.log('Available color variables:', Object.keys(colorVariables));
+        let tokenData = colorVariables[tokenName];
+        // Try common variations if not found
+        if (!tokenData || !tokenData.key) {
+            const possibleKeys = [
+                tokenName,
+                `color-${tokenName}`,
+                `${tokenName}-color`,
+                `colors/${tokenName}`,
+                `color/${tokenName}`
+            ];
+            for (const key of possibleKeys) {
+                if (colorVariables[key] && colorVariables[key].key) {
+                    console.log(`Found color token with key: "${key}"`);
+                    tokenData = colorVariables[key];
+                    break;
+                }
+            }
+            // Try finding by variable name
+            if (!tokenData || !tokenData.key) {
+                for (const [key, data] of Object.entries(colorVariables)) {
+                    if (data && data.name && (data.name === tokenName ||
+                        data.name.endsWith(`-${tokenName}`) ||
+                        data.name.endsWith(`/${tokenName}`) ||
+                        data.name.includes(tokenName))) {
+                        console.log(`Found color token by name match: "${key}" -> "${data.name}"`);
+                        tokenData = data;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!tokenData || !tokenData.key) {
+            const availableTokens = Object.keys(colorVariables).join(', ');
+            throw new Error(`Color token "${tokenName}" not found in library. Available tokens: ${availableTokens}`);
+        }
+        console.log(`Found tokenData:`, { name: tokenData.name, key: tokenData.key, collection: tokenData.collection });
+        // Import the variable using the proper Team Library API
+        let importedVariable;
+        try {
+            // Try to import by key directly if we have it
+            if (tokenData.key) {
+                console.log(`🔄 Importing color variable by key: ${tokenData.key}`);
+                importedVariable = await figma.variables.importVariableByKeyAsync(tokenData.key);
+                console.log(`✅ Successfully imported color variable: "${importedVariable.name}" (ID: ${importedVariable.id})`);
+            }
+            else {
+                // Fallback: use the helper function to find and import by name
+                console.log(`🔄 Importing color variable by name using Team Library API: ${tokenData.name}`);
+                importedVariable = await ensureVariableImportedByName(c => c.name.toLowerCase().includes('color') || c.name.toLowerCase().includes('colour'), tokenData.name, 'COLOR');
+                console.log(`✅ Successfully imported color variable via Team Library: "${importedVariable.name}" (ID: ${importedVariable.id})`);
+            }
+        }
+        catch (importError) {
+            console.error('❌ Failed to import color variable:', importError);
+            throw new Error(`Cannot import color token "${tokenName}". Please ensure the design system library is enabled in the Variables panel. Error: ${importError}`);
+        }
+        // Get the node and apply the color
+        const node = await figma.getNodeByIdAsync(nodeId);
+        if (!node) {
+            throw new Error('Node not found.');
+        }
+        // Apply color based on node type and properties
+        let applied = false;
+        try {
+            // Try to bind to fill color (most common)
+            if ('fills' in node && Array.isArray(node.fills) && node.fills.length > 0) {
+                const nodeWithFills = node;
+                console.log(`🔗 Binding variable to fill color`);
+                // Clone the fills array and bind variable to the first paint
+                const newFills = [...nodeWithFills.fills];
+                if (newFills[0] && newFills[0].type === 'SOLID') {
+                    // Create a new paint with the variable bound using proper VariableAlias structure
+                    const newPaint = Object.assign(Object.assign({}, newFills[0]), { boundVariables: {
+                            color: {
+                                type: 'VARIABLE_ALIAS',
+                                id: importedVariable.id
+                            }
+                        } });
+                    newFills[0] = newPaint;
+                    nodeWithFills.fills = newFills;
+                    figma.notify(`Applied color token "${tokenName}" as fill to "${node.name}".`);
+                    applied = true;
+                }
+            }
+        }
+        catch (fillError) {
+            console.error('Failed to bind variable to fill:', fillError);
+            // Fallback: try stroke color
+            try {
+                if ('strokes' in node && Array.isArray(node.strokes) && node.strokes.length > 0) {
+                    const nodeWithStrokes = node;
+                    console.log(`🔗 Binding variable to stroke color`);
+                    // Clone the strokes array and bind variable to the first paint
+                    const newStrokes = [...nodeWithStrokes.strokes];
+                    if (newStrokes[0] && newStrokes[0].type === 'SOLID') {
+                        // Create a new paint with the variable bound using proper VariableAlias structure
+                        const newPaint = Object.assign(Object.assign({}, newStrokes[0]), { boundVariables: {
+                                color: {
+                                    type: 'VARIABLE_ALIAS',
+                                    id: importedVariable.id
+                                }
+                            } });
+                        newStrokes[0] = newPaint;
+                        nodeWithStrokes.strokes = newStrokes;
+                        figma.notify(`Applied color token "${tokenName}" as stroke to "${node.name}".`);
+                        applied = true;
+                    }
+                }
+            }
+            catch (strokeError) {
+                console.error('Failed to bind variable to stroke:', strokeError);
+            }
+        }
+        if (!applied) {
+            throw new Error(`Cannot apply color to node "${node.name}" - no applicable color properties found or variable binding failed.`);
+        }
+    }
+    catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        figma.notify(errorMsg, { error: true });
+        throw error;
+    }
+}
 async function runValidation(target, library, options, targetName) {
     const results = [];
     const visitedNodes = new Set(); // Prevent infinite recursion
@@ -708,7 +1154,7 @@ async function runValidation(target, library, options, targetName) {
                             console.log(`Adding padding issue for "${containerNode.name}"`);
                             results.push({
                                 type: 'spacing',
-                                issue: `Hardcoded padding (${paddingValue}px) - not using design token`,
+                                issue: `Hardcoded padding (${paddingValue}px)`,
                                 node: {
                                     id: containerNode.id,
                                     name: containerNode.name
@@ -736,7 +1182,7 @@ async function runValidation(target, library, options, targetName) {
                             console.log(`Adding gap issue for "${containerNode.name}"`);
                             results.push({
                                 type: 'spacing',
-                                issue: `Hardcoded gap (${gapValue}px) - not using design token`,
+                                issue: `Hardcoded gap (${gapValue}px)`,
                                 node: {
                                     id: containerNode.id,
                                     name: containerNode.name
@@ -753,6 +1199,160 @@ async function runValidation(target, library, options, targetName) {
                 }
                 catch (error) {
                     console.log(`Error checking gap for "${containerNode.name}":`, error);
+                }
+            }
+            // Corner radius validation
+            if (options.cornerRadius && (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE')) {
+                const shapeNode = node;
+                console.log(`Checking corner radius for node: "${shapeNode.name}" (${shapeNode.type})`);
+                try {
+                    // Check all individual corner radius properties
+                    const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
+                    const cornerIssues = [];
+                    const cornerValues = {};
+                    for (const corner of corners) {
+                        if (corner in shapeNode) {
+                            const radiusValue = shapeNode[corner];
+                            const boundVariables = shapeNode.boundVariables;
+                            const isCornerBound = boundVariables && boundVariables[corner] !== undefined && boundVariables[corner] !== null;
+                            // Always include the corner value and token status in cornerValues (for UI display)
+                            if (typeof radiusValue === 'number' && radiusValue >= 0) {
+                                cornerValues[corner] = {
+                                    value: radiusValue,
+                                    hasToken: isCornerBound // Only true if actually bound to a token
+                                };
+                            }
+                            else {
+                                cornerValues[corner] = {
+                                    value: null,
+                                    hasToken: false
+                                };
+                            }
+                            // Only add to issues if it has a value but is not bound to a token
+                            if (typeof radiusValue === 'number' && radiusValue > 0 && !isCornerBound) {
+                                console.log(`Found unbound corner radius: ${corner} = ${radiusValue}px on "${shapeNode.name}"`);
+                                cornerIssues.push({
+                                    corner: corner,
+                                    value: radiusValue
+                                });
+                            }
+                        }
+                    }
+                    // If we found corner radius issues, create a single consolidated result
+                    if (cornerIssues.length > 0) {
+                        console.log(`Adding consolidated corner radius issue for "${shapeNode.name}" (ID: ${shapeNode.id}) with ${cornerIssues.length} corners`);
+                        console.log(`Corner issues:`, cornerIssues);
+                        console.log(`All corner values:`, cornerValues);
+                        results.push({
+                            type: 'corner-radius',
+                            issue: `Hardcoded corner radius (${cornerIssues.length} corner${cornerIssues.length > 1 ? 's' : ''})`,
+                            node: {
+                                id: shapeNode.id,
+                                name: shapeNode.name
+                            },
+                            frameName: shapeNode.name,
+                            nodeType: 'CORNER_RADIUS',
+                            cornerValues: cornerValues,
+                            cornerCount: cornerIssues.length
+                        });
+                    }
+                }
+                catch (error) {
+                    console.log(`Error checking corner radius for "${shapeNode.name}":`, error);
+                }
+            }
+            // Color validation
+            if (options.colors) {
+                console.log(`Checking colors for node: "${node.name}" (${node.type})`);
+                try {
+                    // Check fill colors for nodes that support fills (excluding TEXT nodes - they're handled separately)
+                    if ('fills' in node && Array.isArray(node.fills) && node.fills.length > 0 && node.type !== 'TEXT') {
+                        const nodeWithFills = node;
+                        for (let i = 0; i < nodeWithFills.fills.length; i++) {
+                            const fill = nodeWithFills.fills[i];
+                            if (fill && fill.type === 'SOLID' && fill.visible !== false) {
+                                // Check if this fill is bound to a variable
+                                const boundVariables = nodeWithFills.boundVariables;
+                                const fillBoundVariable = boundVariables && boundVariables.fills && boundVariables.fills[i];
+                                if (!fillBoundVariable) {
+                                    console.log(`Adding fill color issue for "${node.name}"`);
+                                    results.push({
+                                        type: 'color',
+                                        issue: `Hardcoded fill color`,
+                                        node: {
+                                            id: node.id,
+                                            name: node.name
+                                        },
+                                        frameName: node.name,
+                                        nodeType: 'COLOR',
+                                        property: 'fill'
+                                    });
+                                }
+                                else {
+                                    console.log(`Fill color is properly bound to token for "${node.name}"`);
+                                }
+                            }
+                        }
+                    }
+                    // Check stroke colors for nodes that support strokes
+                    if ('strokes' in node && Array.isArray(node.strokes) && node.strokes.length > 0) {
+                        const nodeWithStrokes = node;
+                        for (let i = 0; i < nodeWithStrokes.strokes.length; i++) {
+                            const stroke = nodeWithStrokes.strokes[i];
+                            if (stroke && stroke.type === 'SOLID' && stroke.visible !== false) {
+                                // Check if this stroke is bound to a variable
+                                const boundVariables = nodeWithStrokes.boundVariables;
+                                const strokeBoundVariable = boundVariables && boundVariables.strokes && boundVariables.strokes[i];
+                                if (!strokeBoundVariable) {
+                                    console.log(`Adding stroke color issue for "${node.name}"`);
+                                    results.push({
+                                        type: 'color',
+                                        issue: `Hardcoded stroke color`,
+                                        node: {
+                                            id: node.id,
+                                            name: node.name
+                                        },
+                                        frameName: node.name,
+                                        nodeType: 'COLOR',
+                                        property: 'stroke'
+                                    });
+                                }
+                                else {
+                                    console.log(`Stroke color is properly bound to token for "${node.name}"`);
+                                }
+                            }
+                        }
+                    }
+                    // Check text color for text nodes
+                    if (node.type === 'TEXT') {
+                        const textNode = node;
+                        // Check if text color is bound to a variable
+                        const boundVariables = textNode.boundVariables;
+                        const textColorBound = boundVariables && boundVariables.fills;
+                        if (!textColorBound && textNode.fills && Array.isArray(textNode.fills) && textNode.fills.length > 0) {
+                            const fill = textNode.fills[0];
+                            if (fill && fill.type === 'SOLID' && fill.visible !== false) {
+                                console.log(`Adding text color issue for "${node.name}"`);
+                                results.push({
+                                    type: 'color',
+                                    issue: `Hardcoded fill color - not using design token`,
+                                    node: {
+                                        id: node.id,
+                                        name: node.name
+                                    },
+                                    frameName: node.name,
+                                    nodeType: 'COLOR',
+                                    property: 'fill'
+                                });
+                            }
+                        }
+                        else if (textColorBound) {
+                            console.log(`Text color is properly bound to token for "${node.name}"`);
+                        }
+                    }
+                }
+                catch (error) {
+                    console.log(`Error checking colors for "${node.name}":`, error);
                 }
             }
             // Recursively check children with safety checks
@@ -791,6 +1391,14 @@ async function runValidation(target, library, options, targetName) {
             traverseNode(target, displayName);
         }
         console.log(`Validation complete. Found ${results.length} issues after checking ${nodeCount} nodes`);
+        // Debug: Log corner radius results
+        const cornerRadiusResults = results.filter(r => r.type === 'corner-radius');
+        console.log(`Corner radius results (${cornerRadiusResults.length}):`, cornerRadiusResults.map(r => ({
+            frameName: r.frameName,
+            nodeId: r.node.id,
+            cornerCount: r.cornerCount,
+            cornerValues: r.cornerValues
+        })));
         return results;
     }
     catch (error) {
@@ -828,6 +1436,22 @@ figma.ui.onmessage = async (msg) => {
             console.log('→ Selection screen (no library selected)');
         }
         console.log(`Sending UI mode: ${mode}`);
+        // Resize based on mode
+        if (mode === 'export') {
+            setScreenSize('EXPORT_SCREEN');
+        }
+        else if (mode === 'link') {
+            setScreenSize('LINK_SCREEN');
+        }
+        else if (mode === 'selection') {
+            setScreenSize('SELECTION_SCREEN');
+        }
+        else if (mode === 'home') {
+            setScreenSize('HOME_SCREEN');
+        }
+        else if (mode === 'export-instructions') {
+            setScreenSize('EXPORT_INSTRUCTIONS_SCREEN');
+        }
         figma.ui.postMessage({
             type: 'ui-mode',
             mode: mode,
@@ -856,6 +1480,9 @@ figma.ui.onmessage = async (msg) => {
             setScreenSize('EXPORT_INSTRUCTIONS_SCREEN');
             await setStatus(4);
         }
+        else if (msg.mode === 'export-confirmation') {
+            setScreenSize('EXPORT_CONFIRMATION_SCREEN');
+        }
         else if (msg.mode === 'validation-results') {
             setScreenSize('VALIDATION_RESULTS_SCREEN');
         }
@@ -881,7 +1508,7 @@ figma.ui.onmessage = async (msg) => {
                     generatedAt: lib.generatedAt,
                     count: Object.keys(lib.items).length,
                     tokenCounts: tokenCounts,
-                    displayName: `${lib.libraryName} (${tokenCounts.textStyles} Text Styles, ${tokenCounts.colors} Colors, ${tokenCounts.spacing} Spacing, ${tokenCounts.cornerRadius} Corner Radius, ${tokenCounts.layerStyles} Layer Styles)`
+                    displayName: `<strong>${lib.libraryName}</strong><br>(${tokenCounts.textStyles} Text Styles, ${tokenCounts.colors} Colors, ${tokenCounts.spacing} Spacing, ${tokenCounts.cornerRadius} Corner Radius, ${tokenCounts.layerStyles} Layer Styles)`
                 };
             })
         });
@@ -1021,6 +1648,136 @@ figma.ui.onmessage = async (msg) => {
             }
             else {
                 throw new Error('Node ID is required for spacing token application.');
+            }
+        }
+        catch (e) {
+            figma.ui.postMessage({
+                type: 'applied',
+                ok: false,
+                error: String(e),
+                nodeId: msg.nodeId,
+                styleName: msg.tokenName
+            });
+        }
+    }
+    else if (msg.type === 'apply-corner-radius-token') {
+        console.log('🔧 Received apply-corner-radius-token message:', msg);
+        try {
+            const tokenName = msg.tokenName;
+            console.log('Corner radius token name:', tokenName);
+            if (!tokenName) {
+                throw new Error('Token name is required.');
+            }
+            if (msg.nodeId) {
+                // Apply corner radius token to specific node
+                await applyCornerRadiusTokenToNode(tokenName, msg.nodeId);
+                figma.ui.postMessage({
+                    type: 'applied',
+                    ok: true,
+                    nodeId: msg.nodeId,
+                    styleName: tokenName, // Use tokenName as styleName for consistency with UI
+                    targetType: 'node'
+                });
+            }
+            else {
+                throw new Error('Node ID is required for corner radius token application.');
+            }
+        }
+        catch (e) {
+            figma.ui.postMessage({
+                type: 'applied',
+                ok: false,
+                error: String(e),
+                nodeId: msg.nodeId,
+                styleName: msg.tokenName
+            });
+        }
+    }
+    else if (msg.type === 'apply-corner-radius-tokens') {
+        console.log('🔧 Received apply-corner-radius-tokens message:', msg);
+        try {
+            const cornerTokens = msg.cornerTokens;
+            console.log('Corner radius tokens:', cornerTokens);
+            if (!cornerTokens || Object.keys(cornerTokens).length === 0) {
+                throw new Error('Corner tokens are required.');
+            }
+            if (msg.nodeId) {
+                // Apply multiple corner radius tokens to specific node
+                await applyCornerRadiusTokensToNode(cornerTokens, msg.nodeId);
+                figma.ui.postMessage({
+                    type: 'applied',
+                    ok: true,
+                    nodeId: msg.nodeId,
+                    styleName: Object.keys(cornerTokens).join(', '), // Show which corners were updated
+                    targetType: 'node',
+                    appliedCorners: cornerTokens, // Send the applied corner tokens for UI update
+                    isCornerRadius: true
+                });
+            }
+            else {
+                throw new Error('Node ID is required for corner radius tokens application.');
+            }
+        }
+        catch (e) {
+            figma.ui.postMessage({
+                type: 'applied',
+                ok: false,
+                error: String(e),
+                nodeId: msg.nodeId,
+                styleName: 'corner radius tokens'
+            });
+        }
+    }
+    else if (msg.type === 'apply-hardcoded-corner-radius') {
+        console.log('🔧 Received apply-hardcoded-corner-radius message:', msg);
+        try {
+            const { nodeId, corner, value } = msg;
+            console.log('Applying hardcoded corner radius:', { nodeId, corner, value });
+            if (!nodeId || !corner || value === undefined) {
+                throw new Error('Node ID, corner, and value are required.');
+            }
+            // Apply hardcoded corner radius value to specific corner
+            await applyHardcodedCornerRadius(nodeId, corner, value);
+            figma.ui.postMessage({
+                type: 'hardcoded-applied',
+                ok: true,
+                nodeId: nodeId,
+                corner: corner,
+                value: value,
+                targetType: 'node'
+            });
+        }
+        catch (e) {
+            figma.ui.postMessage({
+                type: 'applied',
+                ok: false,
+                error: String(e),
+                nodeId: msg.nodeId,
+                styleName: 'hardcoded corner radius'
+            });
+        }
+    }
+    else if (msg.type === 'apply-color-token') {
+        console.log('🔧 Received apply-color-token message:', msg);
+        try {
+            const tokenName = msg.tokenName;
+            console.log('Color token name:', tokenName);
+            if (!tokenName) {
+                throw new Error('Token name is required.');
+            }
+            if (msg.nodeId) {
+                // Apply color token to specific node
+                await applyColorTokenToNode(tokenName, msg.nodeId);
+                figma.ui.postMessage({
+                    type: 'applied',
+                    ok: true,
+                    nodeId: msg.nodeId,
+                    styleName: tokenName, // Use tokenName as styleName for consistency with UI
+                    targetType: 'node'
+                });
+            }
+            else {
+                throw new Error('Node ID is required for color token application.');
             }
         }
         catch (e) {
