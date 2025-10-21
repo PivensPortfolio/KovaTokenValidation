@@ -17,7 +17,7 @@ type SavedLibrary = {
 };
 
 interface PluginMessage {
-  type: 'get-ui-mode' | 'switch-mode' | 'export-keys' | 'get-saved-libraries' | 'select-library' | 'apply-text-style' | 'apply-spacing-token' | 'apply-corner-radius-token' | 'apply-corner-radius-tokens' | 'apply-hardcoded-corner-radius' | 'apply-color-token' | 'create-text-style' | 'resize-ui' | 'clear-all-libraries' | 'close-plugin' | 'user-going-to-design-system' | 'cancel-export-instructions' | 'get-text-styles' | 'get-spacing-variables' | 'get-colors' | 'get-corner-radius' | 'run-validation' | 'back-to-validation' | 'select-node' | 'selection-changed' | 'enable-selection-tracking' | 'disable-selection-tracking' | 'minimize-and-position' | 'validate-issue-resolution';
+  type: 'get-ui-mode' | 'switch-mode' | 'export-keys' | 'get-saved-libraries' | 'select-library' | 'apply-text-style' | 'apply-spacing-token' | 'apply-corner-radius-token' | 'apply-corner-radius-tokens' | 'apply-hardcoded-corner-radius' | 'apply-color-token' | 'create-text-style' | 'resize-ui' | 'clear-all-libraries' | 'close-plugin' | 'user-going-to-design-system' | 'cancel-export-instructions' | 'get-text-styles' | 'get-spacing-variables' | 'get-colors' | 'get-corner-radius' | 'run-validation' | 'back-to-validation' | 'select-node' | 'selection-changed' | 'enable-selection-tracking' | 'disable-selection-tracking' | 'minimize-and-position' | 'validate-issue-resolution' | 'get-node-name' | 'get-current-node-values';
   libraryKey?: string;
   styleName?: string;
   tokenName?: string;
@@ -1244,7 +1244,7 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
   const results: any[] = [];
   const visitedNodes = new Set<string>(); // Prevent infinite recursion
   let nodeCount = 0;
-  const MAX_NODES = 1000; // Prevent processing too many nodes
+  const MAX_NODES = 5000; // Prevent processing too many nodes (increased for complex designs)
 
   // Helper function to check if spacing property is bound to a design system variable
   function isSpacingBoundToToken(node: FrameNode, property: string): boolean {
@@ -1640,22 +1640,48 @@ async function handleRunValidation(msg: PluginMessage): Promise<void> {
 
   let allValidationResults = await Promise.race([validationPromise, timeoutPromise]) as any[];
   
+  // Helper function to check if a node is a descendant of the selected node
+  async function isNodeDescendantOf(nodeId: string | undefined, ancestorId: string): Promise<boolean> {
+    if (!nodeId) return false;
+    try {
+      const node = await getNodeById(nodeId);
+      let current = node.parent;
+      
+      while (current) {
+        if (current.id === ancestorId) {
+          return true;
+        }
+        current = current.parent;
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
+
   // Filter results based on display scope
   let displayedResults = allValidationResults;
   
   if (displayScope === 'node' && selectedNodeId) {
-    // Show only issues for the specific selected node
-    displayedResults = allValidationResults.filter(result => result.node?.id === selectedNodeId);
-    logOperation('Filtered validation results for selected node', { selectedNodeId, totalResults: allValidationResults.length, displayedResults: displayedResults.length });
+    // Show issues for the selected node AND all its nested children
+    const filteredResults = [];
+    for (const result of allValidationResults) {
+      if (result.node?.id === selectedNodeId || await isNodeDescendantOf(result.node?.id, selectedNodeId)) {
+        filteredResults.push(result);
+      }
+    }
+    displayedResults = filteredResults;
+    logOperation('Filtered validation results for selected node and its children', { selectedNodeId, totalResults: allValidationResults.length, displayedResults: displayedResults.length });
   } else if (displayScope === 'frame' && selectedNodeId) {
-    // Show only issues within the selected frame
-    displayedResults = allValidationResults.filter(result => {
-      if (!result.node?.id) return false;
-      // Check if the result node is within the selected frame
-      // This would require traversing up the node hierarchy, but for now we'll use a simpler approach
-      return result.frameName === targetName.replace('frame "', '').replace('"', '');
-    });
-    logOperation('Filtered validation results for selected frame', { selectedNodeId, totalResults: allValidationResults.length, displayedResults: displayedResults.length });
+    // Show issues for the selected frame AND all its nested children
+    const filteredResults = [];
+    for (const result of allValidationResults) {
+      if (result.node?.id === selectedNodeId || await isNodeDescendantOf(result.node?.id, selectedNodeId)) {
+        filteredResults.push(result);
+      }
+    }
+    displayedResults = filteredResults;
+    logOperation('Filtered validation results for selected frame and its children', { selectedNodeId, totalResults: allValidationResults.length, displayedResults: displayedResults.length });
   }
   // For 'page' scope, show all results (no filtering needed)
 
@@ -1684,6 +1710,61 @@ async function handleSelectNode(msg: PluginMessage): Promise<void> {
   } catch (error) {
     logError('Error selecting node', error);
     notifyError('Error selecting node');
+  }
+}
+
+async function handleGetCurrentNodeValues(msg: PluginMessage): Promise<void> {
+  if (!msg.nodeId) {
+    throw new Error('Node ID is required');
+  }
+
+  try {
+    const node = await getNodeById(msg.nodeId);
+    const values: any = {};
+
+    // Get spacing values
+    if ('itemSpacing' in node || 'paddingLeft' in node) {
+      values.spacing = {};
+      
+      if ('itemSpacing' in node) {
+        values.spacing.itemSpacing = (node as any).itemSpacing;
+      }
+      
+      if ('paddingLeft' in node) {
+        values.spacing.paddingLeft = (node as any).paddingLeft;
+        values.spacing.paddingRight = (node as any).paddingRight;
+        values.spacing.paddingTop = (node as any).paddingTop;
+        values.spacing.paddingBottom = (node as any).paddingBottom;
+      }
+    }
+
+    // Get corner radius values
+    if ('topLeftRadius' in node) {
+      values.cornerRadius = {};
+      const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'] as const;
+      
+      corners.forEach(corner => {
+        if (corner in node) {
+          values.cornerRadius[corner] = (node as any)[corner];
+        }
+      });
+    }
+
+    console.log('🔄 Sending current node values:', msg.nodeId, values);
+
+    figma.ui.postMessage({
+      type: 'current-node-values-response',
+      nodeId: msg.nodeId,
+      values: values
+    });
+
+  } catch (error) {
+    console.error('Error getting current node values:', error);
+    figma.ui.postMessage({
+      type: 'current-node-values-response',
+      nodeId: msg.nodeId,
+      values: {}
+    });
   }
 }
 
@@ -2230,6 +2311,9 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
   } else if (msg.type === 'get-node-name') {
     // Get node name for out-of-scope modal
     try {
+      if (!msg.nodeId) {
+        throw new Error('Node ID is required');
+      }
       const node = await figma.getNodeByIdAsync(msg.nodeId);
       const nodeName = node?.name || 'Unknown Asset';
       
@@ -2246,6 +2330,8 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
         nodeName: 'Unknown Asset'
       });
     }
+  } else if (msg.type === 'get-current-node-values') {
+    await safeMessageHandler(handleGetCurrentNodeValues, msg, 'get-current-node-values');
   } else if (msg.type === 'close-plugin') {
     figma.closePlugin();
   }
