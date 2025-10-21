@@ -1,31 +1,10 @@
-// Main plugin: uses saved library keys to apply external text styles
+// ============================================================================
+// KOVA TOKEN VALIDATOR - MAIN PLUGIN
+// ============================================================================
 
-// Start with fixed loader size
-figma.showUI(__html__, { width: 380, height: 530 });
-
-// UI sizing functions for different states
-function resizeUI(width: number, height: number): void {
-  figma.ui.resize(width, height);
-}
-
-// UI sizes for different screens
-const UISizes = {
-  EXPORT_SCREEN: { width: 380, height: 530 },
-  LINK_SCREEN: { width: 380, height: 530 },
-  SELECTION_SCREEN: { width: 400, height: 400 },
-  HOME_SCREEN: { width: 400, height: 900 },
-  EXPORT_INSTRUCTIONS_SCREEN: { width: 400, height: 500 },
-  EXPORT_CONFIRMATION_SCREEN: { width: 400, height: 550 },
-  VALIDATION_RESULTS_SCREEN: { width: 1100, height: 700 },
-  VALIDATION_RESULTS_COLLAPSED: { width: 1100, height: 180 },
-  CUSTOM: (width: number, height: number) => ({ width, height })
-} as const;
-
-function setScreenSize(screen: keyof typeof UISizes): void {
-  if (screen === 'CUSTOM') return;
-  const size = UISizes[screen];
-  resizeUI(size.width, size.height);
-}
+// ============================================================================
+// TYPES AND INTERFACES
+// ============================================================================
 
 type SavedLibrary = {
   libraryName: string;
@@ -37,21 +16,8 @@ type SavedLibrary = {
   variables?: Record<string, any>; // Variable data
 };
 
-// Status values (sequential flow):
-// 0 = No JSON file (no libraries saved) - Link Screen
-// 1 = User went to design system file - Export Screen
-// 2 = Has JSON file, none selected - Selection Screen  
-// 3 = JSON file selected, ready to validate - Home Screen
-
-let selectedLibraryKey: string | null = null;
-
-// Reset selectedLibraryKey on plugin start to ensure clean state
-selectedLibraryKey = null;
-
-// UI will be sized appropriately when initialized
-
 interface PluginMessage {
-  type: 'get-ui-mode' | 'switch-mode' | 'export-keys' | 'get-saved-libraries' | 'select-library' | 'apply-text-style' | 'apply-spacing-token' | 'apply-corner-radius-token' | 'apply-corner-radius-tokens' | 'apply-hardcoded-corner-radius' | 'apply-color-token' | 'create-text-style' | 'resize-ui' | 'clear-all-libraries' | 'close-plugin' | 'user-going-to-design-system' | 'cancel-export-instructions' | 'get-text-styles' | 'get-spacing-variables' | 'get-colors' | 'get-corner-radius' | 'run-validation' | 'back-to-validation' | 'select-node' | 'selection-changed' | 'enable-selection-tracking' | 'disable-selection-tracking';
+  type: 'get-ui-mode' | 'switch-mode' | 'export-keys' | 'get-saved-libraries' | 'select-library' | 'apply-text-style' | 'apply-spacing-token' | 'apply-corner-radius-token' | 'apply-corner-radius-tokens' | 'apply-hardcoded-corner-radius' | 'apply-color-token' | 'create-text-style' | 'resize-ui' | 'clear-all-libraries' | 'close-plugin' | 'user-going-to-design-system' | 'cancel-export-instructions' | 'get-text-styles' | 'get-spacing-variables' | 'get-colors' | 'get-corner-radius' | 'run-validation' | 'back-to-validation' | 'select-node' | 'selection-changed' | 'enable-selection-tracking' | 'disable-selection-tracking' | 'minimize-and-position' | 'validate-issue-resolution';
   libraryKey?: string;
   styleName?: string;
   tokenName?: string;
@@ -59,6 +25,11 @@ interface PluginMessage {
   corner?: string;
   value?: number;
   nodeId?: string;
+  nodeName?: string;
+  targetNodeId?: string;
+  resultType?: string;
+  issueType?: string;
+  validationId?: number;
   mode?: 'export' | 'link' | 'selection' | 'home' | 'export-instructions' | 'export-confirmation' | 'validation-results';
   width?: number;
   height?: number;
@@ -72,8 +43,326 @@ interface PluginMessage {
   options?: {
     textStyles: boolean;
     spacing: boolean;
+    cornerRadius?: boolean;
+    colors?: boolean;
+    typography?: boolean;
+    shadows?: boolean;
+    borders?: boolean;
+    opacity?: boolean;
+    sizing?: boolean;
   };
 }
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+// Plugin Status Flow:
+// 0 = No JSON file (no libraries saved) - Link Screen
+// 1 = User went to design system file - Export Screen
+// 2 = Has JSON file, none selected - Selection Screen  
+// 3 = JSON file selected, ready to validate - Home Screen
+const PLUGIN_STATUS = {
+  NO_LIBRARIES: 0,
+  EXPORT_MODE: 1,
+  SELECTION_MODE: 2,
+  READY: 3
+} as const;
+
+// UI Screen Sizes
+const UI_SIZES = {
+  EXPORT_SCREEN: { width: 380, height: 530 },
+  LINK_SCREEN: { width: 380, height: 530 },
+  SELECTION_SCREEN: { width: 400, height: 400 },
+  HOME_SCREEN: { width: 400, height: 900 },
+  EXPORT_INSTRUCTIONS_SCREEN: { width: 400, height: 500 },
+  EXPORT_CONFIRMATION_SCREEN: { width: 400, height: 550 },
+  VALIDATION_RESULTS_SCREEN: { width: 1100, height: 700 },
+  VALIDATION_RESULTS_COLLAPSED: { width: 450, height: 350 },
+  CUSTOM: (width: number, height: number) => ({ width, height })
+} as const;
+
+// ============================================================================
+// GLOBAL STATE
+// ============================================================================
+
+let selectedLibraryKey: string | null = null;
+
+// ============================================================================
+// PLUGIN INITIALIZATION
+// ============================================================================
+
+// Start with fixed loader size
+figma.showUI(__html__, { width: 380, height: 530 });
+
+// Reset selectedLibraryKey on plugin start to ensure clean state
+selectedLibraryKey = null;
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+// Error handling utilities
+function createError(message: string, context?: any): Error {
+  if (context) {
+    console.error(`Error: ${message}`, context);
+  }
+  return new Error(message);
+}
+
+function handleAsyncError(error: unknown, operation: string): string {
+  const errorMsg = error instanceof Error ? error.message : String(error);
+  console.error(`${operation} failed:`, error);
+  figma.notify(`${operation} failed: ${errorMsg}`, { error: true });
+  return errorMsg;
+}
+
+// Validation utilities
+function validateRequiredParams(params: Record<string, any>, required: string[]): void {
+  for (const param of required) {
+    if (!params[param]) {
+      throw createError(`${param} is required`);
+    }
+  }
+}
+
+function validateLibrarySelected(): void {
+  if (!selectedLibraryKey) {
+    throw createError('Please select a library first.');
+  }
+}
+
+// Node utilities
+async function getNodeById(nodeId: string): Promise<SceneNode> {
+  const node = await figma.getNodeByIdAsync(nodeId);
+  if (!node) {
+    throw createError('Node not found.');
+  }
+  return node as SceneNode;
+}
+
+function isNodeType<T extends SceneNode>(node: SceneNode, types: string[]): node is T {
+  return types.includes(node.type);
+}
+
+// Variable utilities
+async function importVariableByKey(key: string): Promise<Variable> {
+  try {
+    return await figma.variables.importVariableByKeyAsync(key);
+  } catch (error) {
+    throw createError(`Failed to import variable with key "${key}"`, error);
+  }
+}
+
+function findVariableInCollection(
+  tokenName: string,
+  variables: Record<string, any>,
+  possibleKeyPatterns?: string[]
+): any {
+  // Try exact match first
+  let tokenData = variables[tokenName];
+  if (tokenData?.key) return tokenData;
+
+  // Try common variations
+  const defaultPatterns = [
+    tokenName,
+    `${tokenName}px`,
+    `${tokenName}-token`,
+    `token-${tokenName}`
+  ];
+
+  const patterns = possibleKeyPatterns || defaultPatterns;
+
+  for (const pattern of patterns) {
+    if (variables[pattern]?.key) {
+      return variables[pattern];
+    }
+  }
+
+  // Try finding by variable name
+  for (const [key, data] of Object.entries(variables)) {
+    if (data?.name && (
+      data.name === tokenName ||
+      data.name.endsWith(`-${tokenName}`) ||
+      data.name.endsWith(`/${tokenName}`) ||
+      data.name.includes(tokenName)
+    )) {
+      return data;
+    }
+  }
+
+  return null;
+}
+
+// Collection utilities
+function getVariablesFromLibrary(
+  library: SavedLibrary,
+  collectionNames: string[]
+): Record<string, any> {
+  let variables: Record<string, any> = {};
+
+  if (!library.variables) return variables;
+
+  // Try new structure first (organized by collection)
+  for (const collectionName of collectionNames) {
+    if (library.variables[collectionName]) {
+      Object.assign(variables, library.variables[collectionName]);
+    }
+  }
+
+  // If no variables found, try old structure
+  if (Object.keys(variables).length === 0) {
+    for (const [key, value] of Object.entries(library.variables)) {
+      const keyLower = key.toLowerCase();
+      if (collectionNames.some(name => keyLower.includes(name.toLowerCase()))) {
+        variables[key] = value;
+      }
+    }
+  }
+
+  return variables;
+}
+
+// UI utilities
+function notifySuccess(message: string): void {
+  figma.notify(message);
+}
+
+function notifyError(message: string): void {
+  figma.notify(message, { error: true });
+}
+
+function postMessageToUI(type: string, data: any = {}): void {
+  figma.ui.postMessage({ type, ...data });
+}
+
+// Logging utilities
+function logOperation(operation: string, data?: any): void {
+  console.log(`🎯 ${operation}`, data || '');
+}
+
+function logSuccess(operation: string, details?: string): void {
+  console.log(`✅ ${operation}${details ? `: ${details}` : ''}`);
+}
+
+function logError(operation: string, error: any): void {
+  console.error(`❌ ${operation}:`, error);
+}
+
+// Message handler utilities
+type MessageHandler = (msg: PluginMessage) => Promise<void> | void;
+
+async function safeMessageHandler(handler: MessageHandler, msg: PluginMessage, handlerName: string): Promise<void> {
+  try {
+    await handler(msg);
+  } catch (error) {
+    handleAsyncError(error, `Message handler: ${handlerName}`);
+  }
+}
+
+function createValidationTarget(): { targetNode: PageNode; targetName: string; selectedNodeId?: string; displayScope: 'page' | 'frame' | 'node' } {
+  const selection = figma.currentPage.selection;
+
+  // Always validate the entire page for comprehensive results
+  // But track what the user wants to see based on their selection
+  if (selection.length === 0) {
+    return {
+      targetNode: figma.currentPage,
+      targetName: `entire page "${figma.currentPage.name}"`,
+      displayScope: 'page'
+    };
+  }
+
+  const selectedNode = selection[0];
+  
+  if (selectedNode.type === 'FRAME') {
+    return {
+      targetNode: figma.currentPage,
+      targetName: `frame "${selectedNode.name}"`,
+      selectedNodeId: selectedNode.id,
+      displayScope: 'frame'
+    };
+  }
+
+  // For any other selected node
+  return {
+    targetNode: figma.currentPage,
+    targetName: `selected item "${selectedNode.name}"`,
+    selectedNodeId: selectedNode.id,
+    displayScope: 'node'
+  };
+}
+
+async function selectNodeById(nodeId: string): Promise<void> {
+  const node = await getNodeById(nodeId);
+  figma.currentPage.selection = [node];
+  figma.viewport.scrollAndZoomIntoView([node]);
+  notifySuccess(`Selected ${node.name}`);
+
+  postMessageToUI('selection-changed', { nodeId });
+}
+
+// Enhanced error handling for token application
+async function handleTokenApplication(
+  msg: PluginMessage,
+  tokenType: 'text-style' | 'spacing' | 'corner-radius' | 'color',
+  applyFunction: (tokenName: string, nodeId: string) => Promise<void>
+): Promise<void> {
+  try {
+    const tokenName = msg.styleName || msg.tokenName;
+    validateRequiredParams({ tokenName, nodeId: msg.nodeId }, ['tokenName', 'nodeId']);
+
+    await applyFunction(tokenName!, msg.nodeId!);
+
+    postMessageToUI('applied', {
+      ok: true,
+      nodeId: msg.nodeId,
+      styleName: tokenName,
+      targetType: 'node'
+    });
+  } catch (error) {
+    postMessageToUI('applied', {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+      nodeId: msg.nodeId,
+      styleName: msg.styleName || msg.tokenName
+    });
+  }
+}
+
+// Batch processing utility for multiple operations
+async function processBatch<T>(
+  items: T[],
+  processor: (item: T) => Promise<void>,
+  batchSize: number = 5
+): Promise<void> {
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    await Promise.all(batch.map(processor));
+
+    // Small delay between batches to prevent blocking
+    if (i + batchSize < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+  }
+}
+// ============================================================================
+// UI MANAGEMENT FUNCTIONS
+// ============================================================================
+
+function resizeUI(width: number, height: number): void {
+  figma.ui.resize(width, height);
+}
+
+function setScreenSize(screen: keyof typeof UI_SIZES): void {
+  if (screen === 'CUSTOM') return;
+  const size = UI_SIZES[screen];
+  resizeUI(size.width, size.height);
+}
+
+// ============================================================================
+// STORAGE FUNCTIONS
+// ============================================================================
 
 async function getAllSavedLibraries(): Promise<Record<string, SavedLibrary>> {
   return (await figma.clientStorage.getAsync('savedLibraries') || {}) as Record<string, SavedLibrary>;
@@ -87,6 +376,10 @@ async function clearAllSavedLibraries(): Promise<void> {
   await figma.clientStorage.setAsync('savedLibraries', {});
   figma.notify('All saved design systems have been cleared');
 }
+
+// ============================================================================
+// STATUS MANAGEMENT FUNCTIONS
+// ============================================================================
 
 async function getStatus(): Promise<number> {
   const storedStatus = await figma.clientStorage.getAsync('status') as number | null;
@@ -110,13 +403,13 @@ async function getStatus(): Promise<number> {
 
   if (libraryCount === 0) {
     console.log('No stored status, no libraries - defaulting to Status 0 (Link screen)');
-    return 0; // No libraries available
+    return PLUGIN_STATUS.NO_LIBRARIES;
   } else if (!selectedLibraryKey) {
     console.log('No stored status, has libraries, no library selected - defaulting to Status 2 (Selection screen)');
-    return 2; // Has libraries, none selected - should show selection screen
+    return PLUGIN_STATUS.SELECTION_MODE;
   } else {
     console.log('No stored status, library selected - defaulting to Status 3 (Home screen)');
-    return 3; // Library selected - should show home screen
+    return PLUGIN_STATUS.READY;
   }
 }
 
@@ -125,196 +418,134 @@ async function setStatus(status: number): Promise<void> {
   console.log(`Status: ${status}`);
 }
 
-// Function to analyze and categorize variables using Kova's detection rules
-function analyzeLibraryTokens(lib: SavedLibrary) {
-  const textStyles = Object.keys(lib.items || {}).length;
-  let colors = 0;
-  let spacing = 0;
-  let cornerRadius = 0;
-  let typography = 0;
-  let shadows = 0;
-  let borders = 0;
-  let opacity = 0;
-  let sizing = 0;
-  let breakpoints = 0;
-  let zIndex = 0;
-  let layerStyles = 0; // Note: layer styles aren't currently captured in variables
+// ============================================================================
+// TOKEN ANALYSIS FUNCTIONS
+// ============================================================================
 
-  if (lib.variables) {
-    for (const [collectionKey, variables] of Object.entries(lib.variables)) {
-      const collectionName = collectionKey.toLowerCase();
-      const variableCount = Object.keys(variables).length;
+// Token detection patterns for different categories
+const TOKEN_PATTERNS = {
+  colors: ['color', 'colour', 'colors', 'colours'],
+  spacing: ['spacing', 'space', 'gap', 'margin', 'padding'],
+  cornerRadius: ['corner', 'radius', 'border-radius'],
+  typography: ['typography', 'font-size', 'font-weight', 'line-height', 'letter-spacing'],
+  shadows: ['shadow', 'blur', 'glow', 'elevation', 'effect'],
+  borders: ['border', 'stroke', 'outline'],
+  opacity: ['opacity', 'alpha'],
+  sizing: ['size', 'width', 'height', 'dimension'],
+  breakpoints: ['breakpoint', 'screen', 'viewport'],
+  zIndex: ['z-index', 'layer', 'depth']
+} as const;
 
-      // Use Kova's precise detection rules for collection names
-      if (
-        // Colors: Contains "color", "colour", or exact match "colors"/"colours"
-        collectionName.includes('color') ||
-        collectionName.includes('colour') ||
-        collectionName === 'colors' ||
-        collectionName === 'colours'
-      ) {
-        colors += variableCount;
-      } else if (
-        // Spacing: Contains "spacing", "space", "gap", "margin", "padding"
-        collectionName.includes('spacing') ||
-        collectionName.includes('space') ||
-        collectionName.includes('gap') ||
-        collectionName.includes('margin') ||
-        collectionName.includes('padding')
-      ) {
-        spacing += variableCount;
-      } else if (
-        // Corner Radius: Contains "corner", "radius", "border", or exact matches
-        collectionName.includes('corner') ||
-        collectionName.includes('radius') ||
-        collectionName.includes('border') ||
-        collectionName === 'corner radius' ||
-        collectionName === 'border radius'
-      ) {
-        cornerRadius += variableCount;
-      } else if (
-        // Typography: Only very specific typography terms (much more restrictive)
-        collectionName.includes('typography') ||
-        collectionName.includes('font-size') ||
-        collectionName.includes('font-weight') ||
-        collectionName.includes('line-height') ||
-        collectionName.includes('letter-spacing')
-      ) {
-        typography += variableCount;
-      } else if (
-        // Shadows/Effects: Contains "shadow", "blur", "glow", "elevation"
-        collectionName.includes('shadow') ||
-        collectionName.includes('blur') ||
-        collectionName.includes('glow') ||
-        collectionName.includes('elevation') ||
-        collectionName.includes('effect')
-      ) {
-        shadows += variableCount;
-      } else if (
-        // Borders: Only border-specific terms (not corner radius)
-        (collectionName.includes('border') && !collectionName.includes('radius')) ||
-        collectionName.includes('stroke') ||
-        collectionName.includes('outline')
-      ) {
-        borders += variableCount;
-      } else if (
-        // Opacity: Contains "opacity" or "alpha"
-        collectionName.includes('opacity') ||
-        collectionName.includes('alpha')
-      ) {
-        opacity += variableCount;
-      } else if (
-        // Sizing: Contains "size", "width", "height", "dimension"
-        collectionName.includes('size') ||
-        collectionName.includes('width') ||
-        collectionName.includes('height') ||
-        collectionName.includes('dimension')
-      ) {
-        sizing += variableCount;
-      } else if (
-        // Breakpoints: Contains "breakpoint", "screen", "viewport"
-        collectionName.includes('breakpoint') ||
-        collectionName.includes('screen') ||
-        collectionName.includes('viewport')
-      ) {
-        breakpoints += variableCount;
-      } else if (
-        // Z-Index: Contains "z-index", "layer", "depth"
-        collectionName.includes('z-index') ||
-        collectionName.includes('layer') ||
-        collectionName.includes('depth')
-      ) {
-        zIndex += variableCount;
-      } else {
-        // Fallback: Check individual variable names with same precise rules
-        for (const variableName of Object.keys(variables)) {
-          const varName = variableName.toLowerCase();
+function detectTokenTypeFromCollection(collectionName: string): keyof typeof TOKEN_PATTERNS | null {
+  const name = collectionName.toLowerCase();
 
-          if (varName.includes('color') || varName.includes('colour')) {
-            colors++;
-          } else if (
-            varName.includes('spacing') ||
-            varName.includes('space') ||
-            varName.includes('gap') ||
-            varName.includes('margin') ||
-            varName.includes('padding')
-          ) {
-            spacing++;
-          } else if (
-            varName.includes('radius') ||
-            varName.includes('corner')
-          ) {
-            cornerRadius++;
-          } else if (
-            varName.includes('font-size') ||
-            varName.includes('font-weight') ||
-            varName.includes('line-height') ||
-            varName.includes('letter-spacing') ||
-            varName.includes('typography')
-          ) {
-            typography++;
-          } else if (
-            varName.includes('shadow') ||
-            varName.includes('blur') ||
-            varName.includes('glow') ||
-            varName.includes('elevation')
-          ) {
-            shadows++;
-          } else if (
-            (varName.includes('border') && !varName.includes('radius')) ||
-            varName.includes('stroke') ||
-            varName.includes('outline')
-          ) {
-            borders++;
-          } else if (varName.includes('opacity') || varName.includes('alpha')) {
-            opacity++;
-          } else if (
-            varName.includes('size') ||
-            varName.includes('width') ||
-            varName.includes('height')
-          ) {
-            sizing++;
-          } else if (
-            varName.includes('breakpoint') ||
-            varName.includes('screen')
-          ) {
-            breakpoints++;
-          } else if (varName.includes('z-index') || varName.includes('layer')) {
-            zIndex++;
-          }
-        }
+  for (const [tokenType, patterns] of Object.entries(TOKEN_PATTERNS)) {
+    if (patterns.some(pattern => {
+      if (tokenType === 'cornerRadius') {
+        return name.includes('corner') || name.includes('radius') || name === 'corner radius' || name === 'border radius';
       }
+      if (tokenType === 'borders') {
+        return (name.includes('border') && !name.includes('radius')) || name.includes('stroke') || name.includes('outline');
+      }
+      return name.includes(pattern) || name === pattern;
+    })) {
+      return tokenType as keyof typeof TOKEN_PATTERNS;
     }
   }
 
-  return {
-    textStyles,
-    colors,
-    spacing,
-    cornerRadius,
-    typography,
-    shadows,
-    borders,
-    opacity,
-    sizing,
-    breakpoints,
-    zIndex,
-    layerStyles
-  };
+  return null;
 }
 
+function detectTokenTypeFromVariable(variableName: string): keyof typeof TOKEN_PATTERNS | null {
+  const name = variableName.toLowerCase();
 
-
-async function exportLibraryKeys(): Promise<void> {
-  function normalizeName(name: string): string {
-    let n = name.replace(/\s*\/\s*/g, '/').trim();
-    n = n.replace(/^Text\s*Style[s]?\//i, '');
-    n = n.replace(/^Typography\//i, '');
-    n = n.replace(/\/{2,}/g, '/').replace(/^\/|\/$/g, '');
-    return n;
+  for (const [tokenType, patterns] of Object.entries(TOKEN_PATTERNS)) {
+    if (patterns.some(pattern => {
+      if (tokenType === 'borders') {
+        return (name.includes('border') && !name.includes('radius')) || name.includes('stroke') || name.includes('outline');
+      }
+      return name.includes(pattern);
+    })) {
+      return tokenType as keyof typeof TOKEN_PATTERNS;
+    }
   }
 
-  // Export text styles
+  return null;
+}
+
+function analyzeVariableCollection(collectionKey: string, variables: Record<string, any>) {
+  const collectionName = collectionKey.toLowerCase();
+  const variableCount = Object.keys(variables).length;
+  const counts = {
+    colors: 0, spacing: 0, cornerRadius: 0, typography: 0, shadows: 0,
+    borders: 0, opacity: 0, sizing: 0, breakpoints: 0, zIndex: 0
+  };
+
+  // Try collection-level detection first
+  const collectionType = detectTokenTypeFromCollection(collectionName);
+  if (collectionType) {
+    counts[collectionType] += variableCount;
+    return counts;
+  }
+
+  // Fallback: analyze individual variables
+  for (const variableName of Object.keys(variables)) {
+    const variableType = detectTokenTypeFromVariable(variableName);
+    if (variableType) {
+      counts[variableType]++;
+    }
+  }
+
+  return counts;
+}
+
+// Main token analysis function using Kova's detection rules
+function analyzeLibraryTokens(lib: SavedLibrary) {
+  const textStyles = Object.keys(lib.items || {}).length;
+  const totals = {
+    textStyles,
+    colors: 0,
+    spacing: 0,
+    cornerRadius: 0,
+    typography: 0,
+    shadows: 0,
+    borders: 0,
+    opacity: 0,
+    sizing: 0,
+    breakpoints: 0,
+    zIndex: 0,
+    layerStyles: 0 // Note: layer styles aren't currently captured in variables
+  };
+
+  if (lib.variables) {
+    for (const [collectionKey, variables] of Object.entries(lib.variables)) {
+      const collectionCounts = analyzeVariableCollection(collectionKey, variables);
+
+      // Add collection counts to totals
+      Object.keys(collectionCounts).forEach(key => {
+        if (key in totals) {
+          totals[key as keyof typeof totals] += collectionCounts[key as keyof typeof collectionCounts];
+        }
+      });
+    }
+  }
+
+  return totals;
+}
+
+// ============================================================================
+// DESIGN SYSTEM EXPORT FUNCTIONS
+// ============================================================================
+
+function normalizeName(name: string): string {
+  let n = name.replace(/\s*\/\s*/g, '/').trim();
+  n = n.replace(/^Text\s*Style[s]?\//i, '');
+  n = n.replace(/^Typography\//i, '');
+  n = n.replace(/\/{2,}/g, '/').replace(/^\/|\/$/g, '');
+  return n;
+}
+
+async function exportTextStyles(): Promise<Record<string, string>> {
   const styles = await figma.getLocalTextStylesAsync();
   const textStylesMap: Record<string, string> = {};
   const dups: Record<string, number> = {};
@@ -329,11 +560,13 @@ async function exportLibraryKeys(): Promise<void> {
     }
   }
 
-  // Export local variables organized by collection
+  return textStylesMap;
+}
+
+async function exportVariables(): Promise<Record<string, any>> {
   let variablesMap: Record<string, any> = {};
 
   try {
-    // Get local variables using the async API
     if (figma.variables && figma.variables.getLocalVariablesAsync) {
       const variables = await figma.variables.getLocalVariablesAsync();
       console.log(`Found ${variables.length} local variables`);
@@ -344,15 +577,13 @@ async function exportLibraryKeys(): Promise<void> {
           const collectionName = collection?.name || 'Unknown Collection';
           const collectionKey = collectionName.toLowerCase().replace(/\s+/g, '-');
 
-          // Initialize collection if it doesn't exist
           if (!variablesMap[collectionKey]) {
             variablesMap[collectionKey] = {};
           }
 
-          // Add variable to its collection - prioritize key over id for library compatibility
           variablesMap[collectionKey][variable.name] = {
-            key: variable.key, // Key is stable across publishes and required for importVariableByKeyAsync
-            id: variable.id,   // Keep ID for backward compatibility
+            key: variable.key,
+            id: variable.id,
             name: variable.name,
             collection: collectionName,
             collectionKey: collectionKey,
@@ -372,6 +603,15 @@ async function exportLibraryKeys(): Promise<void> {
     console.log('Variables export failed:', error);
   }
 
+  return variablesMap;
+}
+
+async function exportLibraryKeys(): Promise<void> {
+  // Export text styles and variables
+  const textStylesMap = await exportTextStyles();
+  const variablesMap = await exportVariables();
+
+  // Create library payload
   const libraryName = figma.root.name ?? 'Unknown Library';
   const libraryKey = figma.fileKey || `library_${Date.now()}`;
 
@@ -385,12 +625,12 @@ async function exportLibraryKeys(): Promise<void> {
     variables: variablesMap
   };
 
-  // Save to the libraries collection using the file name as key
+  // Save to storage
   const allLibraries = await getAllSavedLibraries();
   allLibraries[libraryKey] = payload;
   await figma.clientStorage.setAsync('savedLibraries', allLibraries);
 
-  // Count total variables across all collections
+  // Calculate totals and notify
   const totalVariables = Object.keys(variablesMap).reduce((total: number, collectionKey: string) => {
     return total + Object.keys(variablesMap[collectionKey]).length;
   }, 0);
@@ -398,8 +638,8 @@ async function exportLibraryKeys(): Promise<void> {
   const totalItems = Object.keys(textStylesMap).length + totalVariables;
   figma.notify(`Exported ${Object.keys(textStylesMap).length} text styles and ${totalVariables} variables from "${libraryName}"`);
 
-  // Update status to indicate export is complete
-  await setStatus(2); // Has JSON files, none selected yet
+  // Update status and notify UI
+  await setStatus(PLUGIN_STATUS.SELECTION_MODE);
 
   figma.ui.postMessage({
     type: 'keys-exported',
@@ -410,6 +650,10 @@ async function exportLibraryKeys(): Promise<void> {
     fileName: `${libraryName}.json`
   });
 }
+
+// ============================================================================
+// TEXT STYLE FUNCTIONS
+// ============================================================================
 
 async function importTextStyleByName(name: string, libraryKey: string): Promise<TextStyle> {
   const saved = await getSavedLibrary(libraryKey);
@@ -502,35 +746,38 @@ async function applyStyleToSelection(styleName: string): Promise<void> {
 }
 
 async function applyStyleToNode(styleName: string, nodeId: string): Promise<void> {
-  if (!selectedLibraryKey) {
-    throw new Error('Please select a library first.');
-  }
-
   try {
-    const style = await importTextStyleByName(styleName, selectedLibraryKey);
-    const node = await figma.getNodeByIdAsync(nodeId);
+    // Validate inputs
+    validateRequiredParams({ styleName, nodeId }, ['styleName', 'nodeId']);
+    validateLibrarySelected();
 
-    if (!node || node.type !== 'TEXT') {
-      throw new Error('Node not found or is not a text node.');
+    // Import style and get node
+    const style = await importTextStyleByName(styleName, selectedLibraryKey!);
+    const node = await getNodeById(nodeId);
+
+    if (!isNodeType<TextNode>(node, ['TEXT'])) {
+      throw createError('Node is not a text node.');
     }
 
     const textNode = node as TextNode;
 
-    // Load the node font to avoid range assignment errors
+    // Load font to avoid errors
     const font = textNode.fontName;
     if (font !== figma.mixed && font && typeof font === 'object') {
       try {
         await figma.loadFontAsync(font);
-      } catch { }
+      } catch {
+        // Font loading failed, but continue anyway
+      }
     }
 
+    // Apply style
     await textNode.setRangeTextStyleIdAsync(0, textNode.characters.length, style.id);
 
-    const library = await getSavedLibrary(selectedLibraryKey);
-    figma.notify(`Applied "${styleName}" from ${library?.libraryName} to "${textNode.name}".`);
+    const library = await getSavedLibrary(selectedLibraryKey!);
+    notifySuccess(`Applied "${styleName}" from ${library?.libraryName} to "${textNode.name}".`);
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    figma.notify(errorMsg, { error: true });
+    handleAsyncError(error, 'Apply text style');
     throw error;
   }
 }
@@ -584,316 +831,155 @@ async function ensureVariableImportedByName(
 }
 
 async function applySpacingTokenToNode(tokenName: string, nodeId: string): Promise<void> {
-  console.log('🎯 applySpacingTokenToNode called with:', { tokenName, nodeId, selectedLibraryKey });
-
-  if (!selectedLibraryKey) {
-    throw new Error('Please select a library first.');
-  }
+  logOperation('applySpacingTokenToNode', { tokenName, nodeId, selectedLibraryKey });
 
   try {
-    const library = await getSavedLibrary(selectedLibraryKey);
+    // Validate inputs
+    validateRequiredParams({ tokenName, nodeId }, ['tokenName', 'nodeId']);
+    validateLibrarySelected();
+
+    // Get library and variables
+    const library = await getSavedLibrary(selectedLibraryKey!);
     if (!library) {
-      throw new Error('Selected library not found.');
+      throw createError('Selected library not found.');
     }
 
-    // Get spacing token data from stored library
-    let spacingVariables: Record<string, any> = {};
-    if (library.variables?.spacing) {
-      spacingVariables = library.variables.spacing;
-    } else if (library.variables) {
-      // Handle old structure
-      for (const key in library.variables) {
-        if (key.toLowerCase().includes('spacing') || key.toLowerCase().includes('space')) {
-          const variableName = key.replace(/^spacing\//i, '').replace(/^space\//i, '');
-          spacingVariables[variableName] = library.variables[key];
-        }
-      }
-    }
+    const spacingVariables = getVariablesFromLibrary(library, ['spacing', 'space']);
+    const spacingPatterns = [
+      tokenName,
+      `spacing-${tokenName}`,
+      `space-${tokenName}`,
+      `${tokenName}px`,
+      `spacing/${tokenName}`,
+      `space/${tokenName}`
+    ];
 
-    console.log(`Looking for spacing token: "${tokenName}"`);
-    console.log('Available spacing variables:', Object.keys(spacingVariables));
-
-    let tokenData = spacingVariables[tokenName];
-
-    // Try common variations if not found
-    if (!tokenData || !tokenData.key) {
-      const possibleKeys = [
-        tokenName,
-        `spacing-${tokenName}`,
-        `space-${tokenName}`,
-        `${tokenName}px`,
-        `spacing/${tokenName}`,
-        `space/${tokenName}`
-      ];
-
-      for (const key of possibleKeys) {
-        if (spacingVariables[key] && spacingVariables[key].key) {
-          console.log(`Found spacing token with key: "${key}"`);
-          tokenData = spacingVariables[key];
-          break;
-        }
-      }
-
-      // Try finding by variable name
-      if (!tokenData || !tokenData.key) {
-        for (const [key, data] of Object.entries(spacingVariables)) {
-          if (data && data.name && (
-            data.name === tokenName ||
-            data.name.endsWith(`-${tokenName}`) ||
-            data.name.endsWith(`/${tokenName}`) ||
-            data.name.includes(tokenName)
-          )) {
-            console.log(`Found spacing token by name match: "${key}" -> "${data.name}"`);
-            tokenData = data;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!tokenData || !tokenData.key) {
+    // Find token data
+    const tokenData = findVariableInCollection(tokenName, spacingVariables, spacingPatterns);
+    if (!tokenData?.key) {
       const availableTokens = Object.keys(spacingVariables).join(', ');
-      throw new Error(`Spacing token "${tokenName}" not found in library. Available tokens: ${availableTokens}`);
+      throw createError(`Spacing token "${tokenName}" not found in library. Available tokens: ${availableTokens}`);
     }
 
-    console.log(`Found tokenData:`, { name: tokenData.name, key: tokenData.key, collection: tokenData.collection });
+    logSuccess('Found spacing token', `${tokenData.name} (key: ${tokenData.key})`);
 
-    // Import the variable using the proper Team Library API
-    let importedVariable: Variable;
+    // Import variable
+    const importedVariable = await importVariableByKey(tokenData.key);
+    logSuccess('Imported variable', `${importedVariable.name} (ID: ${importedVariable.id})`);
 
-    try {
-      // Try to import by key directly if we have it
-      if (tokenData.key) {
-        console.log(`🔄 Importing variable by key: ${tokenData.key}`);
-        importedVariable = await figma.variables.importVariableByKeyAsync(tokenData.key);
-        console.log(`✅ Successfully imported variable: "${importedVariable.name}" (ID: ${importedVariable.id})`);
-      } else {
-        // Fallback: use the helper function to find and import by name
-        console.log(`🔄 Importing variable by name using Team Library API: ${tokenData.name}`);
-        importedVariable = await ensureVariableImportedByName(
-          c => c.name.toLowerCase().includes('spacing') || c.name.toLowerCase().includes('space'),
-          tokenData.name,
-          'FLOAT'
-        );
-        console.log(`✅ Successfully imported variable via Team Library: "${importedVariable.name}" (ID: ${importedVariable.id})`);
-      }
-    } catch (importError) {
-      console.error('❌ Failed to import variable:', importError);
-      throw new Error(`Cannot import spacing token "${tokenName}". Please ensure the design system library is enabled in the Variables panel. Error: ${importError}`);
+    // Get node and apply spacing
+    const node = await getNodeById(nodeId);
+
+    if (!isNodeType<FrameNode>(node, ['FRAME', 'GROUP'])) {
+      throw createError(`Cannot apply spacing to node type "${node.type}".`);
     }
 
-    // Get the node and apply the spacing
-    const node = await figma.getNodeByIdAsync(nodeId);
-    if (!node) {
-      throw new Error('Node not found.');
+    const containerNode = node as FrameNode;
+    let applied = false;
+
+    // Try auto layout gap first
+    if ('layoutMode' in containerNode && containerNode.layoutMode !== 'NONE' && 'itemSpacing' in containerNode) {
+      try {
+        containerNode.setBoundVariable('itemSpacing', importedVariable);
+        notifySuccess(`Applied spacing token "${tokenName}" as gap to "${containerNode.name}".`);
+        applied = true;
+      } catch (bindError) {
+        logError('Failed to bind variable to itemSpacing', bindError);
+      }
     }
 
-    // Apply spacing based on node type
-    if (node.type === 'FRAME' || node.type === 'GROUP') {
-      const containerNode = node as FrameNode;
-      let applied = false;
-
-      // Priority 1: Auto layout gap (itemSpacing)
-      if ('layoutMode' in containerNode && containerNode.layoutMode !== 'NONE' && 'itemSpacing' in containerNode) {
-        try {
-          console.log(`🔗 Binding variable to itemSpacing`);
-          containerNode.setBoundVariable('itemSpacing', importedVariable);
-          figma.notify(`Applied spacing token "${tokenName}" as gap to "${containerNode.name}".`);
-          applied = true;
-        } catch (bindError) {
-          console.error('Failed to bind variable to itemSpacing:', bindError);
-          // Continue to try padding
-        }
+    // Try padding as fallback
+    if (!applied && 'paddingLeft' in containerNode) {
+      try {
+        containerNode.setBoundVariable('paddingLeft', importedVariable);
+        containerNode.setBoundVariable('paddingRight', importedVariable);
+        containerNode.setBoundVariable('paddingTop', importedVariable);
+        containerNode.setBoundVariable('paddingBottom', importedVariable);
+        notifySuccess(`Applied spacing token "${tokenName}" as padding to "${containerNode.name}".`);
+        applied = true;
+      } catch (bindError) {
+        logError('Failed to bind variable to padding', bindError);
       }
+    }
 
-      // Priority 2: Padding (if gap binding failed or not applicable)
-      if (!applied && 'paddingLeft' in containerNode) {
-        try {
-          console.log(`🔗 Binding variable to padding`);
-          containerNode.setBoundVariable('paddingLeft', importedVariable);
-          containerNode.setBoundVariable('paddingRight', importedVariable);
-          containerNode.setBoundVariable('paddingTop', importedVariable);
-          containerNode.setBoundVariable('paddingBottom', importedVariable);
-          figma.notify(`Applied spacing token "${tokenName}" as padding to "${containerNode.name}".`);
-          applied = true;
-        } catch (bindError) {
-          console.error('Failed to bind variable to padding:', bindError);
-        }
-      }
-
-      if (!applied) {
-        throw new Error(`Cannot apply spacing to node "${node.name}" - no applicable spacing properties found or variable binding failed.`);
-      }
-    } else {
-      throw new Error(`Cannot apply spacing to node type "${node.type}".`);
+    if (!applied) {
+      throw createError(`Cannot apply spacing to node "${node.name}" - no applicable spacing properties found or variable binding failed.`);
     }
 
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    figma.notify(errorMsg, { error: true });
+    handleAsyncError(error, 'Apply spacing token');
     throw error;
   }
 }
 
 async function applyCornerRadiusTokenToNode(tokenName: string, nodeId: string): Promise<void> {
-  console.log('🎯 applyCornerRadiusTokenToNode called with:', { tokenName, nodeId, selectedLibraryKey });
-
-  if (!selectedLibraryKey) {
-    throw new Error('Please select a library first.');
-  }
+  logOperation('applyCornerRadiusTokenToNode', { tokenName, nodeId, selectedLibraryKey });
 
   try {
-    const library = await getSavedLibrary(selectedLibraryKey);
+    // Validate inputs
+    validateRequiredParams({ tokenName, nodeId }, ['tokenName', 'nodeId']);
+    validateLibrarySelected();
+
+    // Get library and variables
+    const library = await getSavedLibrary(selectedLibraryKey!);
     if (!library) {
-      throw new Error('Selected library not found.');
+      throw createError('Selected library not found.');
     }
 
-    // Get corner radius token data from stored library
-    let cornerRadiusVariables: Record<string, any> = {};
-    if (library.variables?.['corner-radius'] || library.variables?.cornerRadius) {
-      cornerRadiusVariables = library.variables['corner-radius'] || library.variables.cornerRadius;
-    } else if (library.variables) {
-      // Handle old structure and search through all collections for corner radius-related variables
-      for (const [collectionKey, variables] of Object.entries(library.variables)) {
-        const collectionName = collectionKey.toLowerCase();
+    const cornerRadiusVariables = getVariablesFromLibrary(library, ['corner-radius', 'cornerRadius', 'radius', 'corner', 'border-radius', 'rounded']);
+    const cornerPatterns = [
+      tokenName,
+      `radius-${tokenName}`,
+      `corner-${tokenName}`,
+      `${tokenName}px`,
+      `radius/${tokenName}`,
+      `corner/${tokenName}`
+    ];
 
-        // Check if this collection contains corner radius
-        if (collectionName.includes('radius') || collectionName.includes('corner') ||
-          collectionName.includes('border-radius') || collectionName.includes('rounded')) {
-          // Add all variables from this collection
-          Object.assign(cornerRadiusVariables, variables);
-        } else {
-          // Check individual variable names for corner radius-related terms
-          for (const [varName, varData] of Object.entries(variables)) {
-            const name = varName.toLowerCase();
-            if (name.includes('radius') || name.includes('corner') || name.includes('rounded')) {
-              cornerRadiusVariables[varName] = varData;
-            }
-          }
-        }
-      }
-    }
-
-    console.log(`Looking for corner radius token: "${tokenName}"`);
-    console.log('Available corner radius variables:', Object.keys(cornerRadiusVariables));
-
-    let tokenData = cornerRadiusVariables[tokenName];
-
-    // Try common variations if not found
-    if (!tokenData || !tokenData.key) {
-      const possibleKeys = [
-        tokenName,
-        `radius-${tokenName}`,
-        `corner-${tokenName}`,
-        `${tokenName}px`,
-        `radius/${tokenName}`,
-        `corner/${tokenName}`
-      ];
-
-      for (const key of possibleKeys) {
-        if (cornerRadiusVariables[key] && cornerRadiusVariables[key].key) {
-          console.log(`Found corner radius token with key: "${key}"`);
-          tokenData = cornerRadiusVariables[key];
-          break;
-        }
-      }
-
-      // Try finding by variable name
-      if (!tokenData || !tokenData.key) {
-        for (const [key, data] of Object.entries(cornerRadiusVariables)) {
-          if (data && data.name && (
-            data.name === tokenName ||
-            data.name.endsWith(`-${tokenName}`) ||
-            data.name.endsWith(`/${tokenName}`) ||
-            data.name.includes(tokenName)
-          )) {
-            console.log(`Found corner radius token by name match: "${key}" -> "${data.name}"`);
-            tokenData = data;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!tokenData || !tokenData.key) {
+    // Find token data
+    const tokenData = findVariableInCollection(tokenName, cornerRadiusVariables, cornerPatterns);
+    if (!tokenData?.key) {
       const availableTokens = Object.keys(cornerRadiusVariables).join(', ');
-      throw new Error(`Corner radius token "${tokenName}" not found in library. Available tokens: ${availableTokens}`);
+      throw createError(`Corner radius token "${tokenName}" not found in library. Available tokens: ${availableTokens}`);
     }
 
-    console.log(`Found tokenData:`, { name: tokenData.name, key: tokenData.key, collection: tokenData.collection });
+    logSuccess('Found corner radius token', `${tokenData.name} (key: ${tokenData.key})`);
 
-    // Import the variable using the proper Team Library API
-    let importedVariable: Variable;
+    // Import variable
+    const importedVariable = await importVariableByKey(tokenData.key);
+    logSuccess('Imported corner radius variable', `${importedVariable.name} (ID: ${importedVariable.id})`);
 
-    try {
-      // Try to import by key directly if we have it
-      if (tokenData.key) {
-        console.log(`🔄 Importing corner radius variable by key: ${tokenData.key}`);
-        importedVariable = await figma.variables.importVariableByKeyAsync(tokenData.key);
-        console.log(`✅ Successfully imported corner radius variable: "${importedVariable.name}" (ID: ${importedVariable.id})`);
-      } else {
-        // Fallback: use the helper function to find and import by name
-        console.log(`🔄 Importing corner radius variable by name using Team Library API: ${tokenData.name}`);
-        importedVariable = await ensureVariableImportedByName(
-          c => c.name.toLowerCase().includes('radius') || c.name.toLowerCase().includes('corner'),
-          tokenData.name,
-          'FLOAT'
-        );
-        console.log(`✅ Successfully imported corner radius variable via Team Library: "${importedVariable.name}" (ID: ${importedVariable.id})`);
-      }
-    } catch (importError) {
-      console.error('❌ Failed to import corner radius variable:', importError);
-      throw new Error(`Cannot import corner radius token "${tokenName}". Please ensure the design system library is enabled in the Variables panel. Error: ${importError}`);
+    // Get node and apply corner radius
+    const node = await getNodeById(nodeId);
+
+    if (!isNodeType<FrameNode | RectangleNode | EllipseNode>(node, ['FRAME', 'RECTANGLE', 'ELLIPSE'])) {
+      throw createError(`Cannot apply corner radius to node type "${node.type}". Only frames, rectangles, and ellipses support corner radius.`);
     }
 
-    // Get the node and apply the corner radius
-    const node = await figma.getNodeByIdAsync(nodeId);
-    if (!node) {
-      throw new Error('Node not found.');
-    }
+    const shapeNode = node as FrameNode | RectangleNode | EllipseNode;
+    const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'] as const;
+    let cornersBound = 0;
 
-    // Apply corner radius based on node type
-    if (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE') {
-      const shapeNode = node as FrameNode | RectangleNode | EllipseNode;
-      let applied = false;
-
-      try {
-        // Try individual corner properties (this is the correct approach for Figma API)
-        const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'] as const;
-        let cornersBound = 0;
-
-        for (const corner of corners) {
-          if (corner in shapeNode) {
-            try {
-              (shapeNode as any).setBoundVariable(corner, importedVariable);
-              cornersBound++;
-              console.log(`✅ Successfully bound ${corner} to variable`);
-            } catch (cornerError) {
-              console.error(`Failed to bind variable to ${corner}:`, cornerError);
-            }
-          }
+    for (const corner of corners) {
+      if (corner in shapeNode) {
+        try {
+          (shapeNode as any).setBoundVariable(corner, importedVariable);
+          cornersBound++;
+          logSuccess(`Bound ${corner} to variable`);
+        } catch (cornerError) {
+          logError(`Failed to bind variable to ${corner}`, cornerError);
         }
-
-        if (cornersBound > 0) {
-          figma.notify(`Applied corner radius token "${tokenName}" to ${cornersBound} corners of "${shapeNode.name}".`);
-          applied = true;
-        } else {
-          console.log('No corner radius properties found or bindable on this node');
-        }
-      } catch (bindError) {
-        console.error('Failed to bind corner radius variable:', bindError);
       }
+    }
 
-      if (!applied) {
-        throw new Error(`Cannot apply corner radius to node "${node.name}" - no applicable corner radius properties found or variable binding failed.`);
-      }
+    if (cornersBound > 0) {
+      notifySuccess(`Applied corner radius token "${tokenName}" to ${cornersBound} corners of "${shapeNode.name}".`);
     } else {
-      throw new Error(`Cannot apply corner radius to node type "${node.type}". Only frames, rectangles, and ellipses support corner radius.`);
+      throw createError(`Cannot apply corner radius to node "${node.name}" - no applicable corner radius properties found or variable binding failed.`);
     }
 
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    figma.notify(errorMsg, { error: true });
+    handleAsyncError(error, 'Apply corner radius token');
     throw error;
   }
 }
@@ -1053,134 +1139,52 @@ async function applyHardcodedCornerRadius(nodeId: string, corner: string, value:
 }
 
 async function applyColorTokenToNode(tokenName: string, nodeId: string): Promise<void> {
-  console.log('🎯 applyColorTokenToNode called with:', { tokenName, nodeId, selectedLibraryKey });
-
-  if (!selectedLibraryKey) {
-    throw new Error('Please select a library first.');
-  }
+  logOperation('applyColorTokenToNode', { tokenName, nodeId, selectedLibraryKey });
 
   try {
-    const library = await getSavedLibrary(selectedLibraryKey);
+    // Validate inputs
+    validateRequiredParams({ tokenName, nodeId }, ['tokenName', 'nodeId']);
+    validateLibrarySelected();
+
+    // Get library and variables
+    const library = await getSavedLibrary(selectedLibraryKey!);
     if (!library) {
-      throw new Error('Selected library not found.');
+      throw createError('Selected library not found.');
     }
 
-    // Get color token data from stored library
-    let colorVariables: Record<string, any> = {};
-    if (library.variables?.colors || library.variables?.color) {
-      colorVariables = library.variables.colors || library.variables.color;
-    } else if (library.variables) {
-      // Handle old structure and search through all collections for color-related variables
-      for (const [collectionKey, variables] of Object.entries(library.variables)) {
-        const collectionName = collectionKey.toLowerCase();
+    const colorVariables = getVariablesFromLibrary(library, ['colors', 'color', 'colour', 'palette', 'theme']);
+    const colorPatterns = [
+      tokenName,
+      `color-${tokenName}`,
+      `${tokenName}-color`,
+      `colors/${tokenName}`,
+      `color/${tokenName}`
+    ];
 
-        // Check if this collection contains colors
-        if (collectionName.includes('color') || collectionName.includes('colour') ||
-          collectionName === 'colors' || collectionName === 'colours') {
-          // Add all variables from this collection
-          Object.assign(colorVariables, variables);
-        } else {
-          // Check individual variable names for color-related terms
-          for (const [varName, varData] of Object.entries(variables)) {
-            const name = varName.toLowerCase();
-            if (name.includes('color') || name.includes('colour')) {
-              colorVariables[varName] = varData;
-            }
-          }
-        }
-      }
-    }
-
-    console.log(`Looking for color token: "${tokenName}"`);
-    console.log('Available color variables:', Object.keys(colorVariables));
-
-    let tokenData = colorVariables[tokenName];
-
-    // Try common variations if not found
-    if (!tokenData || !tokenData.key) {
-      const possibleKeys = [
-        tokenName,
-        `color-${tokenName}`,
-        `${tokenName}-color`,
-        `colors/${tokenName}`,
-        `color/${tokenName}`
-      ];
-
-      for (const key of possibleKeys) {
-        if (colorVariables[key] && colorVariables[key].key) {
-          console.log(`Found color token with key: "${key}"`);
-          tokenData = colorVariables[key];
-          break;
-        }
-      }
-
-      // Try finding by variable name
-      if (!tokenData || !tokenData.key) {
-        for (const [key, data] of Object.entries(colorVariables)) {
-          if (data && data.name && (
-            data.name === tokenName ||
-            data.name.endsWith(`-${tokenName}`) ||
-            data.name.endsWith(`/${tokenName}`) ||
-            data.name.includes(tokenName)
-          )) {
-            console.log(`Found color token by name match: "${key}" -> "${data.name}"`);
-            tokenData = data;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!tokenData || !tokenData.key) {
+    // Find token data
+    const tokenData = findVariableInCollection(tokenName, colorVariables, colorPatterns);
+    if (!tokenData?.key) {
       const availableTokens = Object.keys(colorVariables).join(', ');
-      throw new Error(`Color token "${tokenName}" not found in library. Available tokens: ${availableTokens}`);
+      throw createError(`Color token "${tokenName}" not found in library. Available tokens: ${availableTokens}`);
     }
 
-    console.log(`Found tokenData:`, { name: tokenData.name, key: tokenData.key, collection: tokenData.collection });
+    logSuccess('Found color token', `${tokenData.name} (key: ${tokenData.key})`);
 
-    // Import the variable using the proper Team Library API
-    let importedVariable: Variable;
+    // Import variable
+    const importedVariable = await importVariableByKey(tokenData.key);
+    logSuccess('Imported color variable', `${importedVariable.name} (ID: ${importedVariable.id})`);
 
-    try {
-      // Try to import by key directly if we have it
-      if (tokenData.key) {
-        console.log(`🔄 Importing color variable by key: ${tokenData.key}`);
-        importedVariable = await figma.variables.importVariableByKeyAsync(tokenData.key);
-        console.log(`✅ Successfully imported color variable: "${importedVariable.name}" (ID: ${importedVariable.id})`);
-      } else {
-        // Fallback: use the helper function to find and import by name
-        console.log(`🔄 Importing color variable by name using Team Library API: ${tokenData.name}`);
-        importedVariable = await ensureVariableImportedByName(
-          c => c.name.toLowerCase().includes('color') || c.name.toLowerCase().includes('colour'),
-          tokenData.name,
-          'COLOR'
-        );
-        console.log(`✅ Successfully imported color variable via Team Library: "${importedVariable.name}" (ID: ${importedVariable.id})`);
-      }
-    } catch (importError) {
-      console.error('❌ Failed to import color variable:', importError);
-      throw new Error(`Cannot import color token "${tokenName}". Please ensure the design system library is enabled in the Variables panel. Error: ${importError}`);
-    }
-
-    // Get the node and apply the color
-    const node = await figma.getNodeByIdAsync(nodeId);
-    if (!node) {
-      throw new Error('Node not found.');
-    }
-
-    // Apply color based on node type and properties
+    // Get node and apply color
+    const node = await getNodeById(nodeId);
     let applied = false;
 
-    try {
-      // Try to bind to fill color (most common)
-      if ('fills' in node && Array.isArray(node.fills) && node.fills.length > 0) {
+    // Try to bind to fill color first
+    if ('fills' in node && Array.isArray((node as any).fills) && (node as any).fills.length > 0) {
+      try {
         const nodeWithFills = node as any;
-        console.log(`🔗 Binding variable to fill color`);
-
-        // Clone the fills array and bind variable to the first paint
         const newFills = [...nodeWithFills.fills];
+
         if (newFills[0] && newFills[0].type === 'SOLID') {
-          // Create a new paint with the variable bound using proper VariableAlias structure
           const newPaint = {
             ...newFills[0],
             boundVariables: {
@@ -1192,50 +1196,46 @@ async function applyColorTokenToNode(tokenName: string, nodeId: string): Promise
           };
           newFills[0] = newPaint;
           nodeWithFills.fills = newFills;
-          figma.notify(`Applied color token "${tokenName}" as fill to "${node.name}".`);
+          notifySuccess(`Applied color token "${tokenName}" as fill to "${node.name}".`);
           applied = true;
         }
+      } catch (fillError) {
+        logError('Failed to bind variable to fill', fillError);
       }
-    } catch (fillError) {
-      console.error('Failed to bind variable to fill:', fillError);
+    }
 
-      // Fallback: try stroke color
+    // Try stroke color as fallback
+    if (!applied && 'strokes' in node && Array.isArray((node as any).strokes) && (node as any).strokes.length > 0) {
       try {
-        if ('strokes' in node && Array.isArray(node.strokes) && node.strokes.length > 0) {
-          const nodeWithStrokes = node as any;
-          console.log(`🔗 Binding variable to stroke color`);
+        const nodeWithStrokes = node as any;
+        const newStrokes = [...nodeWithStrokes.strokes];
 
-          // Clone the strokes array and bind variable to the first paint
-          const newStrokes = [...nodeWithStrokes.strokes];
-          if (newStrokes[0] && newStrokes[0].type === 'SOLID') {
-            // Create a new paint with the variable bound using proper VariableAlias structure
-            const newPaint = {
-              ...newStrokes[0],
-              boundVariables: {
-                color: {
-                  type: 'VARIABLE_ALIAS' as const,
-                  id: importedVariable.id
-                }
+        if (newStrokes[0] && newStrokes[0].type === 'SOLID') {
+          const newPaint = {
+            ...newStrokes[0],
+            boundVariables: {
+              color: {
+                type: 'VARIABLE_ALIAS' as const,
+                id: importedVariable.id
               }
-            };
-            newStrokes[0] = newPaint;
-            nodeWithStrokes.strokes = newStrokes;
-            figma.notify(`Applied color token "${tokenName}" as stroke to "${node.name}".`);
-            applied = true;
-          }
+            }
+          };
+          newStrokes[0] = newPaint;
+          nodeWithStrokes.strokes = newStrokes;
+          notifySuccess(`Applied color token "${tokenName}" as stroke to "${node.name}".`);
+          applied = true;
         }
       } catch (strokeError) {
-        console.error('Failed to bind variable to stroke:', strokeError);
+        logError('Failed to bind variable to stroke', strokeError);
       }
     }
 
     if (!applied) {
-      throw new Error(`Cannot apply color to node "${node.name}" - no applicable color properties found or variable binding failed.`);
+      throw createError(`Cannot apply color to node "${node.name}" - no applicable color properties found or variable binding failed.`);
     }
 
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    figma.notify(errorMsg, { error: true });
+    handleAsyncError(error, 'Apply color token');
     throw error;
   }
 }
@@ -1249,26 +1249,16 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
   // Helper function to check if spacing property is bound to a design system variable
   function isSpacingBoundToToken(node: FrameNode, property: string): boolean {
     try {
-      // Check if the property has a bound variable
       const boundVariables = node.boundVariables;
-      console.log(`Checking ${property} on node "${node.name}":`, {
-        hasBoundVariables: !!boundVariables,
-        boundVariables: boundVariables,
-        propertyValue: (node as any)[property]
-      });
-
-      if (!boundVariables) {
-        console.log(`No boundVariables found for node "${node.name}"`);
-        return false;
-      }
+      if (!boundVariables) return false;
 
       const propertyBinding = boundVariables[property as keyof typeof boundVariables];
-      const isBound = propertyBinding !== undefined && propertyBinding !== null;
-      console.log(`Property ${property} binding result:`, { propertyBinding, isBound });
-
-      return isBound;
+      return propertyBinding !== undefined && propertyBinding !== null;
     } catch (error) {
-      console.log(`Error checking spacing binding for ${property}:`, error);
+      // Only log errors, not every check
+      if (nodeCount % 100 === 0) {
+        console.log(`Error checking spacing binding for ${property}:`, error);
+      }
       return false;
     }
   }
@@ -1284,20 +1274,9 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
       visitedNodes.add(node.id);
       nodeCount++;
 
-      console.log(`Processing node: "${node.name}" (${node.type})`);
-
-      // Log spacing-related properties for FRAME and GROUP nodes
-      if (node.type === 'FRAME' || node.type === 'GROUP') {
-        const containerNode = node as FrameNode;
-        console.log(`Container node "${node.name}" properties:`, {
-          type: node.type,
-          hasLayoutMode: 'layoutMode' in containerNode,
-          layoutMode: (containerNode as any).layoutMode,
-          hasItemSpacing: 'itemSpacing' in containerNode,
-          itemSpacing: (containerNode as any).itemSpacing,
-          hasPaddingLeft: 'paddingLeft' in containerNode,
-          paddingLeft: (containerNode as any).paddingLeft
-        });
+      // Log progress every 100 nodes instead of every node
+      if (nodeCount % 100 === 0) {
+        console.log(`Processing node ${nodeCount}: "${node.name}" (${node.type})`);
       }
 
       // Text style validation
@@ -1323,15 +1302,12 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
       // Spacing validation
       if (options.spacing && (node.type === 'FRAME' || node.type === 'GROUP')) {
         const containerNode = node as FrameNode;
-        console.log(`Checking spacing for node: "${containerNode.name}" (${containerNode.type})`);
 
         // Check padding (only if it exists and is accessible)
         try {
           if ('paddingLeft' in containerNode && containerNode.paddingLeft && containerNode.paddingLeft > 0) {
             const paddingValue = containerNode.paddingLeft;
-            console.log(`Found padding: ${paddingValue}px on "${containerNode.name}"`);
             if (!isSpacingBoundToToken(containerNode, 'paddingLeft')) {
-              console.log(`Adding padding issue for "${containerNode.name}"`);
               results.push({
                 type: 'spacing',
                 issue: `Hardcoded padding (${paddingValue}px)`,
@@ -1339,16 +1315,14 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
                   id: containerNode.id,
                   name: containerNode.name
                 },
-                frameName: containerNode.name, // Use the actual container name instead of page name
+                frameName: containerNode.name,
                 nodeType: 'SPACING',
                 value: paddingValue
               });
-            } else {
-              console.log(`Padding is properly bound to token for "${containerNode.name}"`);
             }
           }
         } catch (error) {
-          console.log(`Error checking padding for "${containerNode.name}":`, error);
+          // Silent error handling for performance
         }
 
         // Check gaps in auto layout
@@ -1356,9 +1330,7 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
           if ('layoutMode' in containerNode && 'itemSpacing' in containerNode &&
             containerNode.layoutMode !== 'NONE' && containerNode.itemSpacing > 0) {
             const gapValue = containerNode.itemSpacing;
-            console.log(`Found gap: ${gapValue}px on "${containerNode.name}"`);
             if (!isSpacingBoundToToken(containerNode, 'itemSpacing')) {
-              console.log(`Adding gap issue for "${containerNode.name}"`);
               results.push({
                 type: 'spacing',
                 issue: `Hardcoded gap (${gapValue}px)`,
@@ -1366,26 +1338,22 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
                   id: containerNode.id,
                   name: containerNode.name
                 },
-                frameName: containerNode.name, // Use the actual container name instead of page name
+                frameName: containerNode.name,
                 nodeType: 'SPACING',
                 value: gapValue
               });
-            } else {
-              console.log(`Gap is properly bound to token for "${containerNode.name}"`);
             }
           }
         } catch (error) {
-          console.log(`Error checking gap for "${containerNode.name}":`, error);
+          // Silent error handling for performance
         }
       }
 
       // Corner radius validation
       if (options.cornerRadius && (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE')) {
         const shapeNode = node as FrameNode | RectangleNode | EllipseNode;
-        console.log(`Checking corner radius for node: "${shapeNode.name}" (${shapeNode.type})`);
 
         try {
-          // Check all individual corner radius properties
           const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'] as const;
           const cornerIssues: any[] = [];
           const cornerValues: any = {};
@@ -1396,11 +1364,10 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
               const boundVariables = shapeNode.boundVariables;
               const isCornerBound = boundVariables && (boundVariables as any)[corner] !== undefined && (boundVariables as any)[corner] !== null;
 
-              // Always include the corner value and token status in cornerValues (for UI display)
               if (typeof radiusValue === 'number' && radiusValue >= 0) {
                 cornerValues[corner] = {
                   value: radiusValue,
-                  hasToken: isCornerBound // Only true if actually bound to a token
+                  hasToken: isCornerBound
                 };
               } else {
                 cornerValues[corner] = {
@@ -1409,9 +1376,7 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
                 };
               }
 
-              // Only add to issues if it has a value but is not bound to a token
               if (typeof radiusValue === 'number' && radiusValue > 0 && !isCornerBound) {
-                console.log(`Found unbound corner radius: ${corner} = ${radiusValue}px on "${shapeNode.name}"`);
                 cornerIssues.push({
                   corner: corner,
                   value: radiusValue
@@ -1420,12 +1385,7 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
             }
           }
 
-          // If we found corner radius issues, create a single consolidated result
           if (cornerIssues.length > 0) {
-            console.log(`Adding consolidated corner radius issue for "${shapeNode.name}" (ID: ${shapeNode.id}) with ${cornerIssues.length} corners`);
-            console.log(`Corner issues:`, cornerIssues);
-            console.log(`All corner values:`, cornerValues);
-
             results.push({
               type: 'corner-radius',
               issue: `Hardcoded corner radius (${cornerIssues.length} corner${cornerIssues.length > 1 ? 's' : ''})`,
@@ -1440,27 +1400,23 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
             });
           }
         } catch (error) {
-          console.log(`Error checking corner radius for "${shapeNode.name}":`, error);
+          // Silent error handling for performance
         }
       }
 
       // Color validation
       if (options.colors) {
-        console.log(`Checking colors for node: "${node.name}" (${node.type})`);
-
         try {
-          // Check fill colors for nodes that support fills (excluding TEXT nodes - they're handled separately)
+          // Check fill colors for nodes that support fills (excluding TEXT nodes)
           if ('fills' in node && Array.isArray(node.fills) && node.fills.length > 0 && node.type !== 'TEXT') {
             const nodeWithFills = node as any;
             for (let i = 0; i < nodeWithFills.fills.length; i++) {
               const fill = nodeWithFills.fills[i];
               if (fill && fill.type === 'SOLID' && fill.visible !== false) {
-                // Check if this fill is bound to a variable
                 const boundVariables = nodeWithFills.boundVariables;
                 const fillBoundVariable = boundVariables && boundVariables.fills && boundVariables.fills[i];
 
                 if (!fillBoundVariable) {
-                  console.log(`Adding fill color issue for "${node.name}"`);
                   results.push({
                     type: 'color',
                     issue: `Hardcoded fill color`,
@@ -1472,25 +1428,21 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
                     nodeType: 'COLOR',
                     property: 'fill'
                   });
-                } else {
-                  console.log(`Fill color is properly bound to token for "${node.name}"`);
                 }
               }
             }
           }
 
-          // Check stroke colors for nodes that support strokes
+          // Check stroke colors
           if ('strokes' in node && Array.isArray(node.strokes) && node.strokes.length > 0) {
             const nodeWithStrokes = node as any;
             for (let i = 0; i < nodeWithStrokes.strokes.length; i++) {
               const stroke = nodeWithStrokes.strokes[i];
               if (stroke && stroke.type === 'SOLID' && stroke.visible !== false) {
-                // Check if this stroke is bound to a variable
                 const boundVariables = nodeWithStrokes.boundVariables;
                 const strokeBoundVariable = boundVariables && boundVariables.strokes && boundVariables.strokes[i];
 
                 if (!strokeBoundVariable) {
-                  console.log(`Adding stroke color issue for "${node.name}"`);
                   results.push({
                     type: 'color',
                     issue: `Hardcoded stroke color`,
@@ -1502,8 +1454,6 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
                     nodeType: 'COLOR',
                     property: 'stroke'
                   });
-                } else {
-                  console.log(`Stroke color is properly bound to token for "${node.name}"`);
                 }
               }
             }
@@ -1512,14 +1462,12 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
           // Check text color for text nodes
           if (node.type === 'TEXT') {
             const textNode = node as TextNode;
-            // Check if text color is bound to a variable
             const boundVariables = textNode.boundVariables;
             const textColorBound = boundVariables && boundVariables.fills;
 
             if (!textColorBound && textNode.fills && Array.isArray(textNode.fills) && textNode.fills.length > 0) {
               const fill = textNode.fills[0];
               if (fill && fill.type === 'SOLID' && fill.visible !== false) {
-                console.log(`Adding text color issue for "${node.name}"`);
                 results.push({
                   type: 'color',
                   issue: `Hardcoded fill color - not using design token`,
@@ -1532,12 +1480,10 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
                   property: 'fill'
                 });
               }
-            } else if (textColorBound) {
-              console.log(`Text color is properly bound to token for "${node.name}"`);
             }
           }
         } catch (error) {
-          console.log(`Error checking colors for "${node.name}":`, error);
+          // Silent error handling for performance
         }
       }
 
@@ -1550,10 +1496,7 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
         }
       }
 
-      // Log progress every 100 nodes
-      if (nodeCount % 100 === 0) {
-        console.log(`Processed ${nodeCount} nodes, found ${results.length} issues so far`);
-      }
+      // Progress logging handled above
     } catch (error) {
       console.log(`Error processing node ${node?.id || 'unknown'}:`, error);
       // Continue processing other nodes
@@ -1599,6 +1542,333 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
 }
 
 
+
+// ============================================================================
+// MESSAGE HANDLER FUNCTIONS
+// ============================================================================
+
+async function handleGetVariables(msg: PluginMessage, variableType: 'spacing' | 'colors' | 'corner-radius'): Promise<void> {
+  if (!selectedLibraryKey) return;
+
+  const library = await getSavedLibrary(selectedLibraryKey);
+  if (!library?.variables) {
+    postMessageToUI(`${variableType}-data`, { [variableType]: {} });
+    return;
+  }
+
+  const collectionMappings = {
+    'spacing': ['spacing', 'space', 'gap', 'margin', 'padding'],
+    'colors': ['colors', 'color', 'colour', 'palette', 'theme'],
+    'corner-radius': ['corner-radius', 'cornerRadius', 'radius', 'corner', 'border-radius', 'rounded']
+  };
+
+  const variables = getVariablesFromLibrary(library, collectionMappings[variableType]);
+  logSuccess(`Loading ${Object.keys(variables).length} ${variableType} variables`);
+
+  const responseKey = variableType === 'corner-radius' ? 'cornerRadius' : variableType;
+  postMessageToUI(`${variableType}-data`, { [responseKey]: variables });
+}
+
+async function handleRunValidation(msg: PluginMessage): Promise<void> {
+  validateRequiredParams({ options: msg.options }, ['options']);
+  validateLibrarySelected();
+
+  const library = await getSavedLibrary(selectedLibraryKey!);
+  if (!library) {
+    throw createError('Selected library not found');
+  }
+
+  // Ensure options has required properties with defaults
+  const validationOptions = {
+    textStyles: msg.options?.textStyles ?? false,
+    spacing: msg.options?.spacing ?? false,
+    cornerRadius: msg.options?.cornerRadius ?? false,
+    colors: msg.options?.colors ?? false,
+    typography: msg.options?.typography ?? false,
+    shadows: msg.options?.shadows ?? false,
+    borders: msg.options?.borders ?? false,
+    opacity: msg.options?.opacity ?? false,
+    sizing: msg.options?.sizing ?? false
+  };
+
+  logOperation('Running validation', validationOptions);
+
+  // Check if user wants to validate a specific node
+  let targetNode: FrameNode | PageNode;
+  let targetName: string;
+  let selectedNodeId: string | undefined;
+  let displayScope: 'page' | 'frame' | 'node';
+
+  if (msg.targetNodeId) {
+    // User selected a specific asset to validate
+    try {
+      const specificNode = await getNodeById(msg.targetNodeId);
+      if (specificNode.type === 'FRAME') {
+        targetNode = specificNode as FrameNode;
+        targetName = `frame "${specificNode.name}"`;
+        selectedNodeId = msg.targetNodeId;
+        displayScope = 'frame';
+      } else {
+        // For non-frame nodes, validate the entire page but filter to this node
+        targetNode = figma.currentPage;
+        targetName = `selected item "${specificNode.name}"`;
+        selectedNodeId = msg.targetNodeId;
+        displayScope = 'node';
+      }
+    } catch (error) {
+      // If node not found, fall back to normal validation
+      const validationTarget = createValidationTarget();
+      targetNode = validationTarget.targetNode;
+      targetName = validationTarget.targetName;
+      selectedNodeId = validationTarget.selectedNodeId;
+      displayScope = validationTarget.displayScope;
+    }
+  } else {
+    // Normal validation flow
+    const validationTarget = createValidationTarget();
+    targetNode = validationTarget.targetNode;
+    targetName = validationTarget.targetName;
+    selectedNodeId = validationTarget.selectedNodeId;
+    displayScope = validationTarget.displayScope;
+  }
+
+  // Always run validation on the entire page for comprehensive results
+  const validationPromise = runValidation(targetNode, library, validationOptions, targetName);
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(createError('Validation timeout')), 30000)
+  );
+
+  let allValidationResults = await Promise.race([validationPromise, timeoutPromise]) as any[];
+  
+  // Filter results based on display scope
+  let displayedResults = allValidationResults;
+  
+  if (displayScope === 'node' && selectedNodeId) {
+    // Show only issues for the specific selected node
+    displayedResults = allValidationResults.filter(result => result.node?.id === selectedNodeId);
+    logOperation('Filtered validation results for selected node', { selectedNodeId, totalResults: allValidationResults.length, displayedResults: displayedResults.length });
+  } else if (displayScope === 'frame' && selectedNodeId) {
+    // Show only issues within the selected frame
+    displayedResults = allValidationResults.filter(result => {
+      if (!result.node?.id) return false;
+      // Check if the result node is within the selected frame
+      // This would require traversing up the node hierarchy, but for now we'll use a simpler approach
+      return result.frameName === targetName.replace('frame "', '').replace('"', '');
+    });
+    logOperation('Filtered validation results for selected frame', { selectedNodeId, totalResults: allValidationResults.length, displayedResults: displayedResults.length });
+  }
+  // For 'page' scope, show all results (no filtering needed)
+
+  // Resize UI and send results
+  setScreenSize('VALIDATION_RESULTS_SCREEN');
+
+  postMessageToUI('validation-results', {
+    results: displayedResults,
+    allResults: allValidationResults, // Store all results for future filtering
+    library: library,
+    targetName: targetName,
+    targetType: 'page', // Always page since we always validate the full page
+    displayScope: displayScope,
+    selectedNodeId: selectedNodeId,
+    options: validationOptions
+  });
+
+  logSuccess(`Validation completed with ${displayedResults.length} displayed results (${allValidationResults.length} total)`);
+}
+
+async function handleSelectNode(msg: PluginMessage): Promise<void> {
+  if (!msg.nodeId) return;
+
+  try {
+    await selectNodeById(msg.nodeId);
+  } catch (error) {
+    logError('Error selecting node', error);
+    notifyError('Error selecting node');
+  }
+}
+
+async function handleValidateIssueResolution(msg: PluginMessage): Promise<void> {
+  console.log('🔍 Validating issue resolution:', msg);
+  
+  try {
+    const nodeId = msg.nodeId;
+    const issueType = msg.issueType;
+    const validationId = msg.validationId;
+    
+    if (!nodeId || !issueType) {
+      postMessageToUI('validation-response', {
+        validationId,
+        isFixed: false,
+        reason: 'Missing node ID or issue type'
+      });
+      return;
+    }
+
+    // Get the node
+    const node = await getNodeById(nodeId);
+    let isFixed = false;
+    let reason = '';
+
+    // Validate based on issue type
+    switch (issueType) {
+      case 'text-style':
+        // Check if text node has a text style applied
+        if (node.type === 'TEXT') {
+          const textNode = node as TextNode;
+          if (textNode.textStyleId && textNode.textStyleId !== '') {
+            isFixed = true;
+          } else {
+            reason = 'No text style applied to this text layer';
+          }
+        } else {
+          reason = 'Node is not a text layer';
+        }
+        break;
+
+      case 'spacing':
+        // Check if node has spacing tokens bound
+        if (node.type === 'FRAME') {
+          const frameNode = node as FrameNode;
+          const boundVariables = frameNode.boundVariables;
+          
+          if (boundVariables) {
+            // Check for spacing-related bound variables
+            const spacingProperties = ['itemSpacing', 'paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom'];
+            const hasSpacingToken = spacingProperties.some(prop => 
+              boundVariables[prop as keyof typeof boundVariables] !== undefined
+            );
+            
+            if (hasSpacingToken) {
+              isFixed = true;
+            } else {
+              reason = 'No spacing tokens applied to this frame';
+            }
+          } else {
+            reason = 'No design tokens bound to this frame';
+          }
+        } else {
+          reason = 'Node does not support spacing tokens';
+        }
+        break;
+
+      case 'corner-radius':
+        // Check if node has corner radius tokens bound
+        if (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE') {
+          const shapeNode = node as FrameNode | RectangleNode | EllipseNode;
+          const boundVariables = shapeNode.boundVariables;
+          
+          if (boundVariables) {
+            // Check for corner radius bound variables
+            const cornerProperties = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
+            const hasCornerToken = cornerProperties.some(prop => 
+              boundVariables[prop as keyof typeof boundVariables] !== undefined
+            );
+            
+            if (hasCornerToken) {
+              isFixed = true;
+            } else {
+              reason = 'No corner radius tokens applied to this shape';
+            }
+          } else {
+            reason = 'No design tokens bound to this shape';
+          }
+        } else {
+          reason = 'Node does not support corner radius tokens';
+        }
+        break;
+
+      case 'color':
+        // Check if node has color tokens bound
+        if ('fills' in node || 'strokes' in node) {
+          const nodeWithColor = node as any;
+          const boundVariables = nodeWithColor.boundVariables;
+          
+          if (boundVariables) {
+            // Check for color-related bound variables
+            const hasColorToken = boundVariables.fills !== undefined || boundVariables.strokes !== undefined;
+            
+            if (hasColorToken) {
+              isFixed = true;
+            } else {
+              reason = 'No color tokens applied to this element';
+            }
+          } else {
+            reason = 'No design tokens bound to this element';
+          }
+        } else {
+          reason = 'Node does not support color tokens';
+        }
+        break;
+
+      default:
+        reason = `Unknown issue type: ${issueType}`;
+    }
+
+    // Send response back to UI
+    postMessageToUI('validation-response', {
+      validationId,
+      isFixed,
+      reason: isFixed ? 'Issue resolved with design tokens' : reason
+    });
+
+    console.log('🔍 Validation result:', { isFixed, reason });
+
+  } catch (error) {
+    console.error('🔍 Validation error:', error);
+    postMessageToUI('validation-response', {
+      validationId: msg.validationId,
+      isFixed: false,
+      reason: 'Error during validation: ' + (error instanceof Error ? error.message : String(error))
+    });
+  }
+}
+
+async function handleLibrarySelection(msg: PluginMessage): Promise<void> {
+  selectedLibraryKey = msg.libraryKey || null;
+  const library = selectedLibraryKey ? await getSavedLibrary(selectedLibraryKey) : null;
+
+  if (selectedLibraryKey && library) {
+    setScreenSize('HOME_SCREEN');
+    await setStatus(PLUGIN_STATUS.READY);
+
+    // Send UI mode first
+    postMessageToUI('ui-mode', {
+      mode: 'home',
+      fileName: figma.root.name ?? 'Unknown Library'
+    });
+
+    // Get spacing variables for the library
+    const spacingVariables = getVariablesFromLibrary(library, ['spacing', 'space']);
+    const tokenCounts = analyzeLibraryTokens(library);
+
+    // Send library information
+    postMessageToUI('library-selected', {
+      library: {
+        name: library.libraryName,
+        count: Object.keys(library.items).length,
+        textStylesCount: tokenCounts.textStyles,
+        variablesCount: library.variables ? Object.keys(library.variables).length : 0,
+        spacingVariablesCount: tokenCounts.spacing,
+        spacingVariables: spacingVariables,
+        tokenCounts: tokenCounts,
+        key: selectedLibraryKey
+      }
+    });
+  } else {
+    setScreenSize('SELECTION_SCREEN');
+    await setStatus(PLUGIN_STATUS.SELECTION_MODE);
+    postMessageToUI('ui-mode', {
+      mode: 'selection',
+      fileName: figma.root.name ?? 'Unknown Library'
+    });
+  }
+
+  notifySuccess(`Selected library: ${library?.libraryName || 'None'}`);
+}
+
+// ============================================================================
+// MAIN MESSAGE HANDLER
+// ============================================================================
 
 figma.ui.onmessage = async (msg: PluginMessage) => {
   if (msg.type === 'get-ui-mode') {
@@ -1698,184 +1968,46 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
       })
     });
   } else if (msg.type === 'select-library') {
-    selectedLibraryKey = msg.libraryKey || null;
-    const library = selectedLibraryKey ? await getSavedLibrary(selectedLibraryKey) : null;
-
-    // Switch to home screen when library is selected
-    if (selectedLibraryKey && library) {
-      setScreenSize('HOME_SCREEN');
-      await setStatus(3);
-
-      // Send UI mode first
-      figma.ui.postMessage({
-        type: 'ui-mode',
-        mode: 'home',
-        fileName: figma.root.name ?? 'Unknown Library'
-      });
-
-      // Calculate spacing variables count specifically
-      console.log('Library variables structure:', library.variables);
-
-      let spacingVariables: Record<string, any> = {};
-      let spacingVariablesCount = 0;
-
-      if (library.variables) {
-        // Check if using new structure (organized by collection)
-        if (library.variables.spacing) {
-          spacingVariables = library.variables.spacing;
-          spacingVariablesCount = Object.keys(spacingVariables).length;
-          console.log(`Found ${spacingVariablesCount} spacing variables (new format):`, spacingVariables);
-
-          // Log all variable IDs for debugging
-          console.log('📋 ALL SPACING VARIABLE IDs FROM JSON:');
-          for (const [name, data] of Object.entries(spacingVariables)) {
-            console.log(`  ${name}: ID="${data.id}", Key="${data.key}", Name="${data.name}"`);
-          }
-        } else {
-          // Handle old structure (flat with collection names in keys)
-          const oldFormatSpacing: Record<string, any> = {};
-          for (const key in library.variables) {
-            if (key.toLowerCase().startsWith('spacing/')) {
-              const variableName = key.replace(/^spacing\//i, '');
-              oldFormatSpacing[variableName] = library.variables[key];
-            }
-          }
-          spacingVariables = oldFormatSpacing;
-          spacingVariablesCount = Object.keys(spacingVariables).length;
-          console.log(`Found ${spacingVariablesCount} spacing variables (old format):`, spacingVariables);
-
-          // Log all variable IDs for debugging
-          console.log('📋 ALL SPACING VARIABLE IDs FROM JSON (OLD FORMAT):');
-          for (const [name, data] of Object.entries(spacingVariables)) {
-            console.log(`  ${name}: ID="${data.id}", Key="${data.key}", Name="${data.name}"`);
-          }
-        }
-      }
-
-      // Analyze library tokens for dynamic validation options
-      const tokenCounts = analyzeLibraryTokens(library);
-
-      // Then send library information
-      figma.ui.postMessage({
-        type: 'library-selected',
-        library: {
-          name: library.libraryName,
-          count: Object.keys(library.items).length,
-          textStylesCount: tokenCounts.textStyles,
-          variablesCount: library.variables ? Object.keys(library.variables).length : 0,
-          spacingVariablesCount: tokenCounts.spacing,
-          spacingVariables: spacingVariables,
-          tokenCounts: tokenCounts,
-          key: selectedLibraryKey
-        }
-      });
-    } else {
-      setScreenSize('SELECTION_SCREEN');
-      await setStatus(2);
-      figma.ui.postMessage({
-        type: 'ui-mode',
-        mode: 'selection',
-        fileName: figma.root.name ?? 'Unknown Library'
-      });
-    }
-
-    figma.notify(`Selected library: ${library?.libraryName || 'None'}`);
+    await safeMessageHandler(handleLibrarySelection, msg, 'select-library');
   } else if (msg.type === 'create-text-style') {
     await createLocalTextStyle();
   } else if (msg.type === 'apply-text-style') {
-    try {
-      const styleName = msg.styleName || 'Display/Large';
-      if (msg.nodeId) {
-        // Apply style to specific node
-        await applyStyleToNode(styleName, msg.nodeId);
-        figma.ui.postMessage({
-          type: 'applied',
-          ok: true,
-          nodeId: msg.nodeId,
-          styleName: styleName,
-          targetType: 'node'
-        });
-      } else {
-        // Apply style to current selection (legacy behavior)
+    if (msg.nodeId) {
+      await safeMessageHandler(
+        (msg) => handleTokenApplication(msg, 'text-style', applyStyleToNode),
+        msg,
+        'apply-text-style'
+      );
+    } else {
+      // Legacy behavior for selection
+      try {
+        const styleName = msg.styleName || 'Display/Large';
         await applyStyleToSelection(styleName);
-        figma.ui.postMessage({
-          type: 'applied',
+        postMessageToUI('applied', {
           ok: true,
           styleName: styleName,
           targetType: 'selection'
         });
+      } catch (error) {
+        postMessageToUI('applied', {
+          ok: false,
+          error: String(error),
+          styleName: msg.styleName
+        });
       }
-    } catch (e: any) {
-      figma.ui.postMessage({
-        type: 'applied',
-        ok: false,
-        error: String(e),
-        nodeId: msg.nodeId,
-        styleName: msg.styleName
-      });
     }
   } else if (msg.type === 'apply-spacing-token') {
-    console.log('🔧 Received apply-spacing-token message:', msg);
-    try {
-      const tokenName = msg.tokenName;
-      console.log('Token name:', tokenName);
-      if (!tokenName) {
-        throw new Error('Token name is required.');
-      }
-
-      if (msg.nodeId) {
-        // Apply spacing token to specific node
-        await applySpacingTokenToNode(tokenName, msg.nodeId);
-        figma.ui.postMessage({
-          type: 'applied',
-          ok: true,
-          nodeId: msg.nodeId,
-          styleName: tokenName, // Use tokenName as styleName for consistency with UI
-          targetType: 'node'
-        });
-      } else {
-        throw new Error('Node ID is required for spacing token application.');
-      }
-    } catch (e: any) {
-      figma.ui.postMessage({
-        type: 'applied',
-        ok: false,
-        error: String(e),
-        nodeId: msg.nodeId,
-        styleName: msg.tokenName
-      });
-    }
+    await safeMessageHandler(
+      (msg) => handleTokenApplication(msg, 'spacing', applySpacingTokenToNode),
+      msg,
+      'apply-spacing-token'
+    );
   } else if (msg.type === 'apply-corner-radius-token') {
-    console.log('🔧 Received apply-corner-radius-token message:', msg);
-    try {
-      const tokenName = msg.tokenName;
-      console.log('Corner radius token name:', tokenName);
-      if (!tokenName) {
-        throw new Error('Token name is required.');
-      }
-
-      if (msg.nodeId) {
-        // Apply corner radius token to specific node
-        await applyCornerRadiusTokenToNode(tokenName, msg.nodeId);
-        figma.ui.postMessage({
-          type: 'applied',
-          ok: true,
-          nodeId: msg.nodeId,
-          styleName: tokenName, // Use tokenName as styleName for consistency with UI
-          targetType: 'node'
-        });
-      } else {
-        throw new Error('Node ID is required for corner radius token application.');
-      }
-    } catch (e: any) {
-      figma.ui.postMessage({
-        type: 'applied',
-        ok: false,
-        error: String(e),
-        nodeId: msg.nodeId,
-        styleName: msg.tokenName
-      });
-    }
+    await safeMessageHandler(
+      (msg) => handleTokenApplication(msg, 'corner-radius', applyCornerRadiusTokenToNode),
+      msg,
+      'apply-corner-radius-token'
+    );
   } else if (msg.type === 'apply-corner-radius-tokens') {
     console.log('🔧 Received apply-corner-radius-tokens message:', msg);
     try {
@@ -1939,36 +2071,11 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
       });
     }
   } else if (msg.type === 'apply-color-token') {
-    console.log('🔧 Received apply-color-token message:', msg);
-    try {
-      const tokenName = msg.tokenName;
-      console.log('Color token name:', tokenName);
-      if (!tokenName) {
-        throw new Error('Token name is required.');
-      }
-
-      if (msg.nodeId) {
-        // Apply color token to specific node
-        await applyColorTokenToNode(tokenName, msg.nodeId);
-        figma.ui.postMessage({
-          type: 'applied',
-          ok: true,
-          nodeId: msg.nodeId,
-          styleName: tokenName, // Use tokenName as styleName for consistency with UI
-          targetType: 'node'
-        });
-      } else {
-        throw new Error('Node ID is required for color token application.');
-      }
-    } catch (e: any) {
-      figma.ui.postMessage({
-        type: 'applied',
-        ok: false,
-        error: String(e),
-        nodeId: msg.nodeId,
-        styleName: msg.tokenName
-      });
-    }
+    await safeMessageHandler(
+      (msg) => handleTokenApplication(msg, 'color', applyColorTokenToNode),
+      msg,
+      'apply-color-token'
+    );
   } else if (msg.type === 'resize-ui') {
     if (msg.width && msg.height) {
       resizeUI(msg.width, msg.height);
@@ -2074,229 +2181,71 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
       }
     }
   } else if (msg.type === 'get-spacing-variables') {
-    if (selectedLibraryKey) {
-      const library = await getSavedLibrary(selectedLibraryKey);
-      if (library && library.variables) {
-        let spacingVariables: Record<string, any> = {};
-
-        // Check if using new structure (organized by collection)
-        if (library.variables.spacing) {
-          spacingVariables = library.variables.spacing;
-        } else {
-          // Handle old structure (flat with collection names in keys)
-          for (const key in library.variables) {
-            if (key.toLowerCase().startsWith('spacing/')) {
-              const variableName = key.replace(/^spacing\//i, '');
-              spacingVariables[variableName] = library.variables[key];
-            }
-          }
-        }
-
-        console.log(`Loading ${Object.keys(spacingVariables).length} spacing variables...`);
-
-        figma.ui.postMessage({
-          type: 'spacing-variables-data',
-          spacingVariables: spacingVariables
-        });
-      } else {
-        console.log('No spacing variables found in selected library');
-        figma.ui.postMessage({
-          type: 'spacing-variables-data',
-          spacingVariables: {}
-        });
-      }
-    }
+    await safeMessageHandler(() => handleGetVariables(msg, 'spacing'), msg, 'get-spacing-variables');
   } else if (msg.type === 'get-colors') {
-    if (selectedLibraryKey) {
-      const library = await getSavedLibrary(selectedLibraryKey);
-      if (library && library.variables) {
-        let colorVariables: Record<string, any> = {};
-
-        // Check if using new structure (organized by collection)
-        if (library.variables.colors) {
-          colorVariables = library.variables.colors;
-        } else {
-          // Handle old structure and search through all collections for color-related variables
-          for (const [collectionKey, variables] of Object.entries(library.variables)) {
-            const collectionName = collectionKey.toLowerCase();
-
-            // Check if this collection contains colors
-            if (collectionName.includes('color') || collectionName.includes('colour') ||
-              collectionName.includes('palette') || collectionName.includes('theme')) {
-              // Add all variables from this collection
-              Object.assign(colorVariables, variables);
-            } else {
-              // Check individual variable names for color-related terms
-              for (const [varName, varData] of Object.entries(variables)) {
-                const name = varName.toLowerCase();
-                if (name.includes('color') || name.includes('colour')) {
-                  colorVariables[varName] = varData;
-                }
-              }
-            }
-          }
-        }
-
-        console.log(`Loading ${Object.keys(colorVariables).length} color variables...`);
-
-        figma.ui.postMessage({
-          type: 'colors-data',
-          colors: colorVariables
-        });
-      } else {
-        console.log('No color variables found in selected library');
-        figma.ui.postMessage({
-          type: 'colors-data',
-          colors: {}
-        });
-      }
-    }
+    await safeMessageHandler(() => handleGetVariables(msg, 'colors'), msg, 'get-colors');
   } else if (msg.type === 'get-corner-radius') {
-    if (selectedLibraryKey) {
-      const library = await getSavedLibrary(selectedLibraryKey);
-      if (library && library.variables) {
-        let cornerRadiusVariables: Record<string, any> = {};
-
-        // Check if using new structure (organized by collection)
-        if (library.variables['corner-radius'] || library.variables.cornerRadius) {
-          cornerRadiusVariables = library.variables['corner-radius'] || library.variables.cornerRadius;
-        } else {
-          // Handle old structure and search through all collections for corner radius-related variables
-          for (const [collectionKey, variables] of Object.entries(library.variables)) {
-            const collectionName = collectionKey.toLowerCase();
-
-            // Check if this collection contains corner radius
-            if (collectionName.includes('radius') || collectionName.includes('corner') ||
-              collectionName.includes('border-radius') || collectionName.includes('rounded')) {
-              // Add all variables from this collection
-              Object.assign(cornerRadiusVariables, variables);
-            } else {
-              // Check individual variable names for corner radius-related terms
-              for (const [varName, varData] of Object.entries(variables)) {
-                const name = varName.toLowerCase();
-                if (name.includes('radius') || name.includes('corner') || name.includes('rounded')) {
-                  cornerRadiusVariables[varName] = varData;
-                }
-              }
-            }
-          }
-        }
-
-        console.log(`Loading ${Object.keys(cornerRadiusVariables).length} corner radius variables...`);
-
-        figma.ui.postMessage({
-          type: 'corner-radius-data',
-          cornerRadius: cornerRadiusVariables
-        });
-      } else {
-        console.log('No corner radius variables found in selected library');
-        figma.ui.postMessage({
-          type: 'corner-radius-data',
-          cornerRadius: {}
-        });
-      }
-    }
+    await safeMessageHandler(() => handleGetVariables(msg, 'corner-radius'), msg, 'get-corner-radius');
   } else if (msg.type === 'run-validation') {
-    try {
-      if (!selectedLibraryKey || !msg.options) {
-        figma.notify('Please select a library and validation options first', { error: true });
-        return;
-      }
-
-      const library = await getSavedLibrary(selectedLibraryKey);
-      if (!library) {
-        figma.notify('Selected library not found', { error: true });
-        return;
-      }
-
-      console.log('Running validation with options:', msg.options);
-
-      // Get the current selection or use the entire page
-      const selection = figma.currentPage.selection;
-      let targetNode: FrameNode | PageNode;
-      let targetName: string;
-
-      if (selection.length === 0) {
-        // No selection - validate the entire current page
-        targetNode = figma.currentPage;
-        targetName = `entire page "${figma.currentPage.name}"`;
-        console.log(`No selection found, validating entire page: ${figma.currentPage.name}`);
-        figma.notify(`Validating entire page: ${figma.currentPage.name}`);
-      } else {
-        const selectedNode = selection[0];
-        if (selectedNode.type === 'FRAME') {
-          // Frame selected - validate the frame
-          targetNode = selectedNode as FrameNode;
-          targetName = `frame "${selectedNode.name}"`;
-          console.log(`Validating selected frame: ${selectedNode.name}`);
-        } else {
-          // Other node type selected - validate the entire page
-          targetNode = figma.currentPage;
-          targetName = `entire page "${figma.currentPage.name}" (non-frame selected)`;
-          console.log(`Non-frame selected, validating entire page: ${figma.currentPage.name}`);
-          figma.notify(`Non-frame selected, validating entire page: ${figma.currentPage.name}`);
-        }
-      }
-
-      // Run validation with timeout
-      const validationPromise = runValidation(targetNode, library, msg.options, targetName);
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Validation timeout')), 30000)
-      );
-
-      const validationResults = await Promise.race([validationPromise, timeoutPromise]);
-
-      // Resize UI for validation results
-      setScreenSize('VALIDATION_RESULTS_SCREEN');
-      console.log('Resized UI for validation results');
-
-      // Send results to UI
-      figma.ui.postMessage({
-        type: 'validation-results',
-        results: validationResults,
-        library: library,
-        targetName: targetName,
-        targetType: targetNode.type === 'PAGE' ? 'page' : 'frame',
-        options: msg.options
-      });
-
-      console.log('Validation completed successfully');
-    } catch (error) {
-      console.error('Validation error:', error);
-      figma.notify('Validation failed. Please try again.', { error: true });
-
-      // Send error to UI
-      figma.ui.postMessage({
-        type: 'validation-error',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
+    await safeMessageHandler(handleRunValidation, msg, 'run-validation');
   } else if (msg.type === 'back-to-validation') {
     // Resize back to home screen
     setScreenSize('HOME_SCREEN');
     console.log('Resized UI back to home screen');
   } else if (msg.type === 'select-node') {
-    if (msg.nodeId) {
-      try {
-        const node = await figma.getNodeByIdAsync(msg.nodeId);
-        if (node) {
-          figma.currentPage.selection = [node as SceneNode];
-          figma.viewport.scrollAndZoomIntoView([node as SceneNode]);
-          figma.notify(`Selected ${node.name}`);
-        } else {
-          figma.notify('Node not found', { error: true });
-        }
-      } catch (error) {
-        console.error('Error selecting node:', error);
-        figma.notify('Error selecting node', { error: true });
-      }
-    }
+    await safeMessageHandler(handleSelectNode, msg, 'select-node');
+  } else if (msg.type === 'validate-issue-resolution') {
+    await safeMessageHandler(handleValidateIssueResolution, msg, 'validate-issue-resolution');
+  } else if (msg.type === 'minimize-and-position') {
+    // Minimize window and position next to relevant Figma panel
+    const resultType = msg.resultType || 'text-styles';
+
+    // Determine position based on result type
+    let position: { x: number; y: number } = { x: 0, y: 0 };
+
+    // Position at top-right corner for all issue types
+    position = { x: 800, y: 0 };
+
+    // Resize to collapsed view size using the defined constant
+    setScreenSize('VALIDATION_RESULTS_COLLAPSED');
+
+    // Enable selection tracking for collapsed view
+    isSelectionTrackingEnabled = true;
+    console.log('🔍 SELECTION TRACKING ENABLED (via minimize-and-position)');
+
+    console.log(`Minimized plugin for ${resultType}`);
+    figma.notify(`Plugin minimized`);
+
+    // Notify UI that plugin is now minimized
+    figma.ui.postMessage({
+      type: 'plugin-minimized',
+      resultType: resultType
+    });
   } else if (msg.type === 'enable-selection-tracking') {
     isSelectionTrackingEnabled = true;
-    console.log('Selection tracking enabled');
+    console.log('🔍 SELECTION TRACKING ENABLED');
   } else if (msg.type === 'disable-selection-tracking') {
     isSelectionTrackingEnabled = false;
-    console.log('Selection tracking disabled');
+    console.log('🔍 SELECTION TRACKING DISABLED');
+  } else if (msg.type === 'get-node-name') {
+    // Get node name for out-of-scope modal
+    try {
+      const node = await figma.getNodeByIdAsync(msg.nodeId);
+      const nodeName = node?.name || 'Unknown Asset';
+      
+      figma.ui.postMessage({
+        type: 'node-name-response',
+        nodeId: msg.nodeId,
+        nodeName: nodeName
+      });
+    } catch (error) {
+      console.error('Error getting node name:', error);
+      figma.ui.postMessage({
+        type: 'node-name-response',
+        nodeId: msg.nodeId,
+        nodeName: 'Unknown Asset'
+      });
+    }
   } else if (msg.type === 'close-plugin') {
     figma.closePlugin();
   }
@@ -2307,18 +2256,31 @@ let isSelectionTrackingEnabled = false;
 
 // Listen for selection changes and notify UI (only when enabled)
 figma.on('selectionchange', () => {
-  if (!isSelectionTrackingEnabled) return;
+  console.log('🔍 SELECTION CHANGE DETECTED, tracking enabled:', isSelectionTrackingEnabled);
+  
+  if (!isSelectionTrackingEnabled) {
+    console.log('🔍 Selection tracking disabled, ignoring change');
+    return;
+  }
 
   const selection = figma.currentPage.selection;
   let selectedNodeId = null;
 
+  let selectedNodeName = null;
+
   if (selection.length > 0) {
     selectedNodeId = selection[0].id;
+    selectedNodeName = selection[0].name;
+    console.log('🔍 Selected node:', selectedNodeId, 'name:', selectedNodeName);
+  } else {
+    console.log('🔍 No selection');
   }
 
   // Send selection change to UI
+  console.log('🔍 SENDING SELECTION CHANGE TO UI:', selectedNodeId, selectedNodeName);
   figma.ui.postMessage({
     type: 'selection-changed',
-    nodeId: selectedNodeId
+    nodeId: selectedNodeId,
+    nodeName: selectedNodeName
   });
 });

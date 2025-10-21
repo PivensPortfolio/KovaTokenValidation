@@ -77,7 +77,7 @@
     line-height: 1.5;
     color: var(--color-gray-700);
     background: #ffffff;
-    padding: var(--spacing-4) 16px;
+    padding: var(--spacing-2) 16px;
     overflow: hidden;
     position: relative;
     -webkit-font-smoothing: antialiased;
@@ -96,6 +96,11 @@
   /* Remove body padding effect for validation results screen */
   #validation-results-screen {
     margin-top: calc(-1 * var(--spacing-4));
+  }
+
+  /* Remove body padding when collapsed view is active */
+  body.collapsed-view-active {
+    padding: 0 !important;
   }
 
   /* Screen Management */
@@ -1511,6 +1516,8 @@
     overflow-y: auto;
     padding-right: 8px;
     /* Space for scrollbar */
+    padding-bottom: 120px;
+    /* Extra space for sticky footer */
     margin-right: -8px;
     /* Offset the padding */
     min-height: 0;
@@ -1574,6 +1581,207 @@
 
   #collapsed-view-content::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
+  }
+
+  /* Enhanced Collapsed View Styles */
+  #collapsed-view-content button:hover {
+    background: #e5e7eb !important;
+  }
+
+  /* Conversational Interface Button Styles */
+  .action-btn.primary:hover {
+    background: #7c3aed !important;
+    border-color: #7c3aed !important;
+  }
+
+  .action-btn.secondary:hover {
+    background: #f9fafb !important;
+  }
+
+  #prev-issue-btn:hover:not(:disabled),
+  #next-issue-btn:hover:not(:disabled) {
+    color: #7c3aed !important;
+  }
+
+  #expand-to-summary:hover {
+    background: #7c3aed !important;
+  }
+
+  /* Enhanced Collapsed View Component Styles */
+  .enhanced-collapsed-content {
+    font-family: var(--font-family);
+  }
+
+  .enhanced-collapsed-content .action-btn {
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+
+  .enhanced-collapsed-content .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .enhanced-collapsed-content .action-btn.primary:hover {
+    background: #059669 !important;
+  }
+
+  .enhanced-collapsed-content .action-btn.secondary:hover {
+    background: #e5e7eb !important;
+    border-color: #9ca3af !important;
+  }
+
+  .enhanced-collapsed-content .action-btn.subtle:hover {
+    background: #f3f4f6 !important;
+  }
+
+  .enhanced-collapsed-content .reason-btn:hover {
+    background: #e5e7eb !important;
+    border-color: #9ca3af !important;
+  }
+
+  .enhanced-collapsed-content .completion-icon {
+    animation: bounce 2s infinite;
+  }
+
+  @keyframes bounce {
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+      transform: translateY(0);
+    }
+
+    40% {
+      transform: translateY(-10px);
+    }
+
+    60% {
+      transform: translateY(-5px);
+    }
+  }
+
+  /* Responsive adjustments for collapsed view */
+  @media (max-width: 300px) {
+    .enhanced-collapsed-content {
+      padding: 12px;
+    }
+
+    .enhanced-collapsed-content .action-btn {
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .enhanced-collapsed-content .action-btn {
+      border-width: 2px;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .enhanced-collapsed-content .action-btn {
+      transition: none;
+    }
+
+    .enhanced-collapsed-content .action-btn:hover {
+      transform: none;
+    }
+
+    .enhanced-collapsed-content .completion-icon {
+      animation: none;
+    }
+  }
+
+  #auto-refresh-toggle.active,
+  #pin-selection-toggle.active {
+    background: #dbeafe !important;
+    color: #3b82f6 !important;
+  }
+
+  .collapsed-issue-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.2s ease;
+  }
+
+  .collapsed-issue-item:hover {
+    background: #f9fafb;
+  }
+
+  .collapsed-issue-item.resolved {
+    background: #f0fdf4;
+    border-left: 3px solid #10b981;
+  }
+
+  .collapsed-issue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .collapsed-issue-category {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #111827;
+  }
+
+  .collapsed-issue-status {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .collapsed-issue-status.resolved {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .collapsed-issue-status.pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .collapsed-issue-status.detecting {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .collapsed-issue-guidance {
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+
+  .collapsed-token-chip {
+    display: inline-block;
+    background: #f3f4f6;
+    color: #374151;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .collapsed-token-chip:hover {
+    background: #e5e7eb;
+  }
+
+  .collapsed-figma-hint {
+    color: #3b82f6;
+    font-weight: 500;
   }
 
   /* Enhanced truncation styles for collapsed view */
@@ -2378,11 +2586,22 @@
       </div>
     </div>
 
-    <!-- Collapsed View Content (shown when minimized and node is selected) -->
+    <!-- Enhanced Collapsed View Content (shown when minimized) -->
     <div id="collapsed-view-content"
-      style="display: none; background: white; max-height: calc(100vh - 200px); overflow-y: auto; min-height: 200px; padding: 0;">
-      <div id="selected-node-issues" style="width: 100%;">
-        <!-- Selected node issues will be shown here -->
+      style="display: none; background: white; height: 100vh; overflow: hidden; padding: 0; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999;">
+
+      <!-- Enhanced Collapsed View Container -->
+      <div id="enhanced-collapsed-container"
+        style="display: flex; flex-direction: column; height: 100%; margin: 0; padding: 0;">
+        <!-- This will be populated by the CollapsedView component -->
+      </div>
+
+      <!-- Fallback Basic View (for when no validation data is available) -->
+      <div id="basic-collapsed-view"
+        style="display: none; padding: 16px; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;">
+        <button id="basic-expand-button" class="expand-button">
+          Token Validator
+        </button>
       </div>
     </div>
   </div>
@@ -4064,6 +4283,9 @@
     console.log('Target:', targetName, 'Type:', targetType)
     console.log('Validation options:', options)
 
+    // Use unified view manager
+    ValidationViewManager.initialize(results, library, options);
+
     // Initialize issue state tracking
     if (!window.issueStates) {
       window.issueStates = new Map() // nodeId -> 'active' | 'resolved' | 'ignored'
@@ -4313,7 +4535,7 @@
   }
 
   // Truncate frame names for collapsed view
-  function truncateFrameName(frameName, maxLength = 60) {
+  function truncateFrameName(frameName, maxLength = 20) {
     if (!frameName || frameName.length <= maxLength) return frameName
     return frameName.substring(0, maxLength) + '...'
   }
@@ -4959,8 +5181,10 @@
 
       btn.addEventListener('click', function () {
         const nodeId = this.getAttribute('data-node-id')
+        const resultType = this.getAttribute('data-result-type') || 'text-styles'
+
         if (nodeId) {
-          console.log('View button clicked for node:', nodeId)
+          console.log('View button clicked for node:', nodeId, 'type:', resultType)
 
           // First, select the node in Figma
           parent.postMessage({
@@ -4970,21 +5194,14 @@
             }
           }, '*')
 
-          // Set the current selected node for collapsed view
-          window.currentSelectedNodeId = nodeId
-
-          // Trigger collapsed mode if not already minimized
-          if (!window.isValidationMinimized) {
-            console.log('Switching to collapsed mode via minimize button')
-            const minimizeBtn = document.getElementById('minimize-btn')
-            if (minimizeBtn) {
-              // Trigger the minimize button click to enter collapsed mode
-              minimizeBtn.click()
+          // Minimize and position window next to relevant Figma panel
+          parent.postMessage({
+            pluginMessage: {
+              type: 'minimize-and-position',
+              resultType: resultType,
+              nodeId: nodeId
             }
-          } else {
-            // If already in collapsed mode, just update the view for the selected node
-            updateCollapsedViewForSelectedNode()
-          }
+          }, '*')
         }
       })
     })
@@ -6122,16 +6339,74 @@
     }
 
     if (msg.type === 'validation-results') {
+      console.log('🔍 VALIDATION RESULTS RECEIVED');
+      console.log('🔍 State when results received:', {
+        isValidationMinimized: window.isValidationMinimized,
+        currentView: collapsedViewState.currentView,
+        isInitialized: collapsedViewState.isInitialized
+      });
+
       showValidationResults(msg.results, msg.library, msg.targetName, msg.targetType, msg.options)
+
+      // Always initialize collapsed view data, but don't show collapsed UI unless minimized
+      initializeEnhancedCollapsedView(msg.results, msg.library, msg.options)
     }
 
     if (msg.type === 'selection-changed') {
-      console.log('Selection changed:', msg.nodeId)
-      window.currentSelectedNodeId = msg.nodeId
+      console.log('🔍 SELECTION CHANGED EVENT RECEIVED:', msg.nodeId)
+      console.log('🔍 ValidationViewManager.state:', {
+        isMinimized: ValidationViewManager.state.isMinimized,
+        hasValidationData: ValidationViewManager.state.hasValidationData
+      })
 
-      // Update collapsed view if we're in minimized state
-      if (window.isValidationMinimized) {
-        updateCollapsedViewForSelectedNode()
+      window.currentSelectedNodeId = msg.nodeId
+      window.currentSelectedNodeName = msg.nodeName
+
+      // Update collapsed view if we're in minimized state using ValidationViewManager
+      if (ValidationViewManager.state.isMinimized && ValidationViewManager.state.hasValidationData) {
+        console.log('🔍 CALLING ValidationViewManager.onAssetSelected() - SIMPLE LOOKUP ONLY')
+
+        // First, close any existing out-of-scope modal
+        const existingModal = document.querySelector('div[style*="position: fixed"][style*="z-index: 10000"]');
+        if (existingModal) {
+          console.log('🔍 Closing existing out-of-scope modal');
+          document.body.removeChild(existingModal);
+        }
+
+        ValidationViewManager.onAssetSelected(msg.nodeId);
+        return;
+      } else {
+        console.log('🔍 NOT calling ValidationViewManager - isMinimized:', ValidationViewManager.state.isMinimized, 'hasValidationData:', ValidationViewManager.state.hasValidationData)
+      }
+    }
+
+    if (msg.type === 'node-name-response') {
+      console.log('🔍 NODE NAME RESPONSE RECEIVED:', msg.nodeId, msg.nodeName);
+      ValidationViewManager.handleNodeNameResponse(msg.nodeId, msg.nodeName);
+    }
+
+    if (msg.type === 'validation-response') {
+      console.log('🔍 Validation response received:', msg);
+      const validationId = msg.validationId;
+      if (window.validationCallbacks && window.validationCallbacks[validationId]) {
+        window.validationCallbacks[validationId]({
+          isFixed: msg.isFixed,
+          reason: msg.reason
+        });
+        delete window.validationCallbacks[validationId];
+      }
+    }
+
+    if (msg.type === 'plugin-minimized') {
+      console.log('🔍 Plugin minimized message received - updating state only')
+
+      // Just update the ValidationViewManager state without calling showMinimizedView
+      // to avoid triggering more resize messages that cause loops
+      if (ValidationViewManager.state.hasValidationData) {
+        ValidationViewManager.state.isMinimized = true;
+        console.log('🔍 ValidationViewManager state updated to minimized');
+      } else {
+        console.log('🔍 No validation data available');
       }
     }
 
@@ -6233,11 +6508,50 @@
 
   // Track current selected node and minimized state
   window.currentSelectedNodeId = null
+  window.currentSelectedNodeName = null
   window.isValidationMinimized = false
+
+  // Expand button instance
+  window.expandButtonInstance = null
+
+  // Function to render ultra-focused collapsed issue item
+  function renderCollapsedIssueItem(issue, index, assetName) {
+    const isResolved = window.issueStates?.get(issue.nodeId) === 'resolved'
+    const categoryIcons = {
+      'text-style': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,7 4,4 20,4 20,7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>',
+      'spacing': '📏',
+      'color': '🎨',
+      'corner-radius': '⭕'
+    }
+
+    const categoryNames = {
+      'text-style': 'TEXT STYLE',
+      'spacing': 'SPACING',
+      'color': 'COLOR',
+      'corner-radius': 'CORNER RADIUS'
+    }
+
+    const statusText = isResolved ? 'RESOLVED' : 'PENDING'
+
+    return `
+      <div style="padding: 16px; ${isResolved ? 'background: #f0fdf4; border-left: 3px solid #10b981;' : ''}">
+        ${index === 0 ? `<div style="font-size: 16px; font-weight: 600; color: #111827; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><span>📋</span> ${truncateText(assetName, 20)}</div>` : ''}
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">${categoryIcons[issue.type] || '📋'}</span>
+            <span style="font-weight: 600; color: #111827; font-size: 14px;">${categoryNames[issue.type] || issue.type.toUpperCase()}</span>
+          </div>
+          <span style="padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; text-transform: uppercase; ${isResolved ? 'background: #dcfce7; color: #166534;' : 'background: #fef3c7; color: #92400e;'}">${statusText}</span>
+        </div>
+      </div>
+    `
+  }
+
+
 
   // Function to update collapsed view for selected node (global scope)
   function updateCollapsedViewForSelectedNode() {
-    console.log('🔍 updateCollapsedViewForSelectedNode called')
+    console.log('🔍 updateCollapsedViewForSelectedNode called - NEW VERSION 2024-10-19')
     const collapsedContent = document.getElementById('selected-node-issues')
     const validationResults = window.validationResults || []
     const updatedItems = window.updatedItems || new Set()
@@ -6253,7 +6567,7 @@
 
     if (!window.currentSelectedNodeId) {
       console.log('🔍 No selected node, showing default message')
-      collapsedContent.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 60px; color: #999; font-style: italic; background: white; border: 1px solid #e5e7eb; margin: 16px;">Select an asset in Figma to see its validation issues</div>'
+      collapsedContent.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 60px; color: #999; font-style: italic; background: white; margin: 16px;">Select an asset in Figma to see its validation issues</div>'
       return
     }
 
@@ -6271,103 +6585,1505 @@
 
     if (nodeIssues.length === 0) {
       console.log('🔍 No issues found for selected node')
-      collapsedContent.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 60px; color: #28a745; font-weight: 500; background: white; border: 1px solid #e5e7eb; margin: 16px;">✓ No issues found for selected asset</div>'
+      collapsedContent.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 60px; color: #28a745; font-weight: 500; background: white; margin: 16px;">✓ No issues found for selected asset</div>'
       return
     }
 
-    // Display the issues in the exact same format as expanded view
+    // Get selected node name
+    const selectedNodeName = nodeIssues.length > 0 ? nodeIssues[0].frameName : 'Selected Node'
+
+    // Use ultra-focused rendering
+    console.log('🎨 Using ultra-focused rendering for collapsed view')
     let html = ''
-
     nodeIssues.forEach((result, index) => {
-      const isSpacing = result.type === 'spacing'
-      const isCornerRadius = result.type === 'corner-radius'
-      const isColor = result.type === 'color'
-
-      let frameNameColor = '#007bff'
-      let dropdownText = 'Select a style...'
-
-      if (isSpacing) {
-        frameNameColor = '#ff8c00'
-        dropdownText = 'Select token...'
-      } else if (isCornerRadius) {
-        frameNameColor = '#f59e0b'
-        dropdownText = 'Select radius...'
-      } else if (isColor) {
-        frameNameColor = '#be185d'
-        dropdownText = 'Select color...'
+      // Convert result to the format expected by renderCollapsedIssueItem
+      const issue = {
+        nodeId: result.node?.id,
+        type: result.type,
+        recommendedToken: result.recommendedStyle || result.recommendedToken || 'Token Name',
+        issue: result.issue
       }
-
-      html += `
-          <div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f1f3f4; background: white;">
-            <div style="color: ${frameNameColor}; font-weight: 500; font-size: 13px; min-width: 80px; max-width: 480px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${result.frameName}">${truncateFrameName(result.frameName)}</div>
-
-            <div style="flex: 1; color: #6c757d; font-size: 14px; margin-right: 16px;" title="${result.issue}">- ${result.issue}</div>
-            <div style="display: flex; gap: 8px; margin-right: 12px; position: relative;">
-              ${isCornerRadius ? `
-              <!-- Corner radius input fields (simplified) -->
-              <div style="display: flex; flex-direction: column; gap: 6px; margin-right: 8px;">
-                <div style="display: flex; gap: 6px;">
-                  <div style="display: flex; align-items: center; gap: 3px;">
-                    <span style="width: 5px; height: 5px; border-left: 2px solid #e5e7eb; border-top: 2px solid #e5e7eb; border-radius: 1px 0 0 0;"></span>
-                    <input type="text" value="${result.cornerValues?.topLeftRadius || ''}" 
-                           ${result.cornerValues?.topLeftRadius ? '' : 'disabled'} 
-                           style="width: 24px; height: 20px; font-size: 10px; text-align: center; border: 1px solid #d1d5db; border-radius: 2px; outline: none;">
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 3px;">
-                    <input type="text" value="${result.cornerValues?.topRightRadius || ''}" 
-                           ${result.cornerValues?.topRightRadius ? '' : 'disabled'} 
-                           style="width: 24px; height: 20px; font-size: 10px; text-align: center; border: 1px solid #d1d5db; border-radius: 2px; outline: none;">
-                    <span style="width: 5px; height: 5px; border-right: 2px solid #e5e7eb; border-top: 2px solid #e5e7eb; border-radius: 0 1px 0 0;"></span>
-                  </div>
-                </div>
-                <div style="display: flex; gap: 6px;">
-                  <div style="display: flex; align-items: center; gap: 3px;">
-                    <span style="width: 5px; height: 5px; border-left: 2px solid #e5e7eb; border-bottom: 2px solid #e5e7eb; border-radius: 0 0 0 1px;"></span>
-                    <input type="text" value="${result.cornerValues?.bottomLeftRadius || ''}" 
-                           ${result.cornerValues?.bottomLeftRadius ? '' : 'disabled'} 
-                           style="width: 24px; height: 20px; font-size: 10px; text-align: center; border: 1px solid #d1d5db; border-radius: 2px; outline: none;">
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 3px;">
-                    <input type="text" value="${result.cornerValues?.bottomRightRadius || ''}" 
-                           ${result.cornerValues?.bottomRightRadius ? '' : 'disabled'} 
-                           style="width: 24px; height: 20px; font-size: 10px; text-align: center; border: 1px solid #d1d5db; border-radius: 2px; outline: none;">
-                    <span style="width: 5px; height: 5px; border-right: 2px solid #e5e7eb; border-bottom: 2px solid #e5e7eb; border-radius: 0 0 1px 0;"></span>
-                  </div>
-                </div>
-              </div>
-              ` : ''}
-              <div class="simple-dropdown" data-node-id="${result.node?.id || ''}" data-result-type="${result.type}" style="position: relative;">
-                <button class="btn btn-primary dropdown-trigger" style="background: white !important; color: #6c757d !important;">
-                  <span class="dropdown-text">${dropdownText}</span>
-                  <svg class="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; color: #6c757d; transition: transform 0.2s ease;">
-                    <path d="m6 9 6 6 6-6"/>
-                  </svg>
-                </button>
-                <div class="dropdown-options" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-gray-300); border-radius: 0 0 6px 6px; box-shadow: var(--shadow-lg); z-index: 1000; max-height: 200px; overflow-y: auto; display: none;">
-                  <!-- Options will be populated by JavaScript -->
-                </div>
-              </div>
-              <button class="btn btn-primary update-btn" data-node-id="${result.node?.id || ''}" data-result-type="${result.type}" disabled>Update</button>
-              <button class="btn-danger">Ignore</button>
-            </div>
-            <button class="btn btn-icon view-node-btn" data-node-id="${result.node?.id || ''}">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-          </div>`
+      console.log('🎨 Rendering issue:', issue)
+      html += renderCollapsedIssueItem(issue, index, selectedNodeName)
     })
 
-    console.log('🔍 Setting collapsed content HTML with', nodeIssues.length, 'issues')
+    console.log('🎨 Generated HTML:', html.substring(0, 200) + '...')
     collapsedContent.innerHTML = html
+    console.log('🎨 Set innerHTML for collapsed content')
 
-    // After setting the HTML, we need to set up the event handlers for the dropdowns and buttons
-    // This is important because the collapsed view now has the same interactive elements
-    setTimeout(() => {
-      setupValidationEventHandlers()
-    }, 100)
+    // Set up event handlers for the new interface
+    setupCollapsedViewEventHandlers()
+    console.log('🎨 Set up event handlers for collapsed view')
   }
+
+  // Function to set up essential event handlers for collapsed view
+  function setupCollapsedViewEventHandlers() {
+    // Essential action button handlers
+    const markResolvedBtn = document.getElementById('mark-resolved')
+
+    if (markResolvedBtn) {
+      markResolvedBtn.addEventListener('click', function () {
+        if (window.currentSelectedNodeId) {
+          const issueStates = window.issueStates || new Map()
+          issueStates.set(window.currentSelectedNodeId, 'resolved')
+          window.issueStates = issueStates
+          updateCollapsedViewForSelectedNode()
+        }
+      })
+    }
+
+    // Expand button disabled - using minimize button instead
+  }
+
+  // Function to initialize the prominent expand button
+  function initializeExpandButton() {
+    // Only initialize if we're in collapsed view and button doesn't exist
+    if (!window.isValidationMinimized || window.expandButtonInstance) {
+      console.log('🔍 Skipping expand button initialization - minimized:', window.isValidationMinimized, 'existing instance:', !!window.expandButtonInstance)
+      return
+    }
+
+    const expandButtonContainer = document.getElementById('expand-button-container')
+    if (!expandButtonContainer) {
+      console.warn('Expand button container not found')
+      return
+    }
+
+    // Create expand button configuration
+    const expandButtonConfig = {
+      container: expandButtonContainer,
+      onExpand: function () {
+        console.log('Expand button clicked - triggering expand')
+        // Trigger the existing minimize button click to expand
+        const minimizeBtn = document.getElementById('minimize-btn')
+        if (minimizeBtn) {
+          minimizeBtn.click()
+        }
+      },
+      position: 'top-right',
+      showTooltip: true,
+      keyboardShortcut: 'Ctrl+E',
+      ariaLabel: 'Expand to full validation view'
+    }
+
+    // Create expand button instance (simplified inline version)
+    try {
+      window.expandButtonInstance = createExpandButton(expandButtonConfig)
+      console.log('✅ Expand button initialized successfully')
+    } catch (error) {
+      console.error('Failed to initialize expand button:', error)
+    }
+  }
+
+  // Simplified expand button creation function (inline implementation)
+  function createExpandButton(config) {
+    const container = config.container
+    const onExpand = config.onExpand
+
+    // Create button element
+    const button = document.createElement('button')
+    button.className = 'expand-button expand-button-top-right'
+    button.setAttribute('type', 'button')
+    button.setAttribute('aria-label', config.ariaLabel || 'Expand to full validation view')
+    button.setAttribute('title', 'Expand to full view (Ctrl+E)')
+
+    // Create button content
+    const content = document.createElement('div')
+    content.className = 'expand-button-content'
+
+    // Add expand icon
+    const icon = document.createElement('span')
+    icon.className = 'expand-icon'
+    icon.textContent = '↗'
+    icon.setAttribute('aria-hidden', 'true')
+
+    // Add text label
+    const label = document.createElement('span')
+    label.className = 'expand-label'
+    label.textContent = 'Expand'
+
+    content.appendChild(icon)
+    content.appendChild(label)
+    button.appendChild(content)
+
+    // Add click handler
+    button.addEventListener('click', function (event) {
+      event.preventDefault()
+      event.stopPropagation()
+
+      // Add click animation
+      button.classList.add('clicked')
+      setTimeout(() => button.classList.remove('clicked'), 150)
+
+      // Call expand handler
+      onExpand()
+    })
+
+    // Add keyboard handler
+    button.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        button.click()
+      }
+    })
+
+    // Add global keyboard shortcut (Ctrl+E)
+    const keyboardHandler = function (event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'e') {
+        event.preventDefault()
+        event.stopPropagation()
+        button.click()
+      }
+    }
+    document.addEventListener('keydown', keyboardHandler)
+
+    // Add to container
+    container.appendChild(button)
+
+    // Add styles if not already added
+    addExpandButtonStyles()
+
+    // Return instance with cleanup method
+    return {
+      button: button,
+      destroy: function () {
+        document.removeEventListener('keydown', keyboardHandler)
+        if (button && button.parentNode) {
+          button.parentNode.removeChild(button)
+        }
+      }
+    }
+  }
+
+  // Function to add expand button styles
+  function addExpandButtonStyles() {
+    if (document.head.querySelector('style[data-expand-button]')) {
+      return // Styles already added
+    }
+
+    const style = document.createElement('style')
+    style.setAttribute('data-expand-button', 'true')
+    style.textContent = `
+      .expand-button {
+        position: absolute;
+        z-index: 100;
+        background: #ffffff;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: var(--font-family, 'Inter', sans-serif);
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        padding: 0;
+        min-height: 44px;
+        min-width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        user-select: none;
+      }
+
+      .expand-button:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform: translateY(-1px);
+      }
+
+      .expand-button:active,
+      .expand-button.clicked {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        background: #f3f4f6;
+      }
+
+      .expand-button:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .expand-button-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 12px;
+      }
+
+      .expand-icon {
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1;
+        color: #6b7280;
+        transition: color 0.2s ease;
+      }
+
+      .expand-label {
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1;
+        color: #374151;
+        transition: color 0.2s ease;
+      }
+
+      .expand-button:hover .expand-icon {
+        color: #374151;
+      }
+
+      .expand-button:hover .expand-label {
+        color: #111827;
+      }
+
+      .expand-button-top-right {
+        top: 12px;
+        right: 12px;
+      }
+
+      /* Visual hierarchy - ensure button doesn't interfere with main actions */
+      .expand-button {
+        z-index: 100;
+      }
+
+      /* Ensure expand button doesn't overlap with main content */
+      #selected-node-issues {
+        padding-top: 60px; /* Make room for expand button */
+      }
+
+      /* Responsive Design */
+      @media (max-width: 320px) {
+        .expand-button-content {
+          padding: 6px 8px;
+          gap: 4px;
+        }
+        
+        .expand-label {
+          font-size: 12px;
+        }
+        
+        .expand-icon {
+          font-size: 14px;
+        }
+      }
+
+      /* High Contrast Mode */
+      @media (prefers-contrast: high) {
+        .expand-button {
+          border-width: 3px;
+          border-color: #000000;
+        }
+        
+        .expand-button:focus {
+          border-color: #0066cc;
+          box-shadow: 0 0 0 3px #0066cc;
+        }
+      }
+
+      /* Reduced Motion */
+      @media (prefers-reduced-motion: reduce) {
+        .expand-button {
+          transition: none;
+        }
+        
+        .expand-button:hover {
+          transform: none;
+        }
+      }
+
+      /* Focus Visible for Better Accessibility */
+      .expand-button:focus-visible {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+      }
+    `
+
+    document.head.appendChild(style)
+  }
+
+
+
+
+  // Enhanced Collapsed View Management
+  let enhancedCollapsedView = null;
+  let collapsedViewState = {
+    isInitialized: false,
+    validationData: null,
+    currentView: 'expanded' // 'expanded' | 'collapsed'
+  };
+
+  // Initialize the enhanced collapsed view with validation data
+  function initializeEnhancedCollapsedView(results, library, options) {
+    console.log('🎯 Initializing enhanced collapsed view with validation data');
+    console.log('🎯 Results:', results?.length || 0, 'issues');
+    console.log('🎯 Library:', library?.name || 'Unknown');
+    console.log('🎯 Options:', options);
+    console.log('🎯 isValidationMinimized:', window.isValidationMinimized);
+    console.log('🎯 currentView:', collapsedViewState.currentView);
+    console.log('🎯 isInitialized:', collapsedViewState.isInitialized);
+
+    try {
+      // Always store validation data for potential collapsed view use
+      collapsedViewState.validationData = {
+        issues: results || [],
+        library: library,
+        options: options || {},
+        timestamp: new Date()
+      };
+
+      // Only initialize and show collapsed view UI if we're actually minimized
+      console.log('🔍 CHECKING CONDITIONS FOR COLLAPSED VIEW UI:');
+      console.log('🔍 window.isValidationMinimized:', window.isValidationMinimized);
+      console.log('🔍 collapsedViewState.currentView:', collapsedViewState.currentView);
+      console.log('🔍 Should show collapsed UI:', window.isValidationMinimized && collapsedViewState.currentView === 'collapsed');
+
+      if (window.isValidationMinimized && collapsedViewState.currentView === 'collapsed') {
+        console.log('🎯 SETTING UP COLLAPSED VIEW UI');
+        // Initialize the collapsed view component if not already done
+        if (!collapsedViewState.isInitialized) {
+          setupEnhancedCollapsedView();
+          collapsedViewState.isInitialized = true;
+          console.log('🎯 Enhanced collapsed view initialized successfully');
+        }
+
+        // Update the collapsed view with new data
+        updateEnhancedCollapsedViewData();
+      } else {
+        console.log('🎯 SKIPPING collapsed view UI setup - not in collapsed mode');
+      }
+    } catch (error) {
+      console.error('🎯 Error initializing enhanced collapsed view:', error);
+      // Fallback to basic collapsed view
+      setupBasicCollapsedViewFallback();
+    }
+  }
+
+  // Setup the enhanced collapsed view component
+  function setupEnhancedCollapsedView() {
+    console.log('🎯 Setting up enhanced collapsed view component');
+
+    const container = document.getElementById('enhanced-collapsed-container');
+    if (!container) {
+      console.error('Enhanced collapsed container not found');
+      return;
+    }
+
+    // Create a mock ViewStateController for the collapsed view
+    const mockViewStateController = {
+      getResultsData: () => {
+        if (!collapsedViewState.validationData) return null;
+        return {
+          issues: collapsedViewState.validationData.issues,
+          totalNodes: collapsedViewState.validationData.issues.length,
+          scope: 'selection',
+          timestamp: collapsedViewState.validationData.timestamp
+        };
+      }
+    };
+
+    // Initialize the CollapsedView component
+    try {
+      // Since we can't import the TypeScript module directly in the HTML context,
+      // we'll create a simplified version that mimics the CollapsedView behavior
+      setupSimplifiedCollapsedView(container, mockViewStateController);
+    } catch (error) {
+      console.error('Error setting up enhanced collapsed view:', error);
+      // Fallback to basic collapsed view
+      setupBasicCollapsedViewFallback();
+    }
+  }
+
+  // Simplified collapsed view implementation for HTML context
+  function setupSimplifiedCollapsedView(container, viewController) {
+    console.log('🎯 Setting up simplified collapsed view');
+
+    // Create the collapsed view interface with minimal structure
+    container.innerHTML = `
+      <div class="enhanced-collapsed-content" style="height: 100vh; box-sizing: border-box; background: #f9fafb; margin: 0; padding: 16px 0 0 0;">
+        <div id="collapsed-issue-display" style="height: calc(100% - 10px); display: flex; flex-direction: column; margin: 0; padding: 0;">
+          <!-- Issue content will be populated here -->
+        </div>
+      </div>
+    `;
+
+    // Setup conversational interface
+    setupConversationalInterface(container);
+  }
+
+  // Setup conversational interface for the collapsed view
+  function setupConversationalInterface(container) {
+    const issueDisplay = container.querySelector('#collapsed-issue-display');
+    if (!issueDisplay) return;
+
+    // Get current active issue
+    const activeIssue = getCurrentActiveIssue();
+    if (activeIssue) {
+      displayConversationalIssue(issueDisplay, activeIssue);
+    } else {
+      // Check if we have a selected node with no issues
+      if (window.currentSelectedNodeId) {
+        displayNoIssuesForSelectedNode(issueDisplay);
+      } else {
+        displayCompletionState(issueDisplay);
+      }
+    }
+  }
+
+  // Get the current active issue for conversational display
+  function getCurrentActiveIssue() {
+    if (!collapsedViewState.validationData) return null;
+
+    const issues = collapsedViewState.validationData.issues;
+    const issueStates = window.issueStates || new Map();
+
+    // If a specific node is selected, find issues for that node first
+    if (window.currentSelectedNodeId) {
+      const selectedNodeIssues = issues.filter(issue => issue.node?.id === window.currentSelectedNodeId);
+
+      // Find first unresolved issue for the selected node
+      for (const issue of selectedNodeIssues) {
+        const nodeId = issue.node?.id;
+        const state = issueStates.get(nodeId);
+        if (!state || (state !== 'resolved' && state !== 'ignored')) {
+          return issue;
+        }
+      }
+
+      // If no unresolved issues for selected node, return null to show "no issues" state
+      return null;
+    }
+
+    // If no specific node selected, find first unresolved issue from all issues
+    for (const issue of issues) {
+      const nodeId = issue.node?.id;
+      const state = issueStates.get(nodeId);
+      if (!state || (state !== 'resolved' && state !== 'ignored')) {
+        return issue;
+      }
+    }
+
+    return null;
+  }
+
+  // Display "no issues" state for selected node
+  function displayNoIssuesForSelectedNode(container) {
+    // Get the selected node name from stored selection or validation results
+    let selectedNodeName = 'Selected Asset';
+
+    // First try to get from stored selection name
+    if (window.currentSelectedNodeName) {
+      selectedNodeName = truncateText(window.currentSelectedNodeName, 20);
+    }
+    // Fallback to validation results if available
+    else if (collapsedViewState.validationData && window.currentSelectedNodeId) {
+      const allIssues = collapsedViewState.validationData.issues;
+      const nodeIssue = allIssues.find(issue => issue.node?.id === window.currentSelectedNodeId);
+      if (nodeIssue) {
+        selectedNodeName = truncateText(nodeIssue.node?.name || 'Selected Asset', 20);
+      }
+    }
+
+    container.innerHTML = `
+      <div class="conversational-issue" style="height: 100%; display: flex; flex-direction: column;">
+        <!-- No Issues Card -->
+        <div style="background: white; padding: 20px; margin: 16px; margin-top: 0; margin-bottom: 16px; flex: 1; display: flex; flex-direction: column; border-radius: 8px; border: 1px solid #e5e7eb;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: #111827; margin: 0;">
+              ${selectedNodeName}
+            </h2>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="background: #f3f4f6; color: #8B5CF6; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;">
+                No Issues
+              </span>
+              <button id="expand-from-issue" style="color: #6b7280; background: none; border: none; cursor: pointer; padding: 4px;">
+                <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; color: #6b7280;">
+            <div style="margin-bottom: 16px;">
+              <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" style="width: 96px; height: 96px;">
+                <!-- 3x3 Grid of tokens - dots only, no background -->
+                <!-- Grid spacing: 40px between centers, starting at x=88, y=88 -->
+                <!-- Row 1 -->
+                <circle cx="88" cy="88" r="12" fill="#8B5CF6" />
+                <circle cx="128" cy="88" r="12" fill="#8B5CF6" />
+                <circle cx="168" cy="88" r="12" fill="#8B5CF6" />
+                <!-- Row 2 - middle circle offset/highlighted -->
+                <circle cx="88" cy="128" r="12" fill="#8B5CF6" />
+                <!-- Highlighted center token - hollow ring (10% larger: 13.2px) -->
+                <circle cx="128" cy="128" r="13.2" fill="none" stroke="#8B5CF6" stroke-width="3" />
+                <circle cx="168" cy="128" r="12" fill="#8B5CF6" />
+                <!-- Row 3 -->
+                <circle cx="88" cy="168" r="12" fill="#8B5CF6" />
+                <circle cx="128" cy="168" r="12" fill="#8B5CF6" />
+                <circle cx="168" cy="168" r="12" fill="#8B5CF6" />
+                <!-- Optional: Add subtle depth with one offset token -->
+                <!-- Bottom right token slightly elevated/offset -->
+                <circle cx="170" cy="166" r="8" fill="#8B5CF6" opacity="0.5" />
+              </svg>
+            </div>
+            <p style="font-size: 20px; font-weight: 700; color: #8B5CF6; margin-bottom: 8px;">Great job!</p>
+            <p style="font-size: 14px; line-height: 1.5; margin: 0;">This asset follows all the design system guidelines.</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add expand button event listener
+    const expandBtn = container.querySelector('#expand-from-issue');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', () => {
+        console.log('Expand button clicked - switching to full view');
+        expandToFullValidationView();
+      });
+    }
+  }
+
+  // Display a conversational interface for an issue
+  function displayConversationalIssue(container, issue, autoSelect = false) {
+    const questionText = generateConversationalQuestion(issue);
+    const assetName = truncateText(issue.node?.name || 'Selected element', 20);
+
+    // Only auto-select the node when explicitly requested (user navigation)
+    if (autoSelect && issue.node?.id) {
+      console.log('Auto-selecting node in Figma:', issue.node.id);
+      parent.postMessage({
+        pluginMessage: {
+          type: 'select-node',
+          nodeId: issue.node.id
+        }
+      }, '*');
+    }
+
+    // Get current issue index and total count
+    const issues = collapsedViewState.validationData?.issues || [];
+    const currentIndex = issues.findIndex(i => i.node?.id === issue.node?.id);
+    const totalIssues = issues.length;
+    const resolvedCount = getResolvedIssuesCount();
+
+    container.innerHTML = `
+      <div class="conversational-issue" style="height: 100%; display: flex; flex-direction: column;">
+
+        <!-- Issue Card -->
+        <div style="background: white; padding: 20px; margin: 16px; margin-top: 0; margin-bottom: 16px; flex: 1; display: flex; flex-direction: column; border-radius: 8px; border: 1px solid #e5e7eb;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+            <h2 style="font-size: 16px; font-weight: 600; color: #111827; margin: 0;">
+              ${assetName}
+            </h2>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="${getBadgeStyle(issue.type)}">
+                ${getIssueTypeLabel(issue.type)}
+              </span>
+              <button id="expand-from-issue" style="color: #6b7280; background: none; border: none; cursor: pointer; padding: 4px;">
+                <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <p style="color: #374151; margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
+            ${questionText}
+          </p>
+
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto;">
+            <button class="action-btn primary" data-action="resolve" style="width: 100%; padding: 12px 16px; background: #8b5cf6; color: white; border: 1px solid #8b5cf6; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <span class="checkmark" style="display: none; color: white;">✓</span>
+              <span>Yes, Fixed</span>
+            </button>
+            <button class="action-btn secondary" data-action="ignore" style="width: 100%; padding: 12px 16px; background: white; color: #374151; border: 1px solid #e5e7eb; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+              Ignore this issue
+            </button>
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px 16px 16px;">
+          <button id="prev-issue-btn" style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #8b5cf6; background: none; border: none; cursor: pointer; transition: color 0.2s; ${currentIndex === 0 ? 'opacity: 0.4; cursor: not-allowed;' : ''}" ${currentIndex === 0 ? 'disabled' : ''}>
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M15 18l-6-6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span style="font-size: 12px;">Previous</span>
+          </button>
+
+          <span style="font-size: 12px; color: #8b5cf6; font-weight: 500;">
+            ${currentIndex + 1} of ${totalIssues}
+          </span>
+
+          <button id="next-issue-btn" style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #8b5cf6; background: none; border: none; cursor: pointer; transition: color 0.2s; ${currentIndex === totalIssues - 1 ? 'opacity: 0.4; cursor: not-allowed;' : ''}" ${currentIndex === totalIssues - 1 ? 'disabled' : ''}>
+            <span style="font-size: 12px;">Next</span>
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M9 18l6-6-6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Add event listeners for actions
+    const actionButtons = container.querySelectorAll('.action-btn');
+    actionButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const action = e.target.getAttribute('data-action');
+        handleConversationalAction(issue, action, e.target);
+        // Note: Button state will be updated only after successful validation
+      });
+    });
+
+    // Add navigation event listeners
+    const prevBtn = container.querySelector('#prev-issue-btn');
+    const nextBtn = container.querySelector('#next-issue-btn');
+
+    if (prevBtn && !prevBtn.disabled) {
+      prevBtn.addEventListener('click', () => navigateToIssue(currentIndex - 1));
+    }
+
+    if (nextBtn && !nextBtn.disabled) {
+      nextBtn.addEventListener('click', () => navigateToIssue(currentIndex + 1));
+    }
+
+    // Add expand button event listener
+    const expandBtn = container.querySelector('#expand-from-issue');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', () => {
+        console.log('Expand button clicked - switching to full view');
+
+        // Direct expand implementation to avoid reliability issues
+        expandToFullValidationView();
+      });
+    }
+  }
+
+  // Navigate to a specific issue by index
+  function navigateToIssue(index) {
+    const issues = collapsedViewState.validationData?.issues || [];
+    if (index >= 0 && index < issues.length) {
+      const targetIssue = issues[index];
+      const container = document.querySelector('#collapsed-issue-display');
+      if (container && targetIssue) {
+        displayConversationalIssue(container, targetIssue, true);
+      }
+    }
+  }
+
+  // Navigate to the next issue in the current validation
+  function navigateToNextIssue() {
+    const issues = collapsedViewState.validationData?.issues || [];
+
+    if (issues.length === 0) {
+      showSuccessNotification('🎉 No issues found! Great work!', 3000);
+      return;
+    }
+
+    // Find the first unresolved issue
+    const issueStates = window.issueStates || new Map();
+    let nextIssueIndex = -1;
+
+    for (let i = 0; i < issues.length; i++) {
+      const issue = issues[i];
+      const nodeId = issue.node?.id;
+      const state = issueStates.get(nodeId);
+
+      // If issue is not resolved or ignored, this is our next issue
+      if (!state || (state.status !== 'resolved' && state.status !== 'ignored')) {
+        nextIssueIndex = i;
+        break;
+      }
+    }
+
+    if (nextIssueIndex !== -1) {
+      // Navigate to the next unresolved issue
+      navigateToIssue(nextIssueIndex);
+      console.log(`🔄 Navigated to next unresolved issue (${nextIssueIndex + 1} of ${issues.length})`);
+    } else {
+      // All issues are resolved!
+      showSuccessNotification('🎉 All issues resolved! Great work!', 3000);
+      console.log('✅ All issues in current validation are resolved');
+    }
+  }
+
+  // Get count of resolved issues
+  function getResolvedIssuesCount() {
+    const issues = collapsedViewState.validationData?.issues || [];
+    const issueStates = window.issueStates || new Map();
+
+    return issues.filter(issue => {
+      const nodeId = issue.node?.id;
+      const state = issueStates.get(nodeId);
+      return state === 'resolved' || state === 'ignored';
+    }).length;
+  }
+
+  // Get badge style based on issue type (matching expanded view)
+  function getBadgeStyle(issueType) {
+    switch (issueType) {
+      case 'spacing':
+        return 'background: #fed7aa; color: #c2410c; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;';
+      case 'corner-radius':
+        return 'background: #fef3c7; color: #f59e0b; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;';
+      case 'color':
+        return 'background: #fce7f3; color: #be185d; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;';
+      case 'text-style':
+      default:
+        return 'background: #dbeafe; color: #1d4ed8; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;';
+    }
+  }
+
+  // Generate conversational question based on issue type
+  function generateConversationalQuestion(issue) {
+    switch (issue.type) {
+      case 'text-style':
+        return 'Did you apply the text style token?';
+      case 'spacing':
+        return 'Did you apply the spacing token?';
+      case 'color':
+        return 'Did you apply the color token?';
+      case 'corner-radius':
+        return 'Did you apply the corner radius token?';
+      default:
+        return 'Did you apply the design token?';
+    }
+  }
+
+  // Get user-friendly label for issue type
+  function getIssueTypeLabel(type) {
+    switch (type) {
+      case 'text-style':
+        return 'Text Style';
+      case 'spacing':
+        return 'Spacing';
+      case 'color':
+        return 'Color';
+      case 'corner-radius':
+        return 'Corner Radius';
+      default:
+        return 'Design Token';
+    }
+  }
+
+  // Check if a node is within the current validation scope
+  function checkIfNodeInValidationScope(nodeId) {
+    if (!collapsedViewState.validationData || !collapsedViewState.validationData.issues) {
+      return false;
+    }
+
+    // Check if the node has any issues in the current validation results
+    const hasIssues = collapsedViewState.validationData.issues.some(issue => issue.node?.id === nodeId);
+
+    // Also check if it's part of the original validation scope
+    // (for nodes that might not have issues but were in the validated area)
+    return hasIssues;
+  }
+
+  // Show prompt when user selects an asset outside validation scope
+  function showOutOfScopePrompt(nodeId, nodeName) {
+    const assetName = nodeName ? truncateText(nodeName, 25) : 'Selected Asset';
+    const currentScope = getCurrentValidationScopeName();
+
+    console.log('🔍 Showing out-of-scope prompt for:', assetName);
+
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+
+    // Create prompt dialog
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      text-align: center;
+    `;
+
+    dialog.innerHTML = `
+      <div style="margin-bottom: 16px;">
+        <div style="margin-bottom: 12px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; display: block;">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0; line-height: 1.4;">
+          "${assetName}" is outside your current validation scope
+        </h3>
+      </div>
+      
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <button id="run-validation-on-asset" style="
+          width: 100%;
+          padding: 12px 16px;
+          background: #8b5cf6;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        ">
+          Start New Validation
+        </button>
+        
+        <button id="stay-focused" style="
+          width: 100%;
+          padding: 12px 16px;
+          background: white;
+          color: #374151;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        ">
+          Continue Current Validation
+        </button>
+      </div>
+    `;
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    // Add event listeners
+    const runValidationBtn = dialog.querySelector('#run-validation-on-asset');
+    const stayFocusedBtn = dialog.querySelector('#stay-focused');
+
+    runValidationBtn.addEventListener('click', () => {
+      console.log('🎯 User chose to run validation on new asset');
+      document.body.removeChild(overlay);
+      runValidationOnSpecificAsset(nodeId, assetName);
+    });
+
+    stayFocusedBtn.addEventListener('click', () => {
+      console.log('🎯 User chose to continue current validation');
+      document.body.removeChild(overlay);
+      // Navigate to the next issue in the current validation
+      navigateToNextIssue();
+    });
+
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    });
+  }
+
+  // Get a friendly name for the current validation scope
+  function getCurrentValidationScopeName() {
+    if (!collapsedViewState.validationData) return 'Unknown Scope';
+
+    // Try to get from validation metadata
+    if (collapsedViewState.validationData.targetName) {
+      return collapsedViewState.validationData.targetName;
+    }
+
+    // Fallback to generic description
+    const issueCount = collapsedViewState.validationData.issues?.length || 0;
+    return `Current Validation (${issueCount} issues)`;
+  }
+
+  // Run validation on a specific asset
+  function runValidationOnSpecificAsset(nodeId, assetName) {
+    console.log('🎯 Starting new validation setup for asset:', nodeId, assetName);
+
+    // Use the exact same logic as the "Start Over" menu item
+    console.log('Starting over - going to home screen');
+
+    // Reset the unified view manager
+    ValidationViewManager.reset();
+
+    // Clear updated items to reset validation state
+    window.updatedItems = new Set();
+
+    // Go back to home screen (one more screen back)
+    parent.postMessage({
+      pluginMessage: {
+        type: 'switch-mode',
+        mode: 'home'
+      }
+    }, '*');
+
+    // Store the target node for focused validation
+    window.targetNodeForValidation = nodeId;
+
+    console.log('🔍 START NEW VALIDATION - Message sent to switch to home mode');
+  }
+
+  // Validate if an issue has actually been fixed with a design token
+  async function validateIssueResolution(issue) {
+    console.log('🔍 Validating issue resolution for:', issue);
+
+    // Send validation request to plugin
+    return new Promise((resolve) => {
+      // Create a unique callback ID for this validation
+      const validationId = Date.now();
+
+      // Store the callback
+      window.validationCallbacks = window.validationCallbacks || {};
+      window.validationCallbacks[validationId] = resolve;
+
+      // Send validation request to plugin
+      parent.postMessage({
+        pluginMessage: {
+          type: 'validate-issue-resolution',
+          nodeId: issue.node?.id,
+          issueType: issue.type,
+          validationId: validationId
+        }
+      }, '*');
+
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        if (window.validationCallbacks[validationId]) {
+          delete window.validationCallbacks[validationId];
+          resolve({ isFixed: false, reason: 'Validation timeout' });
+        }
+      }, 5000);
+    });
+  }
+
+  // Handle conversational action responses
+  async function handleConversationalAction(issue, action, buttonElement = null) {
+    console.log('🎯 Handling conversational action:', action, 'for issue:', issue);
+
+    const nodeId = issue.node?.id;
+    if (!nodeId) return;
+
+    const issues = collapsedViewState.validationData?.issues || [];
+    const currentIndex = issues.findIndex(i => i.node?.id === issue.node?.id);
+
+    switch (action) {
+      case 'resolve':
+        // Validate if the issue is actually fixed before marking as resolved
+        console.log('🔍 Validating issue resolution...');
+        showSuccessNotification('Checking if issue is actually fixed...', 2000);
+
+        const validation = await validateIssueResolution(issue);
+
+        if (validation.isFixed) {
+          // Update button state only on successful validation
+          if (buttonElement) {
+            const checkmark = buttonElement.querySelector('.checkmark');
+            if (checkmark) {
+              checkmark.style.display = 'inline';
+              buttonElement.style.background = '#f3f4f6';
+              buttonElement.style.fontWeight = '600';
+            }
+          }
+
+          syncStateWithExpandedView(nodeId, 'resolved');
+          showSuccessNotification('✅ Great! Issue is properly fixed with design tokens!');
+
+          // Auto-navigate to next issue after a brief delay
+          setTimeout(() => {
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < issues.length) {
+              navigateToIssue(nextIndex);
+            } else {
+              // Show completion state if this was the last issue
+              const container = document.querySelector('#collapsed-issue-display');
+              if (container) {
+                displayCompletionState(container);
+              }
+            }
+          }, 1000);
+        } else {
+          // Issue is not actually fixed
+          showErrorNotification(`❌ Issue not fixed: ${validation.reason || 'No design token detected'}`);
+          console.log('🔍 Issue validation failed:', validation);
+        }
+        break;
+
+      case 'ignore':
+        syncStateWithExpandedView(nodeId, 'ignored');
+        showSuccessNotification('Issue ignored');
+
+        // Auto-navigate to next issue after a brief delay
+        setTimeout(() => {
+          const nextIndex = currentIndex + 1;
+          if (nextIndex < issues.length) {
+            navigateToIssue(nextIndex);
+          } else {
+            // Show completion state if this was the last issue
+            const container = document.querySelector('#collapsed-issue-display');
+            if (container) {
+              displayCompletionState(container);
+            }
+          }
+        }, 200);
+        break;
+    }
+  }
+
+  // Show ignore reason dialog
+  function showIgnoreReasonDialog(issue) {
+    const container = document.getElementById('collapsed-issue-display');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="ignore-reason-dialog" style="text-align: center;">
+        <h3 style="font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 16px 0;">
+          Why ignore this issue?
+        </h3>
+        
+        <div class="ignore-reasons" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+          <button class="reason-btn" data-reason="not-applicable" style="padding: 10px 16px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+            Not applicable
+          </button>
+          <button class="reason-btn" data-reason="design-decision" style="padding: 10px 16px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+            Design decision
+          </button>
+          <button class="reason-btn" data-reason="will-fix-later" style="padding: 10px 16px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+            Will fix later
+          </button>
+        </div>
+        
+        <button id="cancel-ignore" style="padding: 8px 16px; background: transparent; color: #6b7280; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">
+          Cancel
+        </button>
+      </div>
+    `;
+
+    // Add event listeners
+    const reasonButtons = container.querySelectorAll('.reason-btn');
+    reasonButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const reason = e.target.getAttribute('data-reason');
+        handleIgnoreWithReason(issue, reason);
+      });
+    });
+
+    const cancelBtn = container.querySelector('#cancel-ignore');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        updateEnhancedCollapsedViewData();
+      });
+    }
+  }
+
+  // Handle ignore with reason
+  function handleIgnoreWithReason(issue, reason) {
+    const nodeId = issue.node?.id;
+    if (!nodeId) return;
+
+    // Sync state with expanded view
+    syncStateWithExpandedView(nodeId, 'ignored');
+
+    // Store ignore reason (could be enhanced to persist this)
+    console.log(`Issue ${nodeId} ignored with reason: ${reason}`);
+
+    // Store ignore reason in localStorage for future reference
+    try {
+      const ignoreReasons = JSON.parse(localStorage.getItem('tokenValidator_ignoreReasons') || '{}');
+      ignoreReasons[nodeId] = {
+        reason: reason,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('tokenValidator_ignoreReasons', JSON.stringify(ignoreReasons));
+    } catch (error) {
+      console.warn('Failed to persist ignore reason:', error);
+    }
+
+    showSuccessNotification('Issue ignored');
+
+    // Move to next issue or show completion
+    setTimeout(() => {
+      updateEnhancedCollapsedViewData();
+    }, 1000);
+  }
+
+  // Display completion state when all issues are resolved
+  function displayCompletionState(container) {
+    const totalIssues = collapsedViewState.validationData?.issues?.length || 0;
+    const resolvedCount = getResolvedIssuesCount();
+
+    container.innerHTML = `
+      <div class="completion-state" style="height: 100%; display: flex; flex-direction: column;">
+
+        <!-- Completion Content -->
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 32px 16px; background: #f9fafb;">
+          <div style="margin-bottom: 32px;">
+            <div class="completion-icon" style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+            <h2 style="font-size: 20px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">
+              All issues resolved!
+            </h2>
+            <p style="font-size: 14px; color: #6b7280; margin: 0; line-height: 1.5;">
+              Great work! You've addressed all ${totalIssues} validation issues.
+            </p>
+          </div>
+          
+          <button id="expand-to-summary" style="padding: 12px 24px; background: #8b5cf6; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background-color 0.2s;">
+            View Summary
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Add event listener for expand button
+    const expandBtn = container.querySelector('#expand-to-summary');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', () => {
+        console.log('🎯 Expanding to summary view');
+        switchToExpandedView();
+      });
+    }
+  }
+
+  // Update the enhanced collapsed view with current data
+  function updateEnhancedCollapsedViewData() {
+    console.log('🎯 Updating enhanced collapsed view data');
+
+    if (!collapsedViewState.isInitialized) return;
+
+    const container = document.getElementById('enhanced-collapsed-container');
+    if (!container) return;
+
+    // Update progress indicator
+    updateCollapsedProgress();
+
+    // Update issue display
+    setupConversationalInterface(container);
+  }
+
+  // Update progress indicator in collapsed view
+  function updateCollapsedProgress() {
+    const progressElement = document.getElementById('collapsed-progress');
+    if (!progressElement || !collapsedViewState.validationData) return;
+
+    const issues = collapsedViewState.validationData.issues;
+    const issueStates = window.issueStates || new Map();
+
+    let resolvedCount = 0;
+    issues.forEach(issue => {
+      const nodeId = issue.node?.id;
+      const state = issueStates.get(nodeId);
+      if (state === 'resolved' || state === 'ignored') {
+        resolvedCount++;
+      }
+    });
+
+    const totalCount = issues.length;
+    progressElement.textContent = `${resolvedCount} of ${totalCount} resolved`;
+  }
+
+  // Switch to expanded view
+  function switchToExpandedView() {
+    console.log('🎯 Switching to expanded summary view');
+
+    // Navigate to the validation results screen to show the full summary
+    showScreen('validation-results-screen');
+
+    // Resize to full validation results size
+    parent.postMessage({
+      pluginMessage: {
+        type: 'resize-ui',
+        sizeMode: 'validation-results'
+      }
+    }, '*');
+
+    // Update the collapsed view state
+    collapsedViewState.currentView = 'expanded';
+
+    // Show success message
+    showSuccessNotification('📊 Showing validation summary', 2000);
+  }
+
+  // Direct expand to full validation view (more reliable)
+  function expandToFullValidationView() {
+    console.log('🎯 Expanding to full validation view directly');
+
+    // Resize to full validation results size
+    parent.postMessage({
+      pluginMessage: {
+        type: 'resize-ui',
+        sizeMode: 'validation-results'
+      }
+    }, '*');
+
+    // Disable selection tracking when expanded
+    parent.postMessage({
+      pluginMessage: {
+        type: 'disable-selection-tracking'
+      }
+    }, '*');
+
+    // Show the validation results content and hide collapsed view
+    const resultsContent = document.getElementById('validation-results-content');
+    const collapsedContent = document.getElementById('collapsed-view-content');
+
+    // Show the tabs section and issues count again
+    const categoryTabs = document.getElementById('category-tabs');
+    const statusTabs = document.getElementById('status-tabs');
+    const separator = document.querySelector('#validation-results-screen div[style*="width: 1px"]');
+    const issuesCountHeader = document.querySelector('#validation-results-screen > div > div:nth-child(2)');
+
+    if (categoryTabs) {
+      categoryTabs.style.display = 'flex';
+    }
+
+    if (statusTabs) {
+      statusTabs.style.display = 'flex';
+    }
+
+    if (separator) {
+      separator.style.display = 'block';
+    }
+
+    if (issuesCountHeader) {
+      issuesCountHeader.style.display = 'block';
+    }
+
+    const contentWrapper = document.getElementById('tab-content-wrapper');
+    if (contentWrapper) {
+      contentWrapper.style.justifyContent = 'space-between';
+    }
+
+    if (resultsContent) {
+      resultsContent.style.display = 'block';
+    }
+
+    if (collapsedContent) {
+      collapsedContent.style.display = 'none';
+      // Remove class from body to restore padding
+      document.body.classList.remove('collapsed-view-active');
+    }
+
+    // Update minimize button state
+    const minimizeBtn = document.getElementById('minimize-btn');
+    if (minimizeBtn) {
+      minimizeBtn.innerHTML = `
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M6 12h12" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+      minimizeBtn.title = "Minimize";
+      minimizeBtn.style.display = 'block';
+    }
+
+    // Show hamburger menu button
+    const hamburgerBtn = document.getElementById('hamburger-menu-btn');
+    if (hamburgerBtn) {
+      hamburgerBtn.style.display = 'block';
+      console.log('🔍 SHOWN hamburger menu on expand');
+    }
+
+    // Update global state
+    window.isValidationMinimized = false;
+    collapsedViewState.currentView = 'expanded';
+
+    console.log('✅ Successfully expanded to full validation view');
+  }
+
+  // Switch to collapsed view
+  function switchToCollapsedView() {
+    console.log('🎯 Switching to collapsed view');
+
+    collapsedViewState.currentView = 'collapsed';
+
+    // Show enhanced collapsed view if we have data
+    if (collapsedViewState.validationData && collapsedViewState.validationData.issues.length > 0) {
+      const enhancedContainer = document.getElementById('enhanced-collapsed-container');
+      const basicContainer = document.getElementById('basic-collapsed-view');
+
+      if (enhancedContainer && basicContainer) {
+        enhancedContainer.style.display = 'flex';
+        basicContainer.style.display = 'none';
+        updateEnhancedCollapsedViewData();
+      }
+    } else {
+      // Show basic collapsed view as fallback
+      setupBasicCollapsedViewFallback();
+    }
+  }
+
+  // Setup basic collapsed view fallback
+  function setupBasicCollapsedViewFallback() {
+    console.log('🎯 Setting up basic collapsed view fallback');
+
+    const enhancedContainer = document.getElementById('enhanced-collapsed-container');
+    const basicContainer = document.getElementById('basic-collapsed-view');
+
+    if (enhancedContainer && basicContainer) {
+      enhancedContainer.style.display = 'none';
+      basicContainer.style.display = 'block';
+
+      // Setup basic expand button
+      const basicExpandBtn = document.getElementById('basic-expand-button');
+      if (basicExpandBtn) {
+        basicExpandBtn.addEventListener('click', switchToExpandedView);
+      }
+    }
+  }
+
+  // Show success notification
+  function showSuccessNotification(message) {
+    // Create a simple notification
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #10b981;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 10000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      animation: slideIn 0.3s ease-out;
+    `;
+    notification.textContent = message;
+
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(notification);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+      notification.remove();
+      style.remove();
+    }, 3000);
+  }
+
+  function showErrorNotification(message) {
+    // Create a simple error notification
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #ef4444;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 10000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      animation: slideIn 0.3s ease-out;
+    `;
+    notification.textContent = message;
+
+    // Add animation styles if not already present
+    if (!document.querySelector('style[data-notification-styles]')) {
+      const style = document.createElement('style');
+      style.setAttribute('data-notification-styles', 'true');
+      style.textContent = `
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(notification);
+
+    // Remove after 4 seconds (longer for error messages)
+    setTimeout(() => {
+      notification.remove();
+    }, 4000);
+  }
+
+  // State synchronization between collapsed and expanded views
+  function syncStateWithExpandedView(nodeId, newState) {
+    console.log('🔄 Syncing state with expanded view:', nodeId, newState);
+
+    // Update the global issue states
+    const issueStates = window.issueStates || new Map();
+    issueStates.set(nodeId, newState);
+    window.issueStates = issueStates;
+
+    // Update status tab counts in expanded view
+    if (typeof updateStatusTabCounts === 'function') {
+      updateStatusTabCounts();
+    }
+
+    // Update the expanded view display if it's visible
+    if (!window.isValidationMinimized && typeof applyFilters === 'function') {
+      applyFilters();
+    }
+
+    // Persist state to localStorage for session persistence
+    try {
+      const stateData = {
+        issueStates: Array.from(issueStates.entries()),
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('tokenValidator_issueStates', JSON.stringify(stateData));
+    } catch (error) {
+      console.warn('Failed to persist issue states:', error);
+    }
+  }
+
+  // Load persisted state on initialization
+  function loadPersistedState() {
+    try {
+      const stateData = localStorage.getItem('tokenValidator_issueStates');
+      if (stateData) {
+        const parsed = JSON.parse(stateData);
+        const issueStates = new Map(parsed.issueStates);
+        window.issueStates = issueStates;
+        console.log('🔄 Loaded persisted issue states:', issueStates.size, 'items');
+      }
+    } catch (error) {
+      console.warn('Failed to load persisted state:', error);
+    }
+  }
+
+  // Initialize state persistence on page load
+  document.addEventListener('DOMContentLoaded', function () {
+    loadPersistedState();
+  });
+
+  // Debug function to check enhanced collapsed view state
+  window.debugEnhancedCollapsedView = function () {
+    console.log('🔍 Enhanced Collapsed View Debug Info:');
+    console.log('- Initialized:', collapsedViewState.isInitialized);
+    console.log('- Current View:', collapsedViewState.currentView);
+    console.log('- Validation Data:', collapsedViewState.validationData);
+    console.log('- Issue States:', window.issueStates);
+    console.log('- Is Minimized:', window.isValidationMinimized);
+
+    const container = document.getElementById('enhanced-collapsed-container');
+    console.log('- Container Element:', container);
+    console.log('- Container Display:', container?.style.display);
+
+    return {
+      state: collapsedViewState,
+      issueStates: window.issueStates,
+      isMinimized: window.isValidationMinimized,
+      container: container
+    };
+  };
 
   // Validation Results Screen Tab Functionality
   document.addEventListener('DOMContentLoaded', function () {
@@ -6382,142 +8098,11 @@
       let isMinimized = false
 
       minimizeBtn.addEventListener('click', function () {
-        console.log('Minimize/Expand button clicked, current state:', isMinimized)
+        console.log('🔍 MINIMIZE BUTTON CLICKED - Using ValidationViewManager')
+        ValidationViewManager.toggle();
+      });
 
-        if (!isMinimized) {
-          // Minimize: resize to collapsed validation results size
-          console.log('Minimizing to collapsed size')
-          parent.postMessage({
-            pluginMessage: {
-              type: 'resize-ui',
-              sizeMode: 'validation-results-collapsed'
-            }
-          }, '*')
 
-          // Enable selection tracking for collapsed view
-          parent.postMessage({
-            pluginMessage: {
-              type: 'enable-selection-tracking'
-            }
-          }, '*')
-
-          // Change icon to expand (diagonal arrows pointing outward)
-          minimizeBtn.innerHTML = `
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          `
-          minimizeBtn.title = "Expand"
-
-          // Hide the validation results content and show collapsed view
-          const resultsContent = document.getElementById('validation-results-content')
-          const collapsedContent = document.getElementById('collapsed-view-content')
-
-          // Hide only the tabs section, keep the action buttons visible
-          const categoryTabs = document.getElementById('category-tabs')
-          const statusTabs = document.getElementById('status-tabs')
-          const separator = document.querySelector('#validation-results-screen div[style*="width: 1px"]')
-          const issuesCountHeader = document.querySelector('#validation-results-screen > div > div:nth-child(2)')
-
-          if (categoryTabs) {
-            categoryTabs.style.display = 'none'
-          }
-
-          if (statusTabs) {
-            statusTabs.style.display = 'none'
-          }
-
-          if (separator) {
-            separator.style.display = 'none'
-          }
-
-          if (issuesCountHeader) {
-            issuesCountHeader.style.display = 'none'
-          }
-
-          if (resultsContent) {
-            resultsContent.style.display = 'none'
-          }
-
-          if (collapsedContent) {
-            console.log('🔍 Showing collapsed content')
-            collapsedContent.style.display = 'block'
-            // Check if there's a currently selected node and show its issues
-            updateCollapsedViewForSelectedNode()
-          } else {
-            console.log('❌ Collapsed content element not found')
-          }
-
-          isMinimized = true
-          window.isValidationMinimized = true
-        } else {
-          // Expand: resize back to full validation results screen size
-          console.log('Expanding back to full size')
-          parent.postMessage({
-            pluginMessage: {
-              type: 'resize-ui',
-              sizeMode: 'validation-results'
-            }
-          }, '*')
-
-          // Disable selection tracking when expanded
-          parent.postMessage({
-            pluginMessage: {
-              type: 'disable-selection-tracking'
-            }
-          }, '*')
-
-          // Change icon back to minimize (horizontal line)
-          minimizeBtn.innerHTML = `
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M6 12h12" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          `
-          minimizeBtn.title = "Minimize"
-
-          // Show the validation results content and hide collapsed view
-          const resultsContent = document.getElementById('validation-results-content')
-          const collapsedContent = document.getElementById('collapsed-view-content')
-
-          // Show the tabs section and issues count again
-          const categoryTabs = document.getElementById('category-tabs')
-          const statusTabs = document.getElementById('status-tabs')
-          const separator = document.querySelector('#validation-results-screen div[style*="width: 1px"]')
-          const issuesCountHeader = document.querySelector('#validation-results-screen > div > div:nth-child(2)')
-
-          if (categoryTabs) {
-            categoryTabs.style.display = 'flex'
-          }
-
-          if (statusTabs) {
-            statusTabs.style.display = 'flex'
-          }
-
-          if (separator) {
-            separator.style.display = 'block'
-          }
-
-          if (issuesCountHeader) {
-            issuesCountHeader.style.display = 'block'
-          }
-
-          const contentWrapper = document.getElementById('tab-content-wrapper')
-          if (contentWrapper) {
-            contentWrapper.style.justifyContent = 'space-between'
-          }
-
-          if (resultsContent) {
-            resultsContent.style.display = 'block'
-          }
-
-          if (collapsedContent) {
-            collapsedContent.style.display = 'none'
-          }
-
-          isMinimized = false
-          window.isValidationMinimized = false
-        }
-      })
     }
 
     if (hamburgerBtn) {
@@ -6671,5 +8256,310 @@
   })
 
 
+
+  // UNIFIED VIEW MANAGEMENT SYSTEM
+  // Single source of truth for validation view state and transitions
+
+  const ValidationViewManager = {
+    // Single state object
+    state: {
+      isMinimized: false,
+      hasValidationData: false,
+      currentIssueIndex: 0,
+      validationData: null,
+      resultIndex: null // Map<nodeId, issue> for fast lookup
+    },
+
+    // Initialize the validation view with data
+    initialize(results, library, options) {
+      console.log('🎯 ValidationViewManager: Initializing with data');
+
+      this.state.hasValidationData = true;
+      this.state.validationData = {
+        issues: results || [],
+        library: library,
+        options: options || {}
+      };
+      this.state.currentIssueIndex = 0;
+
+      // Build fast lookup index - NO RE-VALIDATION, JUST INDEX THE RESULTS
+      this.state.resultIndex = new Map();
+      (results || []).forEach(issue => {
+        if (issue.node?.id) {
+          this.state.resultIndex.set(issue.node.id, issue);
+        }
+      });
+
+      console.log('🎯 Built result index with', this.state.resultIndex.size, 'entries');
+
+      // Always start in expanded mode
+      this.showExpandedView();
+    },
+
+    // Show the full expanded validation results
+    showExpandedView() {
+      console.log('🎯 ValidationViewManager: Showing expanded view');
+
+      this.state.isMinimized = false;
+
+      // Show all main UI elements
+      this._showElement('validation-results-content');
+      this._showElement('category-tabs', 'flex');
+      this._showElement('status-tabs', 'flex');
+      this._showElement('#validation-results-screen div[style*="width: 1px"]');
+      this._showElement('#validation-results-screen > div > div:nth-child(2)');
+      this._showElement('minimize-btn');
+      this._showElement('hamburger-menu-btn');
+
+      // Hide collapsed view
+      this._hideElement('collapsed-view-content');
+
+      // Update minimize button
+      this._updateMinimizeButton(false);
+
+      // Resize to full size
+      parent.postMessage({
+        pluginMessage: {
+          type: 'resize-ui',
+          sizeMode: 'validation-results'
+        }
+      }, '*');
+
+      // Disable selection tracking
+      parent.postMessage({
+        pluginMessage: {
+          type: 'disable-selection-tracking'
+        }
+      }, '*');
+
+      console.log('✅ ValidationViewManager: Expanded view shown');
+    },
+
+    // Show the minimized collapsed view
+    showMinimizedView() {
+      console.log('🎯 ValidationViewManager: Showing minimized view');
+
+      if (!this.state.hasValidationData) {
+        console.log('❌ No validation data available for minimized view');
+        return;
+      }
+
+      this.state.isMinimized = true;
+
+      // Hide main UI elements
+      this._hideElement('validation-results-content');
+      this._hideElement('category-tabs');
+      this._hideElement('status-tabs');
+      this._hideElement('#validation-results-screen div[style*="width: 1px"]');
+      this._hideElement('#validation-results-screen > div > div:nth-child(2)');
+      this._hideElement('hamburger-menu-btn');
+
+      // Show and setup collapsed view
+      this._showElement('collapsed-view-content');
+      this._setupCollapsedViewContent();
+
+      // Update minimize button to expand button
+      this._updateMinimizeButton(true);
+
+      // Resize to collapsed size
+      parent.postMessage({
+        pluginMessage: {
+          type: 'resize-ui',
+          sizeMode: 'validation-results-collapsed'
+        }
+      }, '*');
+
+      // Enable selection tracking
+      parent.postMessage({
+        pluginMessage: {
+          type: 'enable-selection-tracking'
+        }
+      }, '*');
+
+      console.log('✅ ValidationViewManager: Minimized view shown');
+    },
+
+    // Toggle between expanded and minimized
+    toggle() {
+      if (this.state.isMinimized) {
+        this.showExpandedView();
+      } else {
+        this.showMinimizedView();
+      }
+    },
+
+    // Reset all state (for new validations)
+    reset() {
+      console.log('🎯 ValidationViewManager: Resetting state');
+      this.state = {
+        isMinimized: false,
+        hasValidationData: false,
+        currentIssueIndex: 0,
+        validationData: null
+      };
+    },
+
+    // Helper methods
+    _showElement(selector, display = 'block') {
+      const element = selector.startsWith('#') || selector.includes('[')
+        ? document.querySelector(selector)
+        : document.getElementById(selector);
+
+      if (element) {
+        element.style.display = display;
+        console.log(`🔍 Shown: ${selector}`);
+      }
+    },
+
+    _hideElement(selector) {
+      const element = selector.startsWith('#') || selector.includes('[')
+        ? document.querySelector(selector)
+        : document.getElementById(selector);
+
+      if (element) {
+        element.style.display = 'none';
+        console.log(`🔍 Hidden: ${selector}`);
+      }
+    },
+
+    _updateMinimizeButton(isMinimized) {
+      const minimizeBtn = document.getElementById('minimize-btn');
+      if (!minimizeBtn) return;
+
+      if (isMinimized) {
+        // Show as expand button
+        minimizeBtn.innerHTML = `
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+        minimizeBtn.title = "Expand";
+      } else {
+        // Show as minimize button
+        minimizeBtn.innerHTML = `
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M6 12h12" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+        minimizeBtn.title = "Minimize";
+      }
+    },
+
+    _setupCollapsedViewContent() {
+      const container = document.getElementById('collapsed-view-content');
+      if (!container || !this.state.validationData) return;
+
+      // Setup the collapsed view interface
+      container.innerHTML = `
+        <div class="enhanced-collapsed-content" style="height: 100vh; box-sizing: border-box; background: #f9fafb; margin: 0; padding: 16px 0 0 0;">
+          <div id="collapsed-issue-display" style="height: calc(100% - 10px); display: flex; flex-direction: column; margin: 0; padding: 0;">
+            <!-- Issue content will be populated here -->
+          </div>
+        </div>
+      `;
+
+      // Show issue for currently selected node, or first issue if none selected
+      const currentSelectedNodeId = window.currentSelectedNodeId;
+      if (currentSelectedNodeId) {
+        this.onAssetSelected(currentSelectedNodeId);
+      } else {
+        // No selection, show first issue
+        const firstIssue = this.state.validationData?.issues?.[0];
+        if (firstIssue) {
+          this.showIssue(firstIssue);
+        }
+      }
+    },
+
+    // SIMPLE LOOKUP - NO RE-VALIDATION, NO COMPLEX LOGIC
+    onAssetSelected(nodeId) {
+      console.log('🔍 Asset selected:', nodeId);
+
+      if (!this.state.resultIndex) {
+        console.log('🔍 No result index available');
+        return;
+      }
+
+      // SIMPLE MAP LOOKUP - THAT'S IT
+      const issue = this.state.resultIndex.get(nodeId);
+
+      if (issue) {
+        // Asset has issue - show it
+        console.log('🔍 Found issue for asset, showing details');
+        this.showIssue(issue);
+      } else {
+        // Asset has no issue - show out-of-scope modal
+        console.log('🔍 No issue for asset, showing out-of-scope modal');
+        this._showOutOfScopeModal(nodeId);
+      }
+    },
+
+    // Show a specific issue (not by index, by the actual issue object)
+    showIssue(issue) {
+      const container = document.querySelector('#collapsed-issue-display');
+      if (container && issue) {
+        displayConversationalIssue(container, issue, true);
+      }
+    },
+
+    _showOutOfScopeModal(nodeId) {
+      console.log('🔍 _showOutOfScopeModal called with nodeId:', nodeId);
+
+      // Get node name from Figma
+      parent.postMessage({
+        pluginMessage: {
+          type: 'get-node-name',
+          nodeId: nodeId
+        }
+      }, '*');
+
+      console.log('🔍 Sent get-node-name message to plugin');
+
+      // Store the node ID for the modal
+      this._pendingOutOfScopeNodeId = nodeId;
+
+      // The modal will be shown when we get the node name response
+      // For now, show a placeholder in the collapsed view
+      const container = document.querySelector('#collapsed-issue-display');
+      if (container) {
+        console.log('🔍 Showing loading placeholder in collapsed view');
+        container.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center;">
+            <div style="color: #6b7280;">
+              <div style="margin-bottom: 12px;">🔍</div>
+              <div>Loading asset information...</div>
+            </div>
+          </div>
+        `;
+      } else {
+        console.log('🔍 ERROR: Could not find collapsed-issue-display container');
+      }
+    },
+
+    // Handle the response from get-node-name
+    handleNodeNameResponse(nodeId, nodeName) {
+      if (this._pendingOutOfScopeNodeId === nodeId) {
+        this._pendingOutOfScopeNodeId = null;
+        showOutOfScopePrompt(nodeId, nodeName);
+      }
+    },
+
+    showIssueAtIndex(index) {
+      if (!this.state.validationData || !this.state.validationData.issues) return;
+
+      const issues = this.state.validationData.issues;
+      if (index < 0 || index >= issues.length) return;
+
+      this.state.currentIssueIndex = index;
+      const issue = issues[index];
+      const container = document.querySelector('#collapsed-issue-display');
+
+      if (container && issue) {
+        console.log('🔍 ValidationViewManager: Showing issue at index', index, 'for node:', issue.node?.id);
+        // Use existing displayConversationalIssue function
+        displayConversationalIssue(container, issue, true);
+      }
+    }
+  };
 
 </script>
