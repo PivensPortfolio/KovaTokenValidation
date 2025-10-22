@@ -634,6 +634,98 @@
     background: #f3f4f6 !important;
   }
 
+  /* Floating bubble tooltip for guided mode */
+  .guided-mode-bubble {
+    position: absolute;
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+    border: 1.5px solid #c4b5fd;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b46c1;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+    z-index: 10000;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: none;
+  }
+
+  .guided-mode-bubble.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    animation: bubbleAttention 2s ease-in-out 0.5s;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25), 0 0 20px rgba(139, 92, 246, 0.1);
+  }
+
+  @keyframes bubbleAttention {
+
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25), 0 0 20px rgba(139, 92, 246, 0.1);
+    }
+
+    15% {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35), 0 0 25px rgba(139, 92, 246, 0.2);
+    }
+
+    30% {
+      transform: translateY(0) scale(1);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25), 0 0 20px rgba(139, 92, 246, 0.1);
+    }
+
+    45% {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 5px 14px rgba(139, 92, 246, 0.3), 0 0 22px rgba(139, 92, 246, 0.15);
+    }
+
+    60% {
+      transform: translateY(0) scale(1);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25), 0 0 20px rgba(139, 92, 246, 0.1);
+    }
+  }
+
+  @keyframes botIconPulse {
+
+    0%,
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+    }
+
+    50% {
+      transform: scale(1.1);
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+    }
+  }
+
+  .guided-mode-bubble::after {
+    content: '';
+    position: absolute;
+    top: var(--arrow-top, 100%);
+    left: var(--arrow-left, 50%);
+    transform: translateX(-50%) var(--arrow-flip, rotate(0deg));
+    border: 6px solid transparent;
+    border-top-color: var(--arrow-border-color, #c4b5fd);
+    border-bottom-color: var(--arrow-border-bottom, transparent);
+  }
+
+  .guided-mode-bubble::before {
+    content: '';
+    position: absolute;
+    top: var(--arrow-top, 100%);
+    left: var(--arrow-left, 50%);
+    transform: translateX(-50%) var(--arrow-flip, rotate(0deg));
+    border: 5px solid transparent;
+    border-top-color: var(--arrow-fill-color, #faf5ff);
+    border-bottom-color: var(--arrow-fill-bottom, transparent);
+    z-index: 1;
+  }
+
   /* Corner radius token states - matching the 3 exact designs */
 
   /* State 1: Value has Token - Small gray badge inside white container */
@@ -2519,7 +2611,7 @@
   <div style="background: white; min-height: 100vh;">
     <!-- Header with tab groups -->
     <div style="background: white; border-bottom: 1px solid #e5e7eb;">
-      <div style="display: flex; align-items: center; padding: 16px 24px 16px 24px; max-width: 1200px; margin: 0 auto;">
+      <div style="display: flex; align-items: center; padding: 24px 24px 16px 24px; max-width: 1200px; margin: 0 auto;">
         <!-- Left side: Category and Status tabs close together -->
         <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
           <!-- Category tabs -->
@@ -2549,21 +2641,14 @@
         <!-- Action buttons (right) -->
         <div style="display: flex; align-items: center; gap: 2px;">
           <button id="hamburger-menu-btn"
-            style="padding: 4px; background: transparent; border: none; border-radius: 3px; cursor: pointer; transition: background-color 0.15s;"
+            style="padding: 8px; background: transparent; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.15s;"
             title="Menu">
-            <svg style="width: 14px; height: 14px; color: #6b7280;" fill="none" stroke="currentColor"
+            <svg style="width: 18px; height: 18px; color: #6b7280;" fill="none" stroke="currentColor"
               viewBox="0 0 24 24">
               <path d="M3 12h18M3 6h18M3 18h18" stroke-width="2" stroke-linecap="round" />
             </svg>
           </button>
         </div>
-      </div>
-    </div>
-
-    <!-- Issues count header -->
-    <div style="background: white; border-bottom: 1px solid #e5e7eb;">
-      <div style="max-width: 1200px; margin: 0 auto; padding: 12px 24px;">
-        <h2 id="issues-count" style="font-size: 15px; font-weight: 600; color: #111827; margin: 0;">Found 0 issues</h2>
       </div>
     </div>
 
@@ -3570,7 +3655,7 @@
 
     // Update "All" tab for current status
     const allTab = document.getElementById('all-tab')
-    if (allTab) allTab.textContent = `All (${statusFilteredResults.length})`
+    if (allTab) allTab.textContent = `All (${statusFilteredResults.length} issues)`
 
     // Update category tabs for current status
     const categoryTabs = document.querySelectorAll('.category-tab-button:not(#all-tab)')
@@ -4217,15 +4302,15 @@
     allTab.id = 'all-tab'
     allTab.className = 'category-tab-button active'
     allTab.setAttribute('data-tab', 'all')
-    allTab.textContent = `All (${allCount})`
+    allTab.textContent = `All (${allCount} issues)`
     categoryTabsContainer.appendChild(allTab)
 
     // Define tab configurations with their display names and result types
     const tabConfigs = [
-      { key: 'textStyles', label: 'Text Styles', type: 'text-style' },
+      { key: 'textStyles', label: 'Text', type: 'text-style' },
       { key: 'spacing', label: 'Spacing', type: 'spacing' },
       { key: 'colors', label: 'Colors', type: 'color' },
-      { key: 'cornerRadius', label: 'Corner Radius', type: 'corner-radius' },
+      { key: 'cornerRadius', label: 'Corners', type: 'corner-radius' },
       { key: 'typography', label: 'Typography', type: 'typography' },
       { key: 'shadows', label: 'Shadows', type: 'shadow' },
       { key: 'borders', label: 'Borders', type: 'border' },
@@ -5212,6 +5297,46 @@
       }
     })
 
+    // Setup guided mode button handlers
+    document.querySelectorAll('.guided-mode-btn').forEach(btn => {
+      // Skip if already has event handlers
+      if (btn.hasAttribute('data-handlers-attached')) {
+        return;
+      }
+      btn.setAttribute('data-handlers-attached', 'true');
+
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const nodeId = this.getAttribute('data-node-id');
+        const resultType = this.getAttribute('data-result-type') || 'text-styles';
+
+        if (nodeId) {
+          console.log('Guided mode button clicked for node:', nodeId, 'type:', resultType);
+
+          // First, select the node in Figma
+          parent.postMessage({
+            pluginMessage: {
+              type: 'select-node',
+              nodeId: nodeId
+            }
+          }, '*');
+
+          // Store the target node ID for the collapsed view to use
+          window.targetNodeIdForCollapsedView = nodeId;
+
+          parent.postMessage({
+            pluginMessage: {
+              type: 'minimize-and-position',
+              resultType: resultType,
+              nodeId: nodeId
+            }
+          }, '*');
+        }
+      });
+    });
+
     // Setup view button handlers
     document.querySelectorAll('.view-node-btn').forEach(btn => {
       // Skip if already has event handlers
@@ -5229,25 +5354,19 @@
         if (nodeId) {
           console.log('View button clicked for node:', nodeId, 'type:', resultType)
 
-          // First, select the node in Figma
+          // Select and position the node in Figma viewport (no mode change)
           parent.postMessage({
             pluginMessage: {
-              type: 'select-node',
-              nodeId: nodeId
+              type: 'select-and-position-node',
+              nodeId: nodeId,
+              position: {
+                horizontal: 'center',
+                vertical: 0.8  // 80% from top
+              }
             }
           }, '*')
 
-          // Minimize and position window next to relevant Figma panel
-          // Store the target node ID for the collapsed view to use
-          window.targetNodeIdForCollapsedView = nodeId;
 
-          parent.postMessage({
-            pluginMessage: {
-              type: 'minimize-and-position',
-              resultType: resultType,
-              nodeId: nodeId
-            }
-          }, '*')
         }
       })
     })
@@ -6048,13 +6167,31 @@
       }
 
       html += `
+            <button class="guided-mode-btn" data-node-id="${nodeId}" 
+                    style="padding: 4px; background: transparent; border: none; border-radius: 3px; cursor: pointer; transition: all 0.15s;"
+                    onmouseover="this.style.backgroundColor='#f3f4f6'" 
+                    onmouseout="this.style.backgroundColor='transparent'"
+                    title="Switch to Guided Mode">
+              <svg style="width: 22px; height: 22px; color: #8b5cf6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M12 8V4H8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect width="16" height="12" x="4" y="8" rx="2" stroke-width="2"/>
+                <path d="M2 14h2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 14h2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M15 13v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9 13v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
             <button class="view-node-btn" data-node-id="${nodeId}" 
                     style="padding: 4px; background: transparent; border: none; border-radius: 3px; cursor: pointer; transition: all 0.15s;"
                     onmouseover="this.style.backgroundColor='#f3f4f6'" 
-                    onmouseout="this.style.backgroundColor='transparent'">
-              <svg style="width: 14px; height: 14px; color: #6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="12" cy="12" r="3"/>
+                    onmouseout="this.style.backgroundColor='transparent'"
+                    title="Select in Figma">
+              <svg style="width: 18px; height: 18px; color: #a78bfa;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <line x1="22" y1="12" x2="18" y2="12" stroke-width="2" stroke-linecap="round"/>
+                <line x1="6" y1="12" x2="2" y2="12" stroke-width="2" stroke-linecap="round"/>
+                <line x1="12" y1="6" x2="12" y2="2" stroke-width="2" stroke-linecap="round"/>
+                <line x1="12" y1="22" x2="12" y2="18" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </button>
           </div>
@@ -6067,6 +6204,9 @@
 
     // Add event handlers for dropdowns and update buttons
     setupValidationEventHandlers()
+
+    // Show guided mode bubble on first load
+    showGuidedModeBubble()
 
     // Add ignore button handlers (only if they exist)
     document.querySelectorAll('.ignore-btn').forEach(btn => {
@@ -6443,6 +6583,12 @@
 
       // NEW: Use SimpleViewController for collapsed view selection
       if (SimpleViewController.state.current.view === 'COLLAPSED' || SimpleViewController.state.current.view === 'ISSUE_DETAILS') {
+        // Skip handling if we're in the middle of navigation to prevent interference
+        if (window.isNavigating) {
+          console.log('🔍 SKIPPING SELECTION HANDLING - NAVIGATION IN PROGRESS');
+          return;
+        }
+
         console.log('🔍 HANDLING SELECTION IN COLLAPSED VIEW - DIRECT DISPLAY')
 
         // First, close any existing out-of-scope modal
@@ -7247,7 +7393,7 @@
   }
 
   // Display a conversational interface for an issue
-  function displayConversationalIssue(container, issue, autoSelect = false) {
+  function displayConversationalIssue(container, issue, autoSelect = false, navigationIndex = null) {
     const questionText = generateConversationalQuestion(issue);
     const assetName = truncateText(issue.node?.name || 'Selected element', 20);
 
@@ -7278,7 +7424,7 @@
       return !state || (state !== 'resolved' && state !== 'ignored');
     });
 
-    const currentIndex = unresolvedIssues.findIndex(i => i.node?.id === issue.node?.id);
+    const currentIndex = navigationIndex !== null ? navigationIndex : unresolvedIssues.findIndex(i => i.node?.id === issue.node?.id);
     const totalIssues = unresolvedIssues.length;
     const resolvedCount = getResolvedIssuesCount();
 
@@ -7507,13 +7653,31 @@
       return !state || (state !== 'resolved' && state !== 'ignored');
     });
 
+    console.log('🔍 Navigation Debug:');
+    console.log('- Total issues:', issues.length);
+    console.log('- Unresolved issues:', unresolvedIssues.length);
+    console.log('- Requested index:', unresolvedIndex);
+    console.log('- Available indices:', unresolvedIssues.map((_, i) => i));
+
     if (unresolvedIndex >= 0 && unresolvedIndex < unresolvedIssues.length) {
       const targetIssue = unresolvedIssues[unresolvedIndex];
+      console.log('- Navigating to issue:', targetIssue?.node?.name || 'Unknown');
+
       const container = document.querySelector('#collapsed-issue-display');
       if (container && targetIssue) {
-        // Auto-select to highlight the issue since this is an explicit user action
-        displayConversationalIssue(container, targetIssue, true);
+        // Set navigation flag to prevent selection handler interference
+        window.isNavigating = true;
+
+        // Pass the navigation index to ensure correct counter display
+        displayConversationalIssue(container, targetIssue, true, unresolvedIndex);
+
+        // Clear navigation flag after a short delay
+        setTimeout(() => {
+          window.isNavigating = false;
+        }, 100);
       }
+    } else {
+      console.log('❌ Invalid navigation index:', unresolvedIndex, 'of', unresolvedIssues.length);
     }
   }
 
@@ -8461,6 +8625,70 @@
     setTimeout(() => {
       notification.remove();
     }, 4000);
+  }
+
+  // Show floating bubble above first bot icon
+  function showGuidedModeBubble() {
+    // Only show once per session
+    if (window.guidedModeBubbleShown) return;
+    window.guidedModeBubbleShown = true;
+
+    // Find the first guided mode button
+    const firstBotIcon = document.querySelector('.guided-mode-btn');
+    if (!firstBotIcon) return;
+
+    // Create the bubble
+    const bubble = document.createElement('div');
+    bubble.className = 'guided-mode-bubble';
+    bubble.innerHTML = `
+      <svg style="width: 14px; height: 14px; color: #8b5cf6; margin-right: 6px; vertical-align: middle;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M12 8V4H8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <rect width="16" height="12" x="4" y="8" rx="2" stroke-width="2" />
+        <path d="M2 14h2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M20 14h2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M15 13v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M9 13v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      Use Guided Mode to fix issues step by step
+    `;
+
+    // Position the bubble above the bot icon
+    document.body.appendChild(bubble);
+
+    // HARDCODED POSITION - Easy to adjust these values:
+    const left = 790;  // Horizontal position from left edge (adjust this)
+    const top = 30;    // Vertical position from top edge (adjust this)
+
+    bubble.style.left = `${left}px`;
+    bubble.style.top = `${top}px`;
+
+    // HARDCODED ARROW POSITION - Easy to adjust:
+    const arrowLeft = 72;  // Arrow position as percentage (0-100, adjust this)
+
+    // Set arrow to point down (standard position)
+    bubble.style.setProperty('--arrow-top', '100%');
+    bubble.style.setProperty('--arrow-flip', 'rotate(0deg)');
+    bubble.style.setProperty('--arrow-border-color', '#c4b5fd');
+    bubble.style.setProperty('--arrow-border-bottom', 'transparent');
+    bubble.style.setProperty('--arrow-fill-color', '#faf5ff');
+    bubble.style.setProperty('--arrow-fill-bottom', 'transparent');
+    bubble.style.setProperty('--arrow-left', `${arrowLeft}%`);
+
+    // Add pulse effect to the bot icon to draw attention
+    firstBotIcon.style.animation = 'botIconPulse 1.5s ease-in-out 3';
+
+    // Show the bubble with enhanced animation
+    setTimeout(() => {
+      bubble.classList.add('show');
+    }, 200);
+
+    // Hide the bubble after 5 seconds
+    setTimeout(() => {
+      bubble.classList.remove('show');
+      setTimeout(() => {
+        bubble.remove();
+      }, 300);
+    }, 5000);
   }
 
   // Compact loader for collapsed view transitions

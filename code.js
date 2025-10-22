@@ -170,22 +170,30 @@ async function safeMessageHandler(handler, msg, handlerName) {
 }
 function createValidationTarget() {
     const selection = figma.currentPage.selection;
+    // Always validate the entire page for comprehensive results
+    // But track what the user wants to see based on their selection
     if (selection.length === 0) {
         return {
             targetNode: figma.currentPage,
-            targetName: `entire page "${figma.currentPage.name}"`
+            targetName: `entire page "${figma.currentPage.name}"`,
+            displayScope: 'page'
         };
     }
     const selectedNode = selection[0];
     if (selectedNode.type === 'FRAME') {
         return {
-            targetNode: selectedNode,
-            targetName: `frame "${selectedNode.name}"`
+            targetNode: figma.currentPage,
+            targetName: `frame "${selectedNode.name}"`,
+            selectedNodeId: selectedNode.id,
+            displayScope: 'frame'
         };
     }
+    // For any other selected node
     return {
         targetNode: figma.currentPage,
-        targetName: `entire page "${figma.currentPage.name}" (non-frame selected)`
+        targetName: `selected item "${selectedNode.name}"`,
+        selectedNodeId: selectedNode.id,
+        displayScope: 'node'
     };
 }
 async function selectNodeById(nodeId) {
@@ -194,6 +202,39 @@ async function selectNodeById(nodeId) {
     figma.viewport.scrollAndZoomIntoView([node]);
     notifySuccess(`Selected ${node.name}`);
     postMessageToUI('selection-changed', { nodeId });
+}
+// Enhanced error handling for token application
+async function handleTokenApplication(msg, tokenType, applyFunction) {
+    try {
+        const tokenName = msg.styleName || msg.tokenName;
+        validateRequiredParams({ tokenName, nodeId: msg.nodeId }, ['tokenName', 'nodeId']);
+        await applyFunction(tokenName, msg.nodeId);
+        postMessageToUI('applied', {
+            ok: true,
+            nodeId: msg.nodeId,
+            styleName: tokenName,
+            targetType: 'node'
+        });
+    }
+    catch (error) {
+        postMessageToUI('applied', {
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+            nodeId: msg.nodeId,
+            styleName: msg.styleName || msg.tokenName
+        });
+    }
+}
+// Batch processing utility for multiple operations
+async function processBatch(items, processor, batchSize = 5) {
+    for (let i = 0; i < items.length; i += batchSize) {
+        const batch = items.slice(i, i + batchSize);
+        await Promise.all(batch.map(processor));
+        // Small delay between batches to prevent blocking
+        if (i + batchSize < items.length) {
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+    }
 }
 // ============================================================================
 // UI MANAGEMENT FUNCTIONS
@@ -973,28 +1014,21 @@ async function runValidation(target, library, options, targetName) {
     const results = [];
     const visitedNodes = new Set(); // Prevent infinite recursion
     let nodeCount = 0;
-    const MAX_NODES = 1000; // Prevent processing too many nodes
+    const MAX_NODES = 5000; // Prevent processing too many nodes (increased for complex designs)
     // Helper function to check if spacing property is bound to a design system variable
     function isSpacingBoundToToken(node, property) {
         try {
-            // Check if the property has a bound variable
             const boundVariables = node.boundVariables;
-            console.log(`Checking ${property} on node "${node.name}":`, {
-                hasBoundVariables: !!boundVariables,
-                boundVariables: boundVariables,
-                propertyValue: node[property]
-            });
-            if (!boundVariables) {
-                console.log(`No boundVariables found for node "${node.name}"`);
+            if (!boundVariables)
                 return false;
-            }
             const propertyBinding = boundVariables[property];
-            const isBound = propertyBinding !== undefined && propertyBinding !== null;
-            console.log(`Property ${property} binding result:`, { propertyBinding, isBound });
-            return isBound;
+            return propertyBinding !== undefined && propertyBinding !== null;
         }
         catch (error) {
-            console.log(`Error checking spacing binding for ${property}:`, error);
+            // Only log errors, not every check
+            if (nodeCount % 100 === 0) {
+                console.log(`Error checking spacing binding for ${property}:`, error);
+            }
             return false;
         }
     }
@@ -1010,19 +1044,9 @@ async function runValidation(target, library, options, targetName) {
                 return; // Prevent excessive processing
             visitedNodes.add(node.id);
             nodeCount++;
-            console.log(`Processing node: "${node.name}" (${node.type})`);
-            // Log spacing-related properties for FRAME and GROUP nodes
-            if (node.type === 'FRAME' || node.type === 'GROUP') {
-                const containerNode = node;
-                console.log(`Container node "${node.name}" properties:`, {
-                    type: node.type,
-                    hasLayoutMode: 'layoutMode' in containerNode,
-                    layoutMode: containerNode.layoutMode,
-                    hasItemSpacing: 'itemSpacing' in containerNode,
-                    itemSpacing: containerNode.itemSpacing,
-                    hasPaddingLeft: 'paddingLeft' in containerNode,
-                    paddingLeft: containerNode.paddingLeft
-                });
+            // Log progress every 100 nodes instead of every node
+            if (nodeCount % 100 === 0) {
+                console.log(`Processing node ${nodeCount}: "${node.name}" (${node.type})`);
             }
             // Text style validation
             if (options.textStyles && node.type === 'TEXT') {
@@ -1045,14 +1069,11 @@ async function runValidation(target, library, options, targetName) {
             // Spacing validation
             if (options.spacing && (node.type === 'FRAME' || node.type === 'GROUP')) {
                 const containerNode = node;
-                console.log(`Checking spacing for node: "${containerNode.name}" (${containerNode.type})`);
                 // Check padding (only if it exists and is accessible)
                 try {
                     if ('paddingLeft' in containerNode && containerNode.paddingLeft && containerNode.paddingLeft > 0) {
                         const paddingValue = containerNode.paddingLeft;
-                        console.log(`Found padding: ${paddingValue}px on "${containerNode.name}"`);
                         if (!isSpacingBoundToToken(containerNode, 'paddingLeft')) {
-                            console.log(`Adding padding issue for "${containerNode.name}"`);
                             results.push({
                                 type: 'spacing',
                                 issue: `Hardcoded padding (${paddingValue}px)`,
@@ -1060,27 +1081,22 @@ async function runValidation(target, library, options, targetName) {
                                     id: containerNode.id,
                                     name: containerNode.name
                                 },
-                                frameName: containerNode.name, // Use the actual container name instead of page name
+                                frameName: containerNode.name,
                                 nodeType: 'SPACING',
                                 value: paddingValue
                             });
                         }
-                        else {
-                            console.log(`Padding is properly bound to token for "${containerNode.name}"`);
-                        }
                     }
                 }
                 catch (error) {
-                    console.log(`Error checking padding for "${containerNode.name}":`, error);
+                    // Silent error handling for performance
                 }
                 // Check gaps in auto layout
                 try {
                     if ('layoutMode' in containerNode && 'itemSpacing' in containerNode &&
                         containerNode.layoutMode !== 'NONE' && containerNode.itemSpacing > 0) {
                         const gapValue = containerNode.itemSpacing;
-                        console.log(`Found gap: ${gapValue}px on "${containerNode.name}"`);
                         if (!isSpacingBoundToToken(containerNode, 'itemSpacing')) {
-                            console.log(`Adding gap issue for "${containerNode.name}"`);
                             results.push({
                                 type: 'spacing',
                                 issue: `Hardcoded gap (${gapValue}px)`,
@@ -1088,26 +1104,21 @@ async function runValidation(target, library, options, targetName) {
                                     id: containerNode.id,
                                     name: containerNode.name
                                 },
-                                frameName: containerNode.name, // Use the actual container name instead of page name
+                                frameName: containerNode.name,
                                 nodeType: 'SPACING',
                                 value: gapValue
                             });
                         }
-                        else {
-                            console.log(`Gap is properly bound to token for "${containerNode.name}"`);
-                        }
                     }
                 }
                 catch (error) {
-                    console.log(`Error checking gap for "${containerNode.name}":`, error);
+                    // Silent error handling for performance
                 }
             }
             // Corner radius validation
             if (options.cornerRadius && (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE')) {
                 const shapeNode = node;
-                console.log(`Checking corner radius for node: "${shapeNode.name}" (${shapeNode.type})`);
                 try {
-                    // Check all individual corner radius properties
                     const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
                     const cornerIssues = [];
                     const cornerValues = {};
@@ -1116,11 +1127,10 @@ async function runValidation(target, library, options, targetName) {
                             const radiusValue = shapeNode[corner];
                             const boundVariables = shapeNode.boundVariables;
                             const isCornerBound = boundVariables && boundVariables[corner] !== undefined && boundVariables[corner] !== null;
-                            // Always include the corner value and token status in cornerValues (for UI display)
                             if (typeof radiusValue === 'number' && radiusValue >= 0) {
                                 cornerValues[corner] = {
                                     value: radiusValue,
-                                    hasToken: isCornerBound // Only true if actually bound to a token
+                                    hasToken: isCornerBound
                                 };
                             }
                             else {
@@ -1129,9 +1139,7 @@ async function runValidation(target, library, options, targetName) {
                                     hasToken: false
                                 };
                             }
-                            // Only add to issues if it has a value but is not bound to a token
                             if (typeof radiusValue === 'number' && radiusValue > 0 && !isCornerBound) {
-                                console.log(`Found unbound corner radius: ${corner} = ${radiusValue}px on "${shapeNode.name}"`);
                                 cornerIssues.push({
                                     corner: corner,
                                     value: radiusValue
@@ -1139,11 +1147,7 @@ async function runValidation(target, library, options, targetName) {
                             }
                         }
                     }
-                    // If we found corner radius issues, create a single consolidated result
                     if (cornerIssues.length > 0) {
-                        console.log(`Adding consolidated corner radius issue for "${shapeNode.name}" (ID: ${shapeNode.id}) with ${cornerIssues.length} corners`);
-                        console.log(`Corner issues:`, cornerIssues);
-                        console.log(`All corner values:`, cornerValues);
                         results.push({
                             type: 'corner-radius',
                             issue: `Hardcoded corner radius (${cornerIssues.length} corner${cornerIssues.length > 1 ? 's' : ''})`,
@@ -1159,24 +1163,21 @@ async function runValidation(target, library, options, targetName) {
                     }
                 }
                 catch (error) {
-                    console.log(`Error checking corner radius for "${shapeNode.name}":`, error);
+                    // Silent error handling for performance
                 }
             }
             // Color validation
             if (options.colors) {
-                console.log(`Checking colors for node: "${node.name}" (${node.type})`);
                 try {
-                    // Check fill colors for nodes that support fills (excluding TEXT nodes - they're handled separately)
+                    // Check fill colors for nodes that support fills (excluding TEXT nodes)
                     if ('fills' in node && Array.isArray(node.fills) && node.fills.length > 0 && node.type !== 'TEXT') {
                         const nodeWithFills = node;
                         for (let i = 0; i < nodeWithFills.fills.length; i++) {
                             const fill = nodeWithFills.fills[i];
                             if (fill && fill.type === 'SOLID' && fill.visible !== false) {
-                                // Check if this fill is bound to a variable
                                 const boundVariables = nodeWithFills.boundVariables;
                                 const fillBoundVariable = boundVariables && boundVariables.fills && boundVariables.fills[i];
                                 if (!fillBoundVariable) {
-                                    console.log(`Adding fill color issue for "${node.name}"`);
                                     results.push({
                                         type: 'color',
                                         issue: `Hardcoded fill color`,
@@ -1189,23 +1190,18 @@ async function runValidation(target, library, options, targetName) {
                                         property: 'fill'
                                     });
                                 }
-                                else {
-                                    console.log(`Fill color is properly bound to token for "${node.name}"`);
-                                }
                             }
                         }
                     }
-                    // Check stroke colors for nodes that support strokes
+                    // Check stroke colors
                     if ('strokes' in node && Array.isArray(node.strokes) && node.strokes.length > 0) {
                         const nodeWithStrokes = node;
                         for (let i = 0; i < nodeWithStrokes.strokes.length; i++) {
                             const stroke = nodeWithStrokes.strokes[i];
                             if (stroke && stroke.type === 'SOLID' && stroke.visible !== false) {
-                                // Check if this stroke is bound to a variable
                                 const boundVariables = nodeWithStrokes.boundVariables;
                                 const strokeBoundVariable = boundVariables && boundVariables.strokes && boundVariables.strokes[i];
                                 if (!strokeBoundVariable) {
-                                    console.log(`Adding stroke color issue for "${node.name}"`);
                                     results.push({
                                         type: 'color',
                                         issue: `Hardcoded stroke color`,
@@ -1218,22 +1214,17 @@ async function runValidation(target, library, options, targetName) {
                                         property: 'stroke'
                                     });
                                 }
-                                else {
-                                    console.log(`Stroke color is properly bound to token for "${node.name}"`);
-                                }
                             }
                         }
                     }
                     // Check text color for text nodes
                     if (node.type === 'TEXT') {
                         const textNode = node;
-                        // Check if text color is bound to a variable
                         const boundVariables = textNode.boundVariables;
                         const textColorBound = boundVariables && boundVariables.fills;
                         if (!textColorBound && textNode.fills && Array.isArray(textNode.fills) && textNode.fills.length > 0) {
                             const fill = textNode.fills[0];
                             if (fill && fill.type === 'SOLID' && fill.visible !== false) {
-                                console.log(`Adding text color issue for "${node.name}"`);
                                 results.push({
                                     type: 'color',
                                     issue: `Hardcoded fill color - not using design token`,
@@ -1247,13 +1238,10 @@ async function runValidation(target, library, options, targetName) {
                                 });
                             }
                         }
-                        else if (textColorBound) {
-                            console.log(`Text color is properly bound to token for "${node.name}"`);
-                        }
                     }
                 }
                 catch (error) {
-                    console.log(`Error checking colors for "${node.name}":`, error);
+                    // Silent error handling for performance
                 }
             }
             // Recursively check children with safety checks
@@ -1264,10 +1252,7 @@ async function runValidation(target, library, options, targetName) {
                     }
                 }
             }
-            // Log progress every 100 nodes
-            if (nodeCount % 100 === 0) {
-                console.log(`Processed ${nodeCount} nodes, found ${results.length} issues so far`);
-            }
+            // Progress logging handled above
         }
         catch (error) {
             console.log(`Error processing node ${(node === null || node === void 0 ? void 0 : node.id) || 'unknown'}:`, error);
@@ -1308,8 +1293,437 @@ async function runValidation(target, library, options, targetName) {
         return [];
     }
 }
+// ============================================================================
+// MESSAGE HANDLER FUNCTIONS
+// ============================================================================
+async function handleGetVariables(msg, variableType) {
+    if (!selectedLibraryKey)
+        return;
+    const library = await getSavedLibrary(selectedLibraryKey);
+    if (!(library === null || library === void 0 ? void 0 : library.variables)) {
+        postMessageToUI(`${variableType}-data`, { [variableType]: {} });
+        return;
+    }
+    const collectionMappings = {
+        'spacing': ['spacing', 'space', 'gap', 'margin', 'padding'],
+        'colors': ['colors', 'color', 'colour', 'palette', 'theme'],
+        'corner-radius': ['corner-radius', 'cornerRadius', 'radius', 'corner', 'border-radius', 'rounded']
+    };
+    const variables = getVariablesFromLibrary(library, collectionMappings[variableType]);
+    logSuccess(`Loading ${Object.keys(variables).length} ${variableType} variables`);
+    const responseKey = variableType === 'corner-radius' ? 'cornerRadius' : variableType;
+    postMessageToUI(`${variableType}-data`, { [responseKey]: variables });
+}
+async function handleRunValidation(msg) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x;
+    validateRequiredParams({ options: msg.options }, ['options']);
+    validateLibrarySelected();
+    const library = await getSavedLibrary(selectedLibraryKey);
+    if (!library) {
+        throw createError('Selected library not found');
+    }
+    // Ensure options has required properties with defaults
+    const validationOptions = {
+        textStyles: (_b = (_a = msg.options) === null || _a === void 0 ? void 0 : _a.textStyles) !== null && _b !== void 0 ? _b : false,
+        spacing: (_d = (_c = msg.options) === null || _c === void 0 ? void 0 : _c.spacing) !== null && _d !== void 0 ? _d : false,
+        cornerRadius: (_f = (_e = msg.options) === null || _e === void 0 ? void 0 : _e.cornerRadius) !== null && _f !== void 0 ? _f : false,
+        colors: (_h = (_g = msg.options) === null || _g === void 0 ? void 0 : _g.colors) !== null && _h !== void 0 ? _h : false,
+        typography: (_k = (_j = msg.options) === null || _j === void 0 ? void 0 : _j.typography) !== null && _k !== void 0 ? _k : false,
+        shadows: (_m = (_l = msg.options) === null || _l === void 0 ? void 0 : _l.shadows) !== null && _m !== void 0 ? _m : false,
+        borders: (_p = (_o = msg.options) === null || _o === void 0 ? void 0 : _o.borders) !== null && _p !== void 0 ? _p : false,
+        opacity: (_r = (_q = msg.options) === null || _q === void 0 ? void 0 : _q.opacity) !== null && _r !== void 0 ? _r : false,
+        sizing: (_t = (_s = msg.options) === null || _s === void 0 ? void 0 : _s.sizing) !== null && _t !== void 0 ? _t : false
+    };
+    logOperation('Running validation', validationOptions);
+    // Check if user wants to validate a specific node
+    let targetNode;
+    let targetName;
+    let selectedNodeId;
+    let displayScope;
+    if (msg.targetNodeId) {
+        // User selected a specific asset to validate
+        try {
+            const specificNode = await getNodeById(msg.targetNodeId);
+            if (specificNode.type === 'FRAME') {
+                targetNode = specificNode;
+                targetName = `frame "${specificNode.name}"`;
+                selectedNodeId = msg.targetNodeId;
+                displayScope = 'frame';
+            }
+            else {
+                // For non-frame nodes, validate the entire page but filter to this node
+                targetNode = figma.currentPage;
+                targetName = `selected item "${specificNode.name}"`;
+                selectedNodeId = msg.targetNodeId;
+                displayScope = 'node';
+            }
+        }
+        catch (error) {
+            // If node not found, fall back to normal validation
+            const validationTarget = createValidationTarget();
+            targetNode = validationTarget.targetNode;
+            targetName = validationTarget.targetName;
+            selectedNodeId = validationTarget.selectedNodeId;
+            displayScope = validationTarget.displayScope;
+        }
+    }
+    else {
+        // Normal validation flow
+        const validationTarget = createValidationTarget();
+        targetNode = validationTarget.targetNode;
+        targetName = validationTarget.targetName;
+        selectedNodeId = validationTarget.selectedNodeId;
+        displayScope = validationTarget.displayScope;
+    }
+    // Always run validation on the entire page for comprehensive results
+    const validationPromise = runValidation(targetNode, library, validationOptions, targetName);
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(createError('Validation timeout')), 30000));
+    let allValidationResults = await Promise.race([validationPromise, timeoutPromise]);
+    // Helper function to check if a node is a descendant of the selected node
+    async function isNodeDescendantOf(nodeId, ancestorId) {
+        if (!nodeId)
+            return false;
+        try {
+            const node = await getNodeById(nodeId);
+            let current = node.parent;
+            while (current) {
+                if (current.id === ancestorId) {
+                    return true;
+                }
+                current = current.parent;
+            }
+            return false;
+        }
+        catch (error) {
+            return false;
+        }
+    }
+    // Filter results based on display scope
+    let displayedResults = allValidationResults;
+    if (displayScope === 'node' && selectedNodeId) {
+        // Show issues for the selected node AND all its nested children
+        const filteredResults = [];
+        for (const result of allValidationResults) {
+            if (((_u = result.node) === null || _u === void 0 ? void 0 : _u.id) === selectedNodeId || await isNodeDescendantOf((_v = result.node) === null || _v === void 0 ? void 0 : _v.id, selectedNodeId)) {
+                filteredResults.push(result);
+            }
+        }
+        displayedResults = filteredResults;
+        logOperation('Filtered validation results for selected node and its children', { selectedNodeId, totalResults: allValidationResults.length, displayedResults: displayedResults.length });
+    }
+    else if (displayScope === 'frame' && selectedNodeId) {
+        // Show issues for the selected frame AND all its nested children
+        const filteredResults = [];
+        for (const result of allValidationResults) {
+            if (((_w = result.node) === null || _w === void 0 ? void 0 : _w.id) === selectedNodeId || await isNodeDescendantOf((_x = result.node) === null || _x === void 0 ? void 0 : _x.id, selectedNodeId)) {
+                filteredResults.push(result);
+            }
+        }
+        displayedResults = filteredResults;
+        logOperation('Filtered validation results for selected frame and its children', { selectedNodeId, totalResults: allValidationResults.length, displayedResults: displayedResults.length });
+    }
+    // For 'page' scope, show all results (no filtering needed)
+    // Resize UI and send results
+    setScreenSize('VALIDATION_RESULTS_SCREEN');
+    postMessageToUI('validation-results', {
+        results: displayedResults,
+        allResults: allValidationResults, // Store all results for future filtering
+        library: library,
+        targetName: targetName,
+        targetType: 'page', // Always page since we always validate the full page
+        displayScope: displayScope,
+        selectedNodeId: selectedNodeId,
+        options: validationOptions
+    });
+    logSuccess(`Validation completed with ${displayedResults.length} displayed results (${allValidationResults.length} total)`);
+}
+async function handleSelectNode(msg) {
+    if (!msg.nodeId)
+        return;
+    try {
+        await selectNodeById(msg.nodeId);
+    }
+    catch (error) {
+        logError('Error selecting node', error);
+        notifyError('Error selecting node');
+    }
+}
+async function handleSelectAndPositionNode(msg) {
+    if (!msg.nodeId)
+        return;
+    try {
+        const node = await getNodeById(msg.nodeId);
+        if (!node) {
+            throw new Error('Node not found');
+        }
+        // Select the node
+        figma.currentPage.selection = [node];
+        // Position the viewport to show the node
+        if (msg.position) {
+            // Get the node's bounds
+            const bounds = node.absoluteBoundingBox;
+            if (bounds) {
+                // Calculate the center point of the node
+                const nodeCenterX = bounds.x + bounds.width / 2;
+                const nodeCenterY = bounds.y + bounds.height / 2;
+                // Get viewport dimensions
+                const viewport = figma.viewport;
+                const viewportWidth = viewport.bounds.width;
+                const viewportHeight = viewport.bounds.height;
+                // Calculate target position based on requirements
+                let targetX = nodeCenterX; // Center horizontally by default
+                let targetY = nodeCenterY;
+                if (msg.position.horizontal === 'center') {
+                    // Node center should be at viewport center horizontally
+                    targetX = nodeCenterX;
+                }
+                // Position vertically at specified percentage from top
+                // If vertical is 0.8, the node should be at 80% down from the top of viewport
+                const viewportTop = viewport.bounds.y;
+                const viewportBottom = viewport.bounds.y + viewport.bounds.height;
+                targetY = viewportTop + (viewportHeight * msg.position.vertical);
+                // Scroll to position the node at the target location
+                figma.viewport.scrollAndZoomIntoView([node]);
+                // Fine-tune the position by calculating the offset needed
+                const currentViewport = figma.viewport.bounds;
+                const currentCenterX = currentViewport.x + currentViewport.width / 2;
+                const currentTargetY = currentViewport.y + (currentViewport.height * msg.position.vertical);
+                const offsetX = nodeCenterX - currentCenterX;
+                const offsetY = nodeCenterY - currentTargetY;
+                // Apply the offset to center horizontally and position at 80% vertically
+                figma.viewport.center = {
+                    x: figma.viewport.center.x + offsetX,
+                    y: figma.viewport.center.y + offsetY
+                };
+            }
+        }
+        else {
+            // Fallback to default behavior
+            figma.viewport.scrollAndZoomIntoView([node]);
+        }
+        console.log(`Selected and positioned node: ${node.name}`);
+    }
+    catch (error) {
+        logError('Error selecting and positioning node', error);
+        notifyError('Error selecting and positioning node');
+    }
+}
+async function handleGetCurrentNodeValues(msg) {
+    if (!msg.nodeId) {
+        throw new Error('Node ID is required');
+    }
+    try {
+        const node = await getNodeById(msg.nodeId);
+        const values = {};
+        // Get spacing values
+        if ('itemSpacing' in node || 'paddingLeft' in node) {
+            values.spacing = {};
+            if ('itemSpacing' in node) {
+                values.spacing.itemSpacing = node.itemSpacing;
+            }
+            if ('paddingLeft' in node) {
+                values.spacing.paddingLeft = node.paddingLeft;
+                values.spacing.paddingRight = node.paddingRight;
+                values.spacing.paddingTop = node.paddingTop;
+                values.spacing.paddingBottom = node.paddingBottom;
+            }
+        }
+        // Get corner radius values
+        if ('topLeftRadius' in node) {
+            values.cornerRadius = {};
+            const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
+            corners.forEach(corner => {
+                if (corner in node) {
+                    values.cornerRadius[corner] = node[corner];
+                }
+            });
+        }
+        console.log('🔄 Sending current node values:', msg.nodeId, values);
+        figma.ui.postMessage({
+            type: 'current-node-values-response',
+            nodeId: msg.nodeId,
+            values: values
+        });
+    }
+    catch (error) {
+        console.error('Error getting current node values:', error);
+        figma.ui.postMessage({
+            type: 'current-node-values-response',
+            nodeId: msg.nodeId,
+            values: {}
+        });
+    }
+}
+async function handleValidateIssueResolution(msg) {
+    console.log('🔍 Validating issue resolution:', msg);
+    try {
+        const nodeId = msg.nodeId;
+        const issueType = msg.issueType;
+        const validationId = msg.validationId;
+        if (!nodeId || !issueType) {
+            postMessageToUI('validation-response', {
+                validationId,
+                isFixed: false,
+                reason: 'Missing node ID or issue type'
+            });
+            return;
+        }
+        // Get the node
+        const node = await getNodeById(nodeId);
+        let isFixed = false;
+        let reason = '';
+        // Validate based on issue type
+        switch (issueType) {
+            case 'text-style':
+                // Check if text node has a text style applied
+                if (node.type === 'TEXT') {
+                    const textNode = node;
+                    if (textNode.textStyleId && textNode.textStyleId !== '') {
+                        isFixed = true;
+                    }
+                    else {
+                        reason = 'No text style applied to this text layer';
+                    }
+                }
+                else {
+                    reason = 'Node is not a text layer';
+                }
+                break;
+            case 'spacing':
+                // Check if node has spacing tokens bound
+                if (node.type === 'FRAME') {
+                    const frameNode = node;
+                    const boundVariables = frameNode.boundVariables;
+                    if (boundVariables) {
+                        // Check for spacing-related bound variables
+                        const spacingProperties = ['itemSpacing', 'paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom'];
+                        const hasSpacingToken = spacingProperties.some(prop => boundVariables[prop] !== undefined);
+                        if (hasSpacingToken) {
+                            isFixed = true;
+                        }
+                        else {
+                            reason = 'No spacing tokens applied to this frame';
+                        }
+                    }
+                    else {
+                        reason = 'No design tokens bound to this frame';
+                    }
+                }
+                else {
+                    reason = 'Node does not support spacing tokens';
+                }
+                break;
+            case 'corner-radius':
+                // Check if node has corner radius tokens bound
+                if (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE') {
+                    const shapeNode = node;
+                    const boundVariables = shapeNode.boundVariables;
+                    if (boundVariables) {
+                        // Check for corner radius bound variables
+                        const cornerProperties = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
+                        const hasCornerToken = cornerProperties.some(prop => boundVariables[prop] !== undefined);
+                        if (hasCornerToken) {
+                            isFixed = true;
+                        }
+                        else {
+                            reason = 'No corner radius tokens applied to this shape';
+                        }
+                    }
+                    else {
+                        reason = 'No design tokens bound to this shape';
+                    }
+                }
+                else {
+                    reason = 'Node does not support corner radius tokens';
+                }
+                break;
+            case 'color':
+                // Check if node has color tokens bound
+                if ('fills' in node || 'strokes' in node) {
+                    const nodeWithColor = node;
+                    const boundVariables = nodeWithColor.boundVariables;
+                    if (boundVariables) {
+                        // Check for color-related bound variables
+                        const hasColorToken = boundVariables.fills !== undefined || boundVariables.strokes !== undefined;
+                        if (hasColorToken) {
+                            isFixed = true;
+                        }
+                        else {
+                            reason = 'No color tokens applied to this element';
+                        }
+                    }
+                    else {
+                        reason = 'No design tokens bound to this element';
+                    }
+                }
+                else {
+                    reason = 'Node does not support color tokens';
+                }
+                break;
+            default:
+                reason = `Unknown issue type: ${issueType}`;
+        }
+        // Send response back to UI
+        postMessageToUI('validation-response', {
+            validationId,
+            isFixed,
+            reason: isFixed ? 'Issue resolved with design tokens' : reason
+        });
+        console.log('🔍 Validation result:', { isFixed, reason });
+    }
+    catch (error) {
+        console.error('🔍 Validation error:', error);
+        postMessageToUI('validation-response', {
+            validationId: msg.validationId,
+            isFixed: false,
+            reason: 'Error during validation: ' + (error instanceof Error ? error.message : String(error))
+        });
+    }
+}
+async function handleLibrarySelection(msg) {
+    var _a, _b;
+    selectedLibraryKey = msg.libraryKey || null;
+    const library = selectedLibraryKey ? await getSavedLibrary(selectedLibraryKey) : null;
+    if (selectedLibraryKey && library) {
+        setScreenSize('HOME_SCREEN');
+        await setStatus(PLUGIN_STATUS.READY);
+        // Send UI mode first
+        postMessageToUI('ui-mode', {
+            mode: 'home',
+            fileName: (_a = figma.root.name) !== null && _a !== void 0 ? _a : 'Unknown Library'
+        });
+        // Get spacing variables for the library
+        const spacingVariables = getVariablesFromLibrary(library, ['spacing', 'space']);
+        const tokenCounts = analyzeLibraryTokens(library);
+        // Send library information
+        postMessageToUI('library-selected', {
+            library: {
+                name: library.libraryName,
+                count: Object.keys(library.items).length,
+                textStylesCount: tokenCounts.textStyles,
+                variablesCount: library.variables ? Object.keys(library.variables).length : 0,
+                spacingVariablesCount: tokenCounts.spacing,
+                spacingVariables: spacingVariables,
+                tokenCounts: tokenCounts,
+                key: selectedLibraryKey
+            }
+        });
+    }
+    else {
+        setScreenSize('SELECTION_SCREEN');
+        await setStatus(PLUGIN_STATUS.SELECTION_MODE);
+        postMessageToUI('ui-mode', {
+            mode: 'selection',
+            fileName: (_b = figma.root.name) !== null && _b !== void 0 ? _b : 'Unknown Library'
+        });
+    }
+    notifySuccess(`Selected library: ${(library === null || library === void 0 ? void 0 : library.libraryName) || 'None'}`);
+}
+// ============================================================================
+// MAIN MESSAGE HANDLER
+// ============================================================================
 figma.ui.onmessage = async (msg) => {
-    var _a, _b, _c, _d;
+    var _a, _b;
     if (msg.type === 'get-ui-mode') {
         console.log('UI requesting mode...');
         console.log('selectedLibraryKey:', selectedLibraryKey);
@@ -1415,184 +1829,40 @@ figma.ui.onmessage = async (msg) => {
         });
     }
     else if (msg.type === 'select-library') {
-        selectedLibraryKey = msg.libraryKey || null;
-        const library = selectedLibraryKey ? await getSavedLibrary(selectedLibraryKey) : null;
-        // Switch to home screen when library is selected
-        if (selectedLibraryKey && library) {
-            setScreenSize('HOME_SCREEN');
-            await setStatus(3);
-            // Send UI mode first
-            figma.ui.postMessage({
-                type: 'ui-mode',
-                mode: 'home',
-                fileName: (_c = figma.root.name) !== null && _c !== void 0 ? _c : 'Unknown Library'
-            });
-            // Calculate spacing variables count specifically
-            console.log('Library variables structure:', library.variables);
-            let spacingVariables = {};
-            let spacingVariablesCount = 0;
-            if (library.variables) {
-                // Check if using new structure (organized by collection)
-                if (library.variables.spacing) {
-                    spacingVariables = library.variables.spacing;
-                    spacingVariablesCount = Object.keys(spacingVariables).length;
-                    console.log(`Found ${spacingVariablesCount} spacing variables (new format):`, spacingVariables);
-                    // Log all variable IDs for debugging
-                    console.log('📋 ALL SPACING VARIABLE IDs FROM JSON:');
-                    for (const [name, data] of Object.entries(spacingVariables)) {
-                        console.log(`  ${name}: ID="${data.id}", Key="${data.key}", Name="${data.name}"`);
-                    }
-                }
-                else {
-                    // Handle old structure (flat with collection names in keys)
-                    const oldFormatSpacing = {};
-                    for (const key in library.variables) {
-                        if (key.toLowerCase().startsWith('spacing/')) {
-                            const variableName = key.replace(/^spacing\//i, '');
-                            oldFormatSpacing[variableName] = library.variables[key];
-                        }
-                    }
-                    spacingVariables = oldFormatSpacing;
-                    spacingVariablesCount = Object.keys(spacingVariables).length;
-                    console.log(`Found ${spacingVariablesCount} spacing variables (old format):`, spacingVariables);
-                    // Log all variable IDs for debugging
-                    console.log('📋 ALL SPACING VARIABLE IDs FROM JSON (OLD FORMAT):');
-                    for (const [name, data] of Object.entries(spacingVariables)) {
-                        console.log(`  ${name}: ID="${data.id}", Key="${data.key}", Name="${data.name}"`);
-                    }
-                }
-            }
-            // Analyze library tokens for dynamic validation options
-            const tokenCounts = analyzeLibraryTokens(library);
-            // Then send library information
-            figma.ui.postMessage({
-                type: 'library-selected',
-                library: {
-                    name: library.libraryName,
-                    count: Object.keys(library.items).length,
-                    textStylesCount: tokenCounts.textStyles,
-                    variablesCount: library.variables ? Object.keys(library.variables).length : 0,
-                    spacingVariablesCount: tokenCounts.spacing,
-                    spacingVariables: spacingVariables,
-                    tokenCounts: tokenCounts,
-                    key: selectedLibraryKey
-                }
-            });
-        }
-        else {
-            setScreenSize('SELECTION_SCREEN');
-            await setStatus(2);
-            figma.ui.postMessage({
-                type: 'ui-mode',
-                mode: 'selection',
-                fileName: (_d = figma.root.name) !== null && _d !== void 0 ? _d : 'Unknown Library'
-            });
-        }
-        figma.notify(`Selected library: ${(library === null || library === void 0 ? void 0 : library.libraryName) || 'None'}`);
+        await safeMessageHandler(handleLibrarySelection, msg, 'select-library');
     }
     else if (msg.type === 'create-text-style') {
         await createLocalTextStyle();
     }
     else if (msg.type === 'apply-text-style') {
-        try {
-            const styleName = msg.styleName || 'Display/Large';
-            if (msg.nodeId) {
-                // Apply style to specific node
-                await applyStyleToNode(styleName, msg.nodeId);
-                figma.ui.postMessage({
-                    type: 'applied',
-                    ok: true,
-                    nodeId: msg.nodeId,
-                    styleName: styleName,
-                    targetType: 'node'
-                });
-            }
-            else {
-                // Apply style to current selection (legacy behavior)
+        if (msg.nodeId) {
+            await safeMessageHandler((msg) => handleTokenApplication(msg, 'text-style', applyStyleToNode), msg, 'apply-text-style');
+        }
+        else {
+            // Legacy behavior for selection
+            try {
+                const styleName = msg.styleName || 'Display/Large';
                 await applyStyleToSelection(styleName);
-                figma.ui.postMessage({
-                    type: 'applied',
+                postMessageToUI('applied', {
                     ok: true,
                     styleName: styleName,
                     targetType: 'selection'
                 });
             }
-        }
-        catch (e) {
-            figma.ui.postMessage({
-                type: 'applied',
-                ok: false,
-                error: String(e),
-                nodeId: msg.nodeId,
-                styleName: msg.styleName
-            });
+            catch (error) {
+                postMessageToUI('applied', {
+                    ok: false,
+                    error: String(error),
+                    styleName: msg.styleName
+                });
+            }
         }
     }
     else if (msg.type === 'apply-spacing-token') {
-        console.log('🔧 Received apply-spacing-token message:', msg);
-        try {
-            const tokenName = msg.tokenName;
-            console.log('Token name:', tokenName);
-            if (!tokenName) {
-                throw new Error('Token name is required.');
-            }
-            if (msg.nodeId) {
-                // Apply spacing token to specific node
-                await applySpacingTokenToNode(tokenName, msg.nodeId);
-                figma.ui.postMessage({
-                    type: 'applied',
-                    ok: true,
-                    nodeId: msg.nodeId,
-                    styleName: tokenName, // Use tokenName as styleName for consistency with UI
-                    targetType: 'node'
-                });
-            }
-            else {
-                throw new Error('Node ID is required for spacing token application.');
-            }
-        }
-        catch (e) {
-            figma.ui.postMessage({
-                type: 'applied',
-                ok: false,
-                error: String(e),
-                nodeId: msg.nodeId,
-                styleName: msg.tokenName
-            });
-        }
+        await safeMessageHandler((msg) => handleTokenApplication(msg, 'spacing', applySpacingTokenToNode), msg, 'apply-spacing-token');
     }
     else if (msg.type === 'apply-corner-radius-token') {
-        console.log('🔧 Received apply-corner-radius-token message:', msg);
-        try {
-            const tokenName = msg.tokenName;
-            console.log('Corner radius token name:', tokenName);
-            if (!tokenName) {
-                throw new Error('Token name is required.');
-            }
-            if (msg.nodeId) {
-                // Apply corner radius token to specific node
-                await applyCornerRadiusTokenToNode(tokenName, msg.nodeId);
-                figma.ui.postMessage({
-                    type: 'applied',
-                    ok: true,
-                    nodeId: msg.nodeId,
-                    styleName: tokenName, // Use tokenName as styleName for consistency with UI
-                    targetType: 'node'
-                });
-            }
-            else {
-                throw new Error('Node ID is required for corner radius token application.');
-            }
-        }
-        catch (e) {
-            figma.ui.postMessage({
-                type: 'applied',
-                ok: false,
-                error: String(e),
-                nodeId: msg.nodeId,
-                styleName: msg.tokenName
-            });
-        }
+        await safeMessageHandler((msg) => handleTokenApplication(msg, 'corner-radius', applyCornerRadiusTokenToNode), msg, 'apply-corner-radius-token');
     }
     else if (msg.type === 'apply-corner-radius-tokens') {
         console.log('🔧 Received apply-corner-radius-tokens message:', msg);
@@ -1659,37 +1929,7 @@ figma.ui.onmessage = async (msg) => {
         }
     }
     else if (msg.type === 'apply-color-token') {
-        console.log('🔧 Received apply-color-token message:', msg);
-        try {
-            const tokenName = msg.tokenName;
-            console.log('Color token name:', tokenName);
-            if (!tokenName) {
-                throw new Error('Token name is required.');
-            }
-            if (msg.nodeId) {
-                // Apply color token to specific node
-                await applyColorTokenToNode(tokenName, msg.nodeId);
-                figma.ui.postMessage({
-                    type: 'applied',
-                    ok: true,
-                    nodeId: msg.nodeId,
-                    styleName: tokenName, // Use tokenName as styleName for consistency with UI
-                    targetType: 'node'
-                });
-            }
-            else {
-                throw new Error('Node ID is required for color token application.');
-            }
-        }
-        catch (e) {
-            figma.ui.postMessage({
-                type: 'applied',
-                ok: false,
-                error: String(e),
-                nodeId: msg.nodeId,
-                styleName: msg.tokenName
-            });
-        }
+        await safeMessageHandler((msg) => handleTokenApplication(msg, 'color', applyColorTokenToNode), msg, 'apply-color-token');
     }
     else if (msg.type === 'resize-ui') {
         if (msg.width && msg.height) {
@@ -1797,194 +2037,16 @@ figma.ui.onmessage = async (msg) => {
         }
     }
     else if (msg.type === 'get-spacing-variables') {
-        if (selectedLibraryKey) {
-            const library = await getSavedLibrary(selectedLibraryKey);
-            if (library && library.variables) {
-                let spacingVariables = {};
-                // Check if using new structure (organized by collection)
-                if (library.variables.spacing) {
-                    spacingVariables = library.variables.spacing;
-                }
-                else {
-                    // Handle old structure (flat with collection names in keys)
-                    for (const key in library.variables) {
-                        if (key.toLowerCase().startsWith('spacing/')) {
-                            const variableName = key.replace(/^spacing\//i, '');
-                            spacingVariables[variableName] = library.variables[key];
-                        }
-                    }
-                }
-                console.log(`Loading ${Object.keys(spacingVariables).length} spacing variables...`);
-                figma.ui.postMessage({
-                    type: 'spacing-variables-data',
-                    spacingVariables: spacingVariables
-                });
-            }
-            else {
-                console.log('No spacing variables found in selected library');
-                figma.ui.postMessage({
-                    type: 'spacing-variables-data',
-                    spacingVariables: {}
-                });
-            }
-        }
+        await safeMessageHandler(() => handleGetVariables(msg, 'spacing'), msg, 'get-spacing-variables');
     }
     else if (msg.type === 'get-colors') {
-        if (selectedLibraryKey) {
-            const library = await getSavedLibrary(selectedLibraryKey);
-            if (library && library.variables) {
-                let colorVariables = {};
-                // Check if using new structure (organized by collection)
-                if (library.variables.colors) {
-                    colorVariables = library.variables.colors;
-                }
-                else {
-                    // Handle old structure and search through all collections for color-related variables
-                    for (const [collectionKey, variables] of Object.entries(library.variables)) {
-                        const collectionName = collectionKey.toLowerCase();
-                        // Check if this collection contains colors
-                        if (collectionName.includes('color') || collectionName.includes('colour') ||
-                            collectionName.includes('palette') || collectionName.includes('theme')) {
-                            // Add all variables from this collection
-                            Object.assign(colorVariables, variables);
-                        }
-                        else {
-                            // Check individual variable names for color-related terms
-                            for (const [varName, varData] of Object.entries(variables)) {
-                                const name = varName.toLowerCase();
-                                if (name.includes('color') || name.includes('colour')) {
-                                    colorVariables[varName] = varData;
-                                }
-                            }
-                        }
-                    }
-                }
-                console.log(`Loading ${Object.keys(colorVariables).length} color variables...`);
-                figma.ui.postMessage({
-                    type: 'colors-data',
-                    colors: colorVariables
-                });
-            }
-            else {
-                console.log('No color variables found in selected library');
-                figma.ui.postMessage({
-                    type: 'colors-data',
-                    colors: {}
-                });
-            }
-        }
+        await safeMessageHandler(() => handleGetVariables(msg, 'colors'), msg, 'get-colors');
     }
     else if (msg.type === 'get-corner-radius') {
-        if (selectedLibraryKey) {
-            const library = await getSavedLibrary(selectedLibraryKey);
-            if (library && library.variables) {
-                let cornerRadiusVariables = {};
-                // Check if using new structure (organized by collection)
-                if (library.variables['corner-radius'] || library.variables.cornerRadius) {
-                    cornerRadiusVariables = library.variables['corner-radius'] || library.variables.cornerRadius;
-                }
-                else {
-                    // Handle old structure and search through all collections for corner radius-related variables
-                    for (const [collectionKey, variables] of Object.entries(library.variables)) {
-                        const collectionName = collectionKey.toLowerCase();
-                        // Check if this collection contains corner radius
-                        if (collectionName.includes('radius') || collectionName.includes('corner') ||
-                            collectionName.includes('border-radius') || collectionName.includes('rounded')) {
-                            // Add all variables from this collection
-                            Object.assign(cornerRadiusVariables, variables);
-                        }
-                        else {
-                            // Check individual variable names for corner radius-related terms
-                            for (const [varName, varData] of Object.entries(variables)) {
-                                const name = varName.toLowerCase();
-                                if (name.includes('radius') || name.includes('corner') || name.includes('rounded')) {
-                                    cornerRadiusVariables[varName] = varData;
-                                }
-                            }
-                        }
-                    }
-                }
-                console.log(`Loading ${Object.keys(cornerRadiusVariables).length} corner radius variables...`);
-                figma.ui.postMessage({
-                    type: 'corner-radius-data',
-                    cornerRadius: cornerRadiusVariables
-                });
-            }
-            else {
-                console.log('No corner radius variables found in selected library');
-                figma.ui.postMessage({
-                    type: 'corner-radius-data',
-                    cornerRadius: {}
-                });
-            }
-        }
+        await safeMessageHandler(() => handleGetVariables(msg, 'corner-radius'), msg, 'get-corner-radius');
     }
     else if (msg.type === 'run-validation') {
-        try {
-            if (!selectedLibraryKey || !msg.options) {
-                figma.notify('Please select a library and validation options first', { error: true });
-                return;
-            }
-            const library = await getSavedLibrary(selectedLibraryKey);
-            if (!library) {
-                figma.notify('Selected library not found', { error: true });
-                return;
-            }
-            console.log('Running validation with options:', msg.options);
-            // Get the current selection or use the entire page
-            const selection = figma.currentPage.selection;
-            let targetNode;
-            let targetName;
-            if (selection.length === 0) {
-                // No selection - validate the entire current page
-                targetNode = figma.currentPage;
-                targetName = `entire page "${figma.currentPage.name}"`;
-                console.log(`No selection found, validating entire page: ${figma.currentPage.name}`);
-                figma.notify(`Validating entire page: ${figma.currentPage.name}`);
-            }
-            else {
-                const selectedNode = selection[0];
-                if (selectedNode.type === 'FRAME') {
-                    // Frame selected - validate the frame
-                    targetNode = selectedNode;
-                    targetName = `frame "${selectedNode.name}"`;
-                    console.log(`Validating selected frame: ${selectedNode.name}`);
-                }
-                else {
-                    // Other node type selected - validate the entire page
-                    targetNode = figma.currentPage;
-                    targetName = `entire page "${figma.currentPage.name}" (non-frame selected)`;
-                    console.log(`Non-frame selected, validating entire page: ${figma.currentPage.name}`);
-                    figma.notify(`Non-frame selected, validating entire page: ${figma.currentPage.name}`);
-                }
-            }
-            // Run validation with timeout
-            const validationPromise = runValidation(targetNode, library, msg.options, targetName);
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Validation timeout')), 30000));
-            const validationResults = await Promise.race([validationPromise, timeoutPromise]);
-            // Resize UI for validation results
-            setScreenSize('VALIDATION_RESULTS_SCREEN');
-            // Send results to UI
-            console.log(`📊 Sending ${validationResults.length} validation results to UI`);
-            figma.ui.postMessage({
-                type: 'validation-results',
-                results: validationResults,
-                library: library,
-                targetName: targetName,
-                targetType: targetNode.type === 'PAGE' ? 'page' : 'frame',
-                options: msg.options
-            });
-            console.log('✅ Validation completed successfully');
-        }
-        catch (error) {
-            console.error('Validation error:', error);
-            figma.notify('Validation failed. Please try again.', { error: true });
-            // Send error to UI
-            figma.ui.postMessage({
-                type: 'validation-error',
-                error: error instanceof Error ? error.message : 'Unknown error'
-            });
-        }
+        await safeMessageHandler(handleRunValidation, msg, 'run-validation');
     }
     else if (msg.type === 'back-to-validation') {
         // Resize back to home screen
@@ -1992,28 +2054,13 @@ figma.ui.onmessage = async (msg) => {
         console.log('Resized UI back to home screen');
     }
     else if (msg.type === 'select-node') {
-        if (msg.nodeId) {
-            try {
-                const node = await figma.getNodeByIdAsync(msg.nodeId);
-                if (node) {
-                    figma.currentPage.selection = [node];
-                    figma.viewport.scrollAndZoomIntoView([node]);
-                    figma.notify(`Selected ${node.name}`);
-                    // Notify UI that selection changed
-                    figma.ui.postMessage({
-                        type: 'selection-changed',
-                        nodeId: msg.nodeId
-                    });
-                }
-                else {
-                    figma.notify('Node not found', { error: true });
-                }
-            }
-            catch (error) {
-                console.error('Error selecting node:', error);
-                figma.notify('Error selecting node', { error: true });
-            }
-        }
+        await safeMessageHandler(handleSelectNode, msg, 'select-node');
+    }
+    else if (msg.type === 'select-and-position-node') {
+        await safeMessageHandler(handleSelectAndPositionNode, msg, 'select-and-position-node');
+    }
+    else if (msg.type === 'validate-issue-resolution') {
+        await safeMessageHandler(handleValidateIssueResolution, msg, 'validate-issue-resolution');
     }
     else if (msg.type === 'minimize-and-position') {
         // Minimize window and position next to relevant Figma panel
@@ -2024,6 +2071,9 @@ figma.ui.onmessage = async (msg) => {
         position = { x: 800, y: 0 };
         // Resize to collapsed view size using the defined constant
         setScreenSize('VALIDATION_RESULTS_COLLAPSED');
+        // Enable selection tracking for collapsed view
+        isSelectionTrackingEnabled = true;
+        console.log('🔍 SELECTION TRACKING ENABLED (via minimize-and-position)');
         console.log(`Minimized plugin for ${resultType}`);
         figma.notify(`Plugin minimized`);
         // Notify UI that plugin is now minimized
@@ -2034,11 +2084,37 @@ figma.ui.onmessage = async (msg) => {
     }
     else if (msg.type === 'enable-selection-tracking') {
         isSelectionTrackingEnabled = true;
-        console.log('Selection tracking enabled');
+        console.log('🔍 SELECTION TRACKING ENABLED');
     }
     else if (msg.type === 'disable-selection-tracking') {
         isSelectionTrackingEnabled = false;
-        console.log('Selection tracking disabled');
+        console.log('🔍 SELECTION TRACKING DISABLED');
+    }
+    else if (msg.type === 'get-node-name') {
+        // Get node name for out-of-scope modal
+        try {
+            if (!msg.nodeId) {
+                throw new Error('Node ID is required');
+            }
+            const node = await figma.getNodeByIdAsync(msg.nodeId);
+            const nodeName = (node === null || node === void 0 ? void 0 : node.name) || 'Unknown Asset';
+            figma.ui.postMessage({
+                type: 'node-name-response',
+                nodeId: msg.nodeId,
+                nodeName: nodeName
+            });
+        }
+        catch (error) {
+            console.error('Error getting node name:', error);
+            figma.ui.postMessage({
+                type: 'node-name-response',
+                nodeId: msg.nodeId,
+                nodeName: 'Unknown Asset'
+            });
+        }
+    }
+    else if (msg.type === 'get-current-node-values') {
+        await safeMessageHandler(handleGetCurrentNodeValues, msg, 'get-current-node-values');
     }
     else if (msg.type === 'close-plugin') {
         figma.closePlugin();
@@ -2048,16 +2124,27 @@ figma.ui.onmessage = async (msg) => {
 let isSelectionTrackingEnabled = false;
 // Listen for selection changes and notify UI (only when enabled)
 figma.on('selectionchange', () => {
-    if (!isSelectionTrackingEnabled)
+    console.log('🔍 SELECTION CHANGE DETECTED, tracking enabled:', isSelectionTrackingEnabled);
+    if (!isSelectionTrackingEnabled) {
+        console.log('🔍 Selection tracking disabled, ignoring change');
         return;
+    }
     const selection = figma.currentPage.selection;
     let selectedNodeId = null;
+    let selectedNodeName = null;
     if (selection.length > 0) {
         selectedNodeId = selection[0].id;
+        selectedNodeName = selection[0].name;
+        console.log('🔍 Selected node:', selectedNodeId, 'name:', selectedNodeName);
+    }
+    else {
+        console.log('🔍 No selection');
     }
     // Send selection change to UI
+    console.log('🔍 SENDING SELECTION CHANGE TO UI:', selectedNodeId, selectedNodeName);
     figma.ui.postMessage({
         type: 'selection-changed',
-        nodeId: selectedNodeId
+        nodeId: selectedNodeId,
+        nodeName: selectedNodeName
     });
 });

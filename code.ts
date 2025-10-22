@@ -17,7 +17,7 @@ type SavedLibrary = {
 };
 
 interface PluginMessage {
-  type: 'get-ui-mode' | 'switch-mode' | 'export-keys' | 'get-saved-libraries' | 'select-library' | 'apply-text-style' | 'apply-spacing-token' | 'apply-corner-radius-token' | 'apply-corner-radius-tokens' | 'apply-hardcoded-corner-radius' | 'apply-color-token' | 'create-text-style' | 'resize-ui' | 'clear-all-libraries' | 'close-plugin' | 'user-going-to-design-system' | 'cancel-export-instructions' | 'get-text-styles' | 'get-spacing-variables' | 'get-colors' | 'get-corner-radius' | 'run-validation' | 'back-to-validation' | 'select-node' | 'selection-changed' | 'enable-selection-tracking' | 'disable-selection-tracking' | 'minimize-and-position' | 'validate-issue-resolution' | 'get-node-name' | 'get-current-node-values';
+  type: 'get-ui-mode' | 'switch-mode' | 'export-keys' | 'get-saved-libraries' | 'select-library' | 'apply-text-style' | 'apply-spacing-token' | 'apply-corner-radius-token' | 'apply-corner-radius-tokens' | 'apply-hardcoded-corner-radius' | 'apply-color-token' | 'create-text-style' | 'resize-ui' | 'clear-all-libraries' | 'close-plugin' | 'user-going-to-design-system' | 'cancel-export-instructions' | 'get-text-styles' | 'get-spacing-variables' | 'get-colors' | 'get-corner-radius' | 'run-validation' | 'back-to-validation' | 'select-node' | 'select-and-position-node' | 'selection-changed' | 'enable-selection-tracking' | 'disable-selection-tracking' | 'minimize-and-position' | 'validate-issue-resolution' | 'get-node-name' | 'get-current-node-values';
   libraryKey?: string;
   styleName?: string;
   tokenName?: string;
@@ -33,6 +33,10 @@ interface PluginMessage {
   mode?: 'export' | 'link' | 'selection' | 'home' | 'export-instructions' | 'export-confirmation' | 'validation-results';
   width?: number;
   height?: number;
+  position?: {
+    horizontal: 'center' | 'left' | 'right';
+    vertical: number; // 0-1, where 0 is top, 1 is bottom
+  };
   sizeMode?: 'export' | 'link' | 'selection' | 'home' | 'export-instructions' | 'validation-results' | 'validation-results-collapsed';
   library?: {
     name: string;
@@ -1713,6 +1717,78 @@ async function handleSelectNode(msg: PluginMessage): Promise<void> {
   }
 }
 
+async function handleSelectAndPositionNode(msg: PluginMessage): Promise<void> {
+  if (!msg.nodeId) return;
+
+  try {
+    const node = await getNodeById(msg.nodeId);
+    if (!node) {
+      throw new Error('Node not found');
+    }
+
+    // Select the node
+    figma.currentPage.selection = [node];
+
+    // Position the viewport to show the node
+    if (msg.position) {
+      // Get the node's bounds
+      const bounds = node.absoluteBoundingBox;
+      if (bounds) {
+        // Calculate the center point of the node
+        const nodeCenterX = bounds.x + bounds.width / 2;
+        const nodeCenterY = bounds.y + bounds.height / 2;
+
+        // Get viewport dimensions
+        const viewport = figma.viewport;
+        const viewportWidth = viewport.bounds.width;
+        const viewportHeight = viewport.bounds.height;
+
+        // Calculate target position based on requirements
+        let targetX = nodeCenterX; // Center horizontally by default
+        let targetY = nodeCenterY;
+
+        if (msg.position.horizontal === 'center') {
+          // Node center should be at viewport center horizontally
+          targetX = nodeCenterX;
+        }
+
+        // Position vertically at specified percentage from top
+        // If vertical is 0.8, the node should be at 80% down from the top of viewport
+        const viewportTop = viewport.bounds.y;
+        const viewportBottom = viewport.bounds.y + viewport.bounds.height;
+        targetY = viewportTop + (viewportHeight * msg.position.vertical);
+
+        // Scroll to position the node at the target location
+        figma.viewport.scrollAndZoomIntoView([node]);
+        
+        // Fine-tune the position by calculating the offset needed
+        const currentViewport = figma.viewport.bounds;
+        const currentCenterX = currentViewport.x + currentViewport.width / 2;
+        const currentTargetY = currentViewport.y + (currentViewport.height * msg.position.vertical);
+        
+        const offsetX = nodeCenterX - currentCenterX;
+        const offsetY = nodeCenterY - currentTargetY;
+        
+        // Apply the offset to center horizontally and position at 80% vertically
+        figma.viewport.center = {
+          x: figma.viewport.center.x + offsetX,
+          y: figma.viewport.center.y + offsetY
+        };
+      }
+    } else {
+      // Fallback to default behavior
+      figma.viewport.scrollAndZoomIntoView([node]);
+    }
+
+    console.log(`Selected and positioned node: ${node.name}`);
+  } catch (error) {
+    logError('Error selecting and positioning node', error);
+    notifyError('Error selecting and positioning node');
+  }
+}
+
+
+
 async function handleGetCurrentNodeValues(msg: PluginMessage): Promise<void> {
   if (!msg.nodeId) {
     throw new Error('Node ID is required');
@@ -2275,6 +2351,8 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
     console.log('Resized UI back to home screen');
   } else if (msg.type === 'select-node') {
     await safeMessageHandler(handleSelectNode, msg, 'select-node');
+  } else if (msg.type === 'select-and-position-node') {
+    await safeMessageHandler(handleSelectAndPositionNode, msg, 'select-and-position-node');
   } else if (msg.type === 'validate-issue-resolution') {
     await safeMessageHandler(handleValidateIssueResolution, msg, 'validate-issue-resolution');
   } else if (msg.type === 'minimize-and-position') {
