@@ -1704,7 +1704,6 @@
   }
 
   .enhanced-collapsed-content .action-btn {
-    transition: all 0.2s ease;
     font-family: inherit;
   }
 
@@ -2770,6 +2769,34 @@
 </div>
 
 <script>
+  // ============================================================================
+  // CONSTANTS
+  // ============================================================================
+
+  // Corner properties constants
+  const CORNER_PROPERTIES = {
+    // UI corner names (for dropdowns and validation)
+    UI_CORNERS: ['topLeft', 'topRight', 'bottomLeft', 'bottomRight'],
+    // Figma API corner names (for node properties)
+    FIGMA_CORNERS: ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius']
+  };
+
+  // Truncation settings
+  const TRUNCATION_CONFIG = {
+    DEFAULT_MAX_LENGTH: 20,
+    COLLAPSED_VIEW_MAX_LENGTH: 20,
+    OUT_OF_SCOPE_MAX_LENGTH: 25,
+    WORD_BOUNDARY_MIN_LENGTH: 10,
+    TOOLTIP_THRESHOLD: 17,
+    ELLIPSIS: '...',
+    RESPONSIVE_BASE_LENGTH: 8,
+    RESPONSIVE_CHAR_WIDTH: 8
+  };
+
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
+
   // Font loading and error handling
   // Loading state management
   let loadingStartTime = Date.now();
@@ -2786,7 +2813,7 @@
       setTimeout(() => {
         KovaLoader.hide();
         // Request UI mode after loader is hidden
-        parent.postMessage({ pluginMessage: { type: 'get-ui-mode' } }, '*');
+        sendMessage('get-ui-mode');
       }, remainingTime);
     }
   }
@@ -3054,12 +3081,7 @@
       this.close()
 
       // Trigger library selection
-      parent.postMessage({
-        pluginMessage: {
-          type: 'select-library',
-          libraryKey: value || null
-        }
-      }, '*')
+      sendMessage('select-library', { libraryKey: value || null })
     }
 
     setValue(value, text) {
@@ -3249,9 +3271,13 @@
     }
   }, 1000)
 
+  // ============================================================================
+  // VIEW MANAGEMENT
+  // ============================================================================
+
   // Function to show only one screen
   function showScreen(mode) {
-    console.log('🎬 showScreen called with mode:', mode)
+    console.log('� shhowScreen called with mode:', mode)
 
     // Debug: Log currently active screens before hiding
     const currentlyActive = document.querySelectorAll('.screen.active')
@@ -3302,16 +3328,16 @@
 
   // Function to go back to home screen
   function goBackToHome() {
-    parent.postMessage({
-      pluginMessage: {
-        type: 'back-to-validation'
-      }
-    }, '*')
+    sendMessage('back-to-validation')
     showScreen('home')
   }
 
   // Track successfully updated items
   window.updatedItems = window.updatedItems || new Set()
+
+  // ============================================================================
+  // UI COMPONENTS & UTILITIES
+  // ============================================================================
 
   // Visual feedback functions for applied styles
   function showStyleAppliedFeedback(nodeId, styleName, targetType, appliedCorners = null, isCornerRadius = false) {
@@ -3324,13 +3350,15 @@
     // For corner radius tokens, handle individual corner updates
     if (isCornerRadius && appliedCorners) {
       updateCornerRadiusStates(nodeId, appliedCorners)
-      // Don't mark as resolved unless all corners have tokens
-      const allCornersHaveTokens = checkIfAllCornersHaveTokens(nodeId)
-      if (allCornersHaveTokens) {
-        const issueStates = window.issueStates || new Map()
-        issueStates.set(nodeId, 'resolved')
-        window.issueStates = issueStates
-      }
+
+      // Refresh the validation data to reflect the current state
+      console.log('🔄 Refreshing validation data after corner radius token application');
+      refreshValidationValuesForNode(nodeId);
+
+      // Use the same logic as guided mode - check if all corners are valid and resolve if so
+      setTimeout(() => {
+        checkAndResolveCornerRadiusItem(nodeId);
+      }, 100); // Small delay to ensure validation data is refreshed
     } else {
       // For spacing and other tokens, store resolved state and mark as resolved
       if (targetType === 'node') {
@@ -3473,7 +3501,7 @@
 
   function checkAndResolveCornerRadiusItem(nodeId) {
     // Check if all corners are now in a valid state (either have tokens or are 0)
-    const corners = ['topLeft', 'topRight', 'bottomLeft', 'bottomRight']
+    const corners = CORNER_PROPERTIES.UI_CORNERS
     const allCornersValid = corners.every(corner => {
       const cornerDropdown = document.querySelector(`.corner-radius-dropdown[data-node-id="${nodeId}"][data-corner="${corner}"]`)
       if (!cornerDropdown) return false
@@ -3533,10 +3561,27 @@
       resolvedStates.set(nodeId, resolvedCornerValues)
       window.resolvedCornerStates = resolvedStates
 
-      // Mark as resolved in the issue states
-      const issueStates = window.issueStates || new Map()
-      issueStates.set(nodeId, 'resolved')
-      window.issueStates = issueStates
+      // Update the validation results array to reflect the resolved state
+      if (window.validationResults) {
+        window.validationResults = window.validationResults.map(result => {
+          if (result.node?.id === nodeId && result.type === 'corner-radius') {
+            console.log('🔄 Updating corner-radius result with resolved values');
+            // Update the corner values to show the current state
+            const updatedResult = { ...result };
+            updatedResult.cornerValues = resolvedCornerValues;
+            updatedResult.issue = '✓ Using design tokens';
+            return updatedResult;
+          }
+          return result;
+        });
+      }
+
+      // Mark only corner-radius issues as resolved using a composite key
+      const issueStates = window.issueStates || new Map();
+      issueStates.set(`${nodeId}-corner-radius`, 'resolved');
+      window.issueStates = issueStates;
+
+      console.log('Corner radius issue resolved for node:', nodeId);
 
       // Update tab counts
       updateStatusTabCounts()
@@ -3553,7 +3598,7 @@
   }
 
   function checkIfAllCornersHaveTokens(nodeId) {
-    const corners = ['topLeft', 'topRight', 'bottomLeft', 'bottomRight']
+    const corners = CORNER_PROPERTIES.UI_CORNERS
     return corners.every(corner => {
       const cornerDropdown = document.querySelector(`.corner-radius-dropdown[data-node-id="${nodeId}"][data-corner="${corner}"]`)
       if (!cornerDropdown) return false
@@ -3706,14 +3751,14 @@
   const exportBtn = document.getElementById('export-btn')
   if (exportBtn) {
     exportBtn.onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'export-keys' } }, '*')
+      sendMessage('export-keys')
     }
   }
 
   const cancelExportBtn = document.getElementById('cancel-export-btn')
   if (cancelExportBtn) {
     cancelExportBtn.onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'cancel-export-instructions' } }, '*')
+      sendMessage('cancel-export-instructions')
     }
   }
 
@@ -3721,12 +3766,7 @@
   const largeAddBtn = document.getElementById('large-add-button')
   if (largeAddBtn) {
     largeAddBtn.onclick = () => {
-      parent.postMessage({
-        pluginMessage: {
-          type: 'switch-mode',
-          mode: 'export-instructions'
-        }
-      }, '*')
+      sendMessage('switch-mode', { mode: 'export-instructions' })
     }
   }
 
@@ -3734,7 +3774,7 @@
 
   // Home screen handlers
   document.getElementById('apply').onclick = () => {
-    parent.postMessage({ pluginMessage: { type: 'apply-text-style', styleName: 'Display/Large' } }, '*')
+    sendMessage('apply-text-style', { styleName: 'Display/Large' })
   }
 
   // Validation option handlers
@@ -3797,7 +3837,7 @@
   if (runValidationBtn) {
     console.log('✅ Run validation button found and handler attached')
     runValidationBtn.onclick = () => {
-      console.log('🔥 Run validation button clicked!')
+      console.log('🎯 Run validation button clicked!')
       console.log('Button disabled state:', runValidationBtn.disabled)
 
       if (!runValidationBtn.disabled) {
@@ -3838,12 +3878,7 @@
         showScreen('validation-results')
 
         // Tell plugin to resize for validation results
-        parent.postMessage({
-          pluginMessage: {
-            type: 'switch-mode',
-            mode: 'validation-results'
-          }
-        }, '*')
+        sendMessage('switch-mode', { mode: 'validation-results' })
 
         // Show Kova loader for validation
         KovaLoader.showLight('Running validation...')
@@ -3854,12 +3889,7 @@
 
         // Send validation request to plugin
         console.log('🚀 Sending validation request with options:', validationOptions)
-        parent.postMessage({
-          pluginMessage: {
-            type: 'run-validation',
-            options: validationOptions
-          }
-        }, '*')
+        sendMessage('run-validation', { options: validationOptions })
       }
     }
   } else {
@@ -3870,18 +3900,15 @@
       if (delayedBtn) {
         console.log('✅ Run validation button found on retry')
         delayedBtn.onclick = () => {
-          console.log('🔥 Run validation button clicked (delayed handler)!')
+          console.log('🎯 Run validation button clicked (delayed handler)!')
           if (!delayedBtn.disabled) {
             // Trigger validation
-            parent.postMessage({
-              pluginMessage: {
-                type: 'run-validation',
-                options: {
-                  textStyles: document.getElementById('text-styles-checkbox')?.checked || false,
-                  spacing: document.getElementById('spacing-checkbox')?.checked || false
-                }
+            sendMessage('run-validation', {
+              options: {
+                textStyles: document.getElementById('text-styles-checkbox')?.checked || false,
+                spacing: document.getElementById('spacing-checkbox')?.checked || false
               }
-            }, '*')
+            })
             showScreen('validation-results')
           }
         }
@@ -3894,7 +3921,7 @@
   if (resetBtn) {
     resetBtn.onclick = () => {
       if (confirm('Are you sure you want to delete all saved design systems? This cannot be undone.')) {
-        parent.postMessage({ pluginMessage: { type: 'clear-all-libraries' } }, '*')
+        sendMessage('clear-all-libraries')
       }
     }
   }
@@ -3912,7 +3939,7 @@
     slideScreen.style.left = '0'
 
     // Request text styles data
-    parent.postMessage({ pluginMessage: { type: 'get-text-styles' } }, '*')
+    sendMessage('get-text-styles')
   }
 
   document.getElementById('back-to-home').onclick = () => {
@@ -3952,7 +3979,7 @@
     slideScreen.style.left = '0'
 
     // Request colors data
-    parent.postMessage({ pluginMessage: { type: 'get-colors' } }, '*')
+    sendMessage('get-colors')
   }
 
   document.getElementById('back-to-home-from-colors').onclick = () => {
@@ -3980,7 +4007,7 @@
     slideScreen.style.left = '0'
 
     // Request corner radius data
-    parent.postMessage({ pluginMessage: { type: 'get-corner-radius' } }, '*')
+    sendMessage('get-corner-radius')
   }
 
   document.getElementById('back-to-home-from-corner-radius').onclick = () => {
@@ -4008,7 +4035,7 @@
     slideScreen.style.left = '0'
 
     // Request spacing variables data
-    parent.postMessage({ pluginMessage: { type: 'get-spacing-variables' } }, '*')
+    sendMessage('get-spacing-variables')
   }
 
   function showTextStylesScreen(textStyles) {
@@ -4369,11 +4396,7 @@
     window.currentStatusFilter = 'active'
 
     // Enable selection tracking for value updates
-    parent.postMessage({
-      pluginMessage: {
-        type: 'enable-selection-tracking'
-      }
-    }, '*');
+    sendMessage('enable-selection-tracking');
 
     // Generate dynamic tabs based on selected validation options and results
     generateDynamicTabs(results, options)
@@ -4404,25 +4427,21 @@
       const nodeId = result.node?.id
       if (!nodeId) return statusFilter === 'active' // No nodeId means active by default
 
-      const issueState = issueStates.get(nodeId) || 'active'
-      return issueState === statusFilter
+      // Check for issue-specific state first (nodeId-issueType)
+      const issueSpecificKey = `${nodeId}-${result.type}`;
+      const issueSpecificState = issueStates.get(issueSpecificKey);
+
+      if (issueSpecificState) {
+        return issueSpecificState === statusFilter;
+      }
+
+      // Fall back to node-level state for backward compatibility
+      const nodeState = issueStates.get(nodeId) || 'active';
+      return nodeState === statusFilter;
     })
 
-    // For resolved items, update them to show current state instead of original validation data
-    if (statusFilter === 'resolved') {
-      filteredResults = filteredResults.map(result => {
-        if (result.type === 'corner-radius') {
-          return updateResolvedCornerRadiusResult(result)
-        } else if (result.type === 'spacing') {
-          return updateResolvedSpacingResult(result)
-        } else if (result.type === 'text-style') {
-          return updateResolvedTextStyleResult(result)
-        } else if (result.type === 'color') {
-          return updateResolvedColorResult(result)
-        }
-        return result
-      })
-    }
+    // Note: Resolved items are now updated in the main array when they're resolved
+    // No need to process them again here
 
     console.log(`Filtered results: ${allResults.length} -> ${filteredResults.length}`)
 
@@ -4434,110 +4453,38 @@
   }
 
   function updateResolvedTextStyleResult(result) {
-    // For resolved text style items, show them with stored resolved state
-    const updatedResult = { ...result }
-    const nodeId = result.node?.id
-
-    // Update the issue text to reflect resolved state
-    updatedResult.issue = '✓ Using design system text style'
-
-    // Get resolved state from stored data
-    const resolvedTextStates = window.resolvedTextStates || new Map()
-    const resolvedTextStyle = resolvedTextStates.get(nodeId)
-
-    if (resolvedTextStyle) {
-      updatedResult.resolvedStyleName = resolvedTextStyle.styleName
-      updatedResult.resolvedDisplayText = resolvedTextStyle.displayText
-    }
-
-    return updatedResult
+    return _updateResolvedResultInternal(
+      result,
+      'text-style',
+      '✓ Using design system text style',
+      'resolvedTextStates',
+      'resolvedStyleName'
+    )
   }
 
   function updateResolvedColorResult(result) {
-    // For resolved color items, show them with stored resolved state
-    const updatedResult = { ...result }
-    const nodeId = result.node?.id
-
-    // Update the issue text to reflect resolved state
-    updatedResult.issue = '✓ Using design token'
-
-    // Get resolved state from stored data
-    const resolvedColorStates = window.resolvedColorStates || new Map()
-    const resolvedColorToken = resolvedColorStates.get(nodeId)
-
-    if (resolvedColorToken) {
-      updatedResult.resolvedTokenName = resolvedColorToken.tokenName
-      updatedResult.resolvedDisplayText = resolvedColorToken.displayText
-    }
-
-    return updatedResult
+    return _updateResolvedResultInternal(
+      result,
+      'color',
+      '✓ Using design token',
+      'resolvedColorStates',
+      'resolvedTokenName'
+    )
   }
 
   function updateResolvedCornerRadiusResult(result) {
-    // For resolved corner radius items, show them with stored resolved state
-    const updatedResult = { ...result }
-    const nodeId = result.node?.id
-
-    // Update the issue text to reflect resolved state
-    updatedResult.issue = '✓ Using design tokens'
-
-    // Get resolved state from stored data
-    if (updatedResult.cornerValues && nodeId) {
-      const resolvedStates = window.resolvedCornerStates || new Map()
-      const nodeResolvedState = resolvedStates.get(nodeId)
-
-      if (nodeResolvedState) {
-        // Use stored resolved state
-        updatedResult.cornerValues = nodeResolvedState
-      } else {
-        // Fallback: show all corners as resolved with generic tokens
-        const updatedCornerValues = {}
-        Object.keys(updatedResult.cornerValues).forEach(corner => {
-          const originalCorner = updatedResult.cornerValues[corner]
-          if (originalCorner && typeof originalCorner === 'object') {
-            // For resolved items, show appropriate resolved state
-            if (originalCorner.value === 0) {
-              updatedCornerValues[corner] = {
-                value: '0',
-                hasToken: false // 0 is hardcoded but not an issue
-              }
-            } else {
-              updatedCornerValues[corner] = {
-                value: getResolvedTokenName(originalCorner.value),
-                hasToken: true
-              }
-            }
-          } else {
-            updatedCornerValues[corner] = {
-              value: getResolvedTokenName(originalCorner),
-              hasToken: true
-            }
-          }
-        })
-        updatedResult.cornerValues = updatedCornerValues
-      }
-    }
-
-    return updatedResult
+    console.log('🔧 updateResolvedCornerRadiusResult called for:', result.node?.name);
+    return _updateResolvedResultInternal(
+      result,
+      'corner-radius',
+      '✓ Using design tokens',
+      'resolvedCornerStates',
+      null
+    )
   }
 
-  function truncateText(text, maxLength = 20, preferWordBoundary = true) {
-    if (!text || text.length <= maxLength) return text
-
-    // If we prefer word boundaries and the text is long enough
-    if (preferWordBoundary && maxLength > 10) {
-      // Look for the last space within the limit
-      const truncated = text.substring(0, maxLength)
-      const lastSpaceIndex = truncated.lastIndexOf(' ')
-
-      // If we found a space and it's not too close to the beginning
-      if (lastSpaceIndex > maxLength * 0.6) {
-        return text.substring(0, lastSpaceIndex) + '...'
-      }
-    }
-
-    // Fallback to character-based truncation
-    return text.substring(0, maxLength) + '...'
+  function truncateText(text, maxLength = TRUNCATION_CONFIG.DEFAULT_MAX_LENGTH, preferWordBoundary = true) {
+    return _truncateInternal(text, maxLength, preferWordBoundary, TRUNCATION_CONFIG.ELLIPSIS)
   }
 
   // Enhanced truncation for collapsed view with responsive length
@@ -4545,30 +4492,19 @@
     if (!text) return text
 
     // For collapsed view, be more aggressive with truncation
-    // Use smaller character estimate and lower max limit
-    const baseLength = Math.floor(containerWidth / 10) // More conservative estimate
-    const maxLength = Math.max(12, Math.min(baseLength, 25)) // Between 12-25 chars for collapsed view
+    const baseLength = Math.floor(containerWidth / TRUNCATION_CONFIG.RESPONSIVE_CHAR_WIDTH)
+    const maxLength = Math.max(12, Math.min(baseLength, 25))
 
     console.log(`Truncation calculation: containerWidth=${containerWidth}, baseLength=${baseLength}, maxLength=${maxLength}`)
-    return truncateText(text, maxLength, true)
+    return _truncateInternal(text, maxLength, true, TRUNCATION_CONFIG.ELLIPSIS)
   }
 
   // Create truncated text with enhanced tooltip support
   function createTruncatedTextElement(text, containerWidth = 200, className = 'collapsed-issue-text') {
     if (!text) return ''
 
-    // FORCE aggressive truncation for collapsed view - hard limit of 20 characters
-    let finalText = text
-    if (text.length > 20) {
-      // Look for word boundary within first 17 characters
-      const truncated = text.substring(0, 17)
-      const lastSpace = truncated.lastIndexOf(' ')
-      if (lastSpace > 10) {
-        finalText = text.substring(0, lastSpace) + '...'
-      } else {
-        finalText = text.substring(0, 17) + '...'
-      }
-    }
+    // FORCE aggressive truncation for collapsed view - hard limit of configured length
+    let finalText = _truncateInternal(text, TRUNCATION_CONFIG.COLLAPSED_VIEW_MAX_LENGTH, true, TRUNCATION_CONFIG.ELLIPSIS)
 
     const isTruncated = finalText !== text
     const classNames = isTruncated ? `${className} truncated` : className
@@ -4607,9 +4543,8 @@
   }
 
   // Truncate frame names for collapsed view
-  function truncateFrameName(frameName, maxLength = 20) {
-    if (!frameName || frameName.length <= maxLength) return frameName
-    return frameName.substring(0, maxLength) + '...'
+  function truncateFrameName(frameName, maxLength = TRUNCATION_CONFIG.DEFAULT_MAX_LENGTH) {
+    return _truncateInternal(frameName, maxLength, false, TRUNCATION_CONFIG.ELLIPSIS)
   }
 
   // Debounce utility function
@@ -4631,7 +4566,7 @@
   // Test truncation on page load
   window.addEventListener('DOMContentLoaded', () => {
     console.log('Testing truncation functions:')
-    console.log('Short text:', truncateText('Short text', 20))
+    console.log('Short text:', truncateText('Short text', TRUNCATION_CONFIG.DEFAULT_MAX_LENGTH))
     console.log('Long text:', truncateText('this si a asdasd asdasd a asda asdasd asda this si a asdasd asdasd a asda asdasd asda this si a asdasd asdasd a asda asdasd asda', 25))
     console.log('Collapsed view test:', truncateForCollapsedView('this si a asdasd asdasd a asda asdasd asda this si a asdasd asdasd a asda asdasd asda', 200))
   })
@@ -4651,23 +4586,23 @@
   }
 
   function updateResolvedSpacingResult(result) {
-    // For resolved spacing items, show them with stored resolved state
-    const updatedResult = { ...result }
+    const updatedResult = _updateResolvedResultInternal(
+      result,
+      'spacing',
+      '✓ Using design tokens',
+      'resolvedSpacingStates',
+      null
+    )
+
+    // Special handling for spacing value
     const nodeId = result.node?.id
-
-    // Update the issue text to reflect resolved state
-    updatedResult.issue = '✓ Using design tokens'
-
-    // Get resolved state from stored data
     if (nodeId) {
       const resolvedStates = window.resolvedSpacingStates || new Map()
       const nodeResolvedState = resolvedStates.get(nodeId)
 
       if (nodeResolvedState) {
-        // Use stored resolved state
         updatedResult.value = nodeResolvedState.value
       } else {
-        // Fallback: show resolved token name based on original value
         updatedResult.value = getResolvedTokenName(result.value)
       }
     }
@@ -4679,14 +4614,30 @@
     const allResults = window.validationResults || []
     const issueStates = window.issueStates || new Map()
 
+    console.log('🔢 updateStatusTabCounts - Total results:', allResults.length);
+    console.log('🔢 Issue states:', Array.from(issueStates.entries()));
+
     let activeCounts = { all: 0, byType: {} }
     let resolvedCounts = { all: 0, byType: {} }
     let ignoredCounts = { all: 0, byType: {} }
 
-    allResults.forEach(result => {
+    allResults.forEach((result, index) => {
       const nodeId = result.node?.id
-      const issueState = nodeId ? (issueStates.get(nodeId) || 'active') : 'active'
       const resultType = result.type
+
+      // Check for issue-specific state first (nodeId-issueType)
+      const issueSpecificKey = `${nodeId}-${resultType}`;
+      const issueSpecificState = issueStates.get(issueSpecificKey);
+
+      let issueState;
+      if (issueSpecificState) {
+        issueState = issueSpecificState;
+      } else {
+        // Fall back to node-level state for backward compatibility
+        issueState = nodeId ? (issueStates.get(nodeId) || 'active') : 'active';
+      }
+
+      console.log(`🔢 Result ${index}: ${result.node?.name} (${nodeId}) - ${resultType} - ${issueState}`);
 
       if (issueState === 'active') {
         activeCounts.all++
@@ -4699,6 +4650,8 @@
         ignoredCounts.byType[resultType] = (ignoredCounts.byType[resultType] || 0) + 1
       }
     })
+
+    console.log('🔢 Final counts - Active:', activeCounts.all, 'Resolved:', resolvedCounts.all, 'Ignored:', ignoredCounts.all);
 
     // Update status tab labels
     const activeTab = document.getElementById('active-tab')
@@ -4815,84 +4768,81 @@
     }, 3000);
   }
 
-  function getTextStyleOptions() {
+  // ============================================================================
+  // TOKEN UTILITIES
+  // ============================================================================
+
+  // Internal helper for token array generation
+  function _getTokenArrayInternal(tokenType, collectionKeys = [], searchTerms = []) {
     const library = window.validationLibrary
-    if (!library || !library.items) return ''
+    console.log(`_getTokenArrayInternal called for ${tokenType}, library:`, library)
 
-    let options = ''
-    Object.keys(library.items).forEach(styleName => {
-      options += `<option value="${styleName}">${styleName}</option>`
-    })
-    return options
-  }
-
-  function getTextStyleOptionsArray() {
-    const library = window.validationLibrary
-    console.log('getTextStyleOptionsArray called, library:', library)
-
-    if (!library || !library.items) {
-      console.log('No library or items found')
+    if (!library) {
+      console.log('No library found')
       return []
     }
 
-    const options = Object.keys(library.items).map(styleName => ({
-      value: styleName,
-      text: styleName
-    }))
+    // Handle text styles (different structure)
+    if (tokenType === 'textStyles') {
+      if (!library.items) {
+        console.log('No library items found')
+        return []
+      }
+      return Object.keys(library.items).map(styleName => ({
+        value: styleName,
+        text: styleName
+      }))
+    }
 
-    console.log('Generated options:', options)
-    return options
-  }
-
-  // Create custom dropdown for validation results
-  function createValidationDropdown(nodeId, isSpacing = false) {
-    // Sanitize nodeId for use in CSS selectors (replace invalid characters)
-    const sanitizedNodeId = nodeId.replace(/[^a-zA-Z0-9-_]/g, '-')
-    const dropdownId = `validation-dropdown-${sanitizedNodeId}`
-    const textId = `validation-text-${sanitizedNodeId}`
-    const optionsId = `validation-options-${sanitizedNodeId}`
-
-    return `
-      <div class="custom-dropdown validation-dropdown" id="${dropdownId}" data-node-id="${nodeId}" style="min-width: 200px;">
-        <button class="btn btn-primary validation-dropdown-selected" style="border: 2px solid red; background: white !important; color: var(--color-gray-700) !important; display: flex; align-items: center; justify-content: space-between; min-width: 200px; padding-right: 24px !important;">
-          <span id="${textId}">Select a style...</span>
-          <svg class="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; transition: transform 0.2s ease; flex-shrink: 0; color: var(--color-gray-500);">
-            <path d="m6 9 6 6 6-6"/>
-          </svg>
-        </button>
-        <div class="dropdown-options" id="${optionsId}" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-gray-300); border-top: none; border-radius: 0 0 var(--radius-md) var(--radius-md); box-shadow: var(--shadow-lg); z-index: 1000; max-height: 200px; overflow-y: auto; display: none;">
-          <!-- Options will be populated by JavaScript -->
-        </div>
-      </div>
-    `
-  }
-
-  function getSpacingTokensArray() {
-    const library = window.validationLibrary
-    console.log('getSpacingTokensArray called, library:', library)
-
-    if (!library || !library.variables) {
-      console.log('No library or variables found')
+    // Handle variables (spacing, colors, corner radius)
+    if (!library.variables) {
+      console.log('No library variables found')
       return []
     }
 
-    let spacingVariables = {}
+    let targetVariables = {}
 
-    // Check if using new structure (organized by collection)
-    if (library.variables.spacing) {
-      spacingVariables = library.variables.spacing
-    } else {
-      // Handle old structure (flat with collection names in keys)
-      for (const key in library.variables) {
-        if (key.toLowerCase().startsWith('spacing/')) {
-          const variableName = key.replace(/^spacing\//i, '')
-          spacingVariables[variableName] = library.variables[key]
+    // Try new structure first (organized by collection)
+    for (const key of collectionKeys) {
+      if (library.variables[key]) {
+        targetVariables = library.variables[key]
+        break
+      }
+    }
+
+    // If not found, search through all collections
+    if (Object.keys(targetVariables).length === 0) {
+      for (const [collectionKey, variables] of Object.entries(library.variables)) {
+        const collectionName = collectionKey.toLowerCase()
+
+        // Check if collection name matches search terms
+        const collectionMatches = searchTerms.some(term => collectionName.includes(term))
+
+        if (collectionMatches) {
+          Object.assign(targetVariables, variables)
+        } else {
+          // Check individual variable names
+          for (const [varName, varData] of Object.entries(variables)) {
+            const name = varName.toLowerCase()
+            if (searchTerms.some(term => name.includes(term))) {
+              targetVariables[varName] = varData
+            }
+          }
         }
       }
     }
 
-    const options = Object.entries(spacingVariables).map(([name, data]) => {
-      // Extract the pixel value from the variable data
+    // Convert to options array based on token type
+    if (tokenType === 'colors') {
+      return _formatColorTokens(targetVariables)
+    } else {
+      return _formatSimpleTokens(targetVariables)
+    }
+  }
+
+  // Internal helper for simple token formatting (spacing, corner radius)
+  function _formatSimpleTokens(variables) {
+    return Object.entries(variables).map(([name, data]) => {
       let pixelValue = 'Unknown'
       if (data && data.values && typeof data.values === 'object') {
         const firstModeValues = Object.values(data.values)[0]
@@ -4907,109 +4857,13 @@
         pixelValue: pixelValue
       }
     })
-
-    console.log('Generated spacing options:', options)
-    return options
   }
 
-  function getCornerRadiusTokensArray() {
-    const library = window.validationLibrary
-    console.log('getCornerRadiusTokensArray called, library:', library)
-
-    if (!library || !library.variables) {
-      console.log('No library or variables found')
-      return []
-    }
-
-    let cornerRadiusVariables = {}
-
-    // Check if using new structure (organized by collection)
-    if (library.variables['corner-radius'] || library.variables.cornerRadius) {
-      cornerRadiusVariables = library.variables['corner-radius'] || library.variables.cornerRadius
-    } else {
-      // Handle old structure and search through all collections for corner radius-related variables
-      for (const [collectionKey, variables] of Object.entries(library.variables)) {
-        const collectionName = collectionKey.toLowerCase()
-
-        // Check if this collection contains corner radius
-        if (collectionName.includes('radius') || collectionName.includes('corner') ||
-          collectionName.includes('border-radius') || collectionName.includes('rounded')) {
-          // Add all variables from this collection
-          Object.assign(cornerRadiusVariables, variables)
-        } else {
-          // Check individual variable names for corner radius-related terms
-          for (const [varName, varData] of Object.entries(variables)) {
-            const name = varName.toLowerCase()
-            if (name.includes('radius') || name.includes('corner') || name.includes('rounded')) {
-              cornerRadiusVariables[varName] = varData
-            }
-          }
-        }
-      }
-    }
-
-    const options = Object.entries(cornerRadiusVariables).map(([name, data]) => {
-      // Extract the pixel value from the variable data
-      let pixelValue = 'Unknown'
-      if (data && data.values && typeof data.values === 'object') {
-        const firstModeValues = Object.values(data.values)[0]
-        if (typeof firstModeValues === 'number') {
-          pixelValue = `${firstModeValues}px`
-        }
-      }
-
-      return {
-        value: name,
-        text: `${name} (${pixelValue})`,
-        pixelValue: pixelValue
-      }
-    })
-
-    console.log('Generated corner radius options:', options)
-    return options
-  }
-
-  function getColorTokensArray() {
-    const library = window.validationLibrary
-    console.log('getColorTokensArray called, library:', library)
-
-    if (!library || !library.variables) {
-      console.log('No library or variables found')
-      return []
-    }
-
-    let colorVariables = {}
-
-    // Check if using new structure (organized by collection)
-    if (library.variables.colors || library.variables.color) {
-      colorVariables = library.variables.colors || library.variables.color
-    } else {
-      // Handle old structure and search through all collections for color-related variables
-      for (const [collectionKey, variables] of Object.entries(library.variables)) {
-        const collectionName = collectionKey.toLowerCase()
-
-        // Check if this collection contains colors
-        if (collectionName.includes('color') || collectionName.includes('colour') ||
-          collectionName === 'colors' || collectionName === 'colours') {
-          // Add all variables from this collection
-          Object.assign(colorVariables, variables)
-        } else {
-          // Check individual variable names for color-related terms
-          for (const [varName, varData] of Object.entries(variables)) {
-            const name = varName.toLowerCase()
-            if (name.includes('color') || name.includes('colour')) {
-              colorVariables[varName] = varData
-            }
-          }
-        }
-      }
-    }
-
-    // Group colors by category and color name, similar to token view
+  // Internal helper for color token formatting
+  function _formatColorTokens(colorVariables) {
     const colorsByCategory = {}
 
     Object.entries(colorVariables).forEach(([name, data]) => {
-      // Parse name: "Brand/Primary/50" -> category: "Brand", color: "Primary", variant: "50"
       const parts = name.split('/')
       const category = parts[0] || 'Other'
       const colorName = parts[1] || name
@@ -5023,7 +4877,6 @@
         colorsByCategory[category][colorName] = []
       }
 
-      // Extract color value
       let colorValue = '#000000'
       if (data && data.values && typeof data.values === 'object') {
         const firstModeValues = Object.values(data.values)[0]
@@ -5053,10 +4906,7 @@
       })
     })
 
-    // Convert grouped structure to flat options array for dropdown
     const options = []
-
-    // Sort categories with Brand first
     const sortedCategories = Object.entries(colorsByCategory).sort(([a], [b]) => {
       if (a === 'Brand') return -1
       if (b === 'Brand') return 1
@@ -5064,11 +4914,9 @@
     })
 
     sortedCategories.forEach(([category, colorGroups]) => {
-      // Sort color groups within category
       const sortedColorGroups = Object.entries(colorGroups).sort(([a], [b]) => a.localeCompare(b))
 
       sortedColorGroups.forEach(([colorName, variants]) => {
-        // Add color group header (e.g., "Brand/Primary")
         options.push({
           value: '',
           text: `${category}/${colorName}`,
@@ -5077,7 +4925,6 @@
           colorName: colorName
         })
 
-        // Sort variants numerically
         const sortedVariants = variants.sort((a, b) => {
           const aNum = parseInt(a.variant)
           const bNum = parseInt(b.variant)
@@ -5087,7 +4934,6 @@
           return a.variant.localeCompare(b.variant)
         })
 
-        // Add each variant as an option (just the variant number)
         sortedVariants.forEach(({ variant, colorValue, fullName }) => {
           options.push({
             value: fullName,
@@ -5102,8 +4948,130 @@
       })
     })
 
-    console.log('Generated grouped color options:', options)
     return options
+  }
+
+  // Internal helper for validation result updates
+  function _updateResolvedResultInternal(result, resultType, resolvedIssueText, stateMapName, resolvedStateKey) {
+    const updatedResult = { ...result }
+    const nodeId = result.node?.id
+
+    updatedResult.issue = resolvedIssueText
+
+    const stateMap = window[stateMapName] || new Map()
+    const resolvedState = stateMap.get(nodeId)
+
+    if (resolvedState) {
+      if (resolvedStateKey) {
+        updatedResult[resolvedStateKey] = resolvedState.styleName || resolvedState.tokenName
+        updatedResult.resolvedDisplayText = resolvedState.displayText
+      }
+    }
+
+    // Special handling for corner radius
+    if (resultType === 'corner-radius' && updatedResult.cornerValues && nodeId) {
+      console.log('🔧 Updating resolved corner radius result for node:', nodeId);
+      console.log('🔧 Original corner values:', updatedResult.cornerValues);
+
+      // For resolved corner radius issues, show the resolved state
+      // Since the issue is resolved, any previously hardcoded corners are now either:
+      // 1. Using design tokens, or 2. Set to 0 (which is acceptable)
+      const updatedCornerValues = {}
+      Object.keys(updatedResult.cornerValues).forEach(corner => {
+        const originalCorner = updatedResult.cornerValues[corner]
+        if (originalCorner && typeof originalCorner === 'object') {
+          if (originalCorner.hasToken) {
+            // Keep token values as they were
+            updatedCornerValues[corner] = originalCorner
+            console.log(`🔧 Keeping token value for ${corner}:`, originalCorner);
+          } else {
+            // Originally hardcoded, now resolved - show as 0
+            updatedCornerValues[corner] = {
+              value: '0',
+              hasToken: false
+            }
+            console.log(`🔧 Converting hardcoded ${corner} from ${originalCorner.value} to 0`);
+          }
+        } else {
+          // Handle legacy format - if it was hardcoded, now show as 0
+          updatedCornerValues[corner] = {
+            value: '0',
+            hasToken: false
+          }
+          console.log(`🔧 Converting legacy hardcoded ${corner} to 0`);
+        }
+      })
+      updatedResult.cornerValues = updatedCornerValues
+      console.log('🔧 Updated corner values:', updatedResult.cornerValues);
+    }
+
+    return updatedResult
+  }
+
+  // Internal helper for truncation
+  function _truncateInternal(text, maxLength, preferWordBoundary, ellipsis) {
+    if (!text || text.length <= maxLength) return text
+
+    if (preferWordBoundary && maxLength > TRUNCATION_CONFIG.WORD_BOUNDARY_MIN_LENGTH) {
+      const truncated = text.substring(0, maxLength)
+      const lastSpaceIndex = truncated.lastIndexOf(' ')
+
+      if (lastSpaceIndex > maxLength * 0.6) {
+        return text.substring(0, lastSpaceIndex) + ellipsis
+      }
+    }
+
+    return text.substring(0, maxLength) + ellipsis
+  }
+
+  function getTextStyleOptions() {
+    const library = window.validationLibrary
+    if (!library || !library.items) return ''
+
+    let options = ''
+    Object.keys(library.items).forEach(styleName => {
+      options += `<option value="${styleName}">${styleName}</option>`
+    })
+    return options
+  }
+
+  function getTextStyleOptionsArray() {
+    return _getTokenArrayInternal('textStyles')
+  }
+
+  // Create custom dropdown for validation results
+  function createValidationDropdown(nodeId, isSpacing = false) {
+    // Sanitize nodeId for use in CSS selectors (replace invalid characters)
+    const sanitizedNodeId = nodeId.replace(/[^a-zA-Z0-9-_]/g, '-')
+    const dropdownId = `validation-dropdown-${sanitizedNodeId}`
+    const textId = `validation-text-${sanitizedNodeId}`
+    const optionsId = `validation-options-${sanitizedNodeId}`
+
+    return `
+      <div class="custom-dropdown validation-dropdown" id="${dropdownId}" data-node-id="${nodeId}" style="min-width: 200px;">
+        <button class="btn btn-primary validation-dropdown-selected" style="border: 2px solid red; background: white !important; color: var(--color-gray-700) !important; display: flex; align-items: center; justify-content: space-between; min-width: 200px; padding-right: 24px !important;">
+          <span id="${textId}">Select a style...</span>
+          <svg class="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; transition: transform 0.2s ease; flex-shrink: 0; color: var(--color-gray-500);">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+        <div class="dropdown-options" id="${optionsId}" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-gray-300); border-top: none; border-radius: 0 0 var(--radius-md) var(--radius-md); box-shadow: var(--shadow-lg); z-index: 1000; max-height: 200px; overflow-y: auto; display: none;">
+          <!-- Options will be populated by JavaScript -->
+        </div>
+      </div>
+    `
+  }
+
+  function getSpacingTokensArray() {
+    return _getTokenArrayInternal('spacing', ['spacing'], ['spacing'])
+  }
+
+  function getCornerRadiusTokensArray() {
+    return _getTokenArrayInternal('cornerRadius', ['corner-radius', 'cornerRadius'], ['radius', 'corner', 'border-radius', 'rounded'])
+  }
+
+  function getColorTokensArray() {
+    return _getTokenArrayInternal('colors', ['colors', 'color'], ['color', 'colour'])
   }
 
 
@@ -5316,23 +5284,16 @@
           console.log('Guided mode button clicked for node:', nodeId, 'type:', resultType);
 
           // First, select the node in Figma
-          parent.postMessage({
-            pluginMessage: {
-              type: 'select-node',
-              nodeId: nodeId
-            }
-          }, '*');
+          sendMessage('select-node', { nodeId: nodeId });
 
-          // Store the target node ID for the collapsed view to use
+          // Store the target node ID and issue type for the collapsed view to use
           window.targetNodeIdForCollapsedView = nodeId;
+          window.targetIssueTypeForCollapsedView = resultType;
 
-          parent.postMessage({
-            pluginMessage: {
-              type: 'minimize-and-position',
-              resultType: resultType,
-              nodeId: nodeId
-            }
-          }, '*');
+          sendMessage('minimize-and-position', {
+            resultType: resultType,
+            nodeId: nodeId
+          });
         }
       });
     });
@@ -5440,7 +5401,7 @@
             // Show loading state
             showUpdateButtonLoading(this, selectedToken)
 
-            console.log('🔥 Sending apply-spacing-token message:', {
+            console.log('�  Sending apply-spacing-token message:', {
               type: 'apply-spacing-token',
               nodeId: nodeId,
               tokenName: selectedToken
@@ -5479,7 +5440,7 @@
             // Show loading state
             showUpdateButtonLoading(this, 'corner radius tokens')
 
-            console.log('🔥 Sending apply-corner-radius-tokens message:', {
+            console.log('� Sendding apply-corner-radius-tokens message:', {
               type: 'apply-corner-radius-tokens',
               nodeId: nodeId,
               cornerTokens: cornerTokens
@@ -5510,7 +5471,7 @@
           // Show loading state
           showUpdateButtonLoading(this, selectedStyle)
 
-          console.log('🔥 Sending apply-color-token message:', {
+          console.log('� Seending apply-color-token message:', {
             type: 'apply-color-token',
             nodeId: nodeId,
             tokenName: selectedStyle
@@ -6167,7 +6128,7 @@
       }
 
       html += `
-            <button class="guided-mode-btn" data-node-id="${nodeId}" 
+            <button class="guided-mode-btn" data-node-id="${nodeId}" data-result-type="${resultType}"
                     style="padding: 4px; background: transparent; border: none; border-radius: 3px; cursor: pointer; transition: all 0.15s;"
                     onmouseover="this.style.backgroundColor='#f3f4f6'" 
                     onmouseout="this.style.backgroundColor='transparent'"
@@ -6266,7 +6227,7 @@
   const backToValidationBtn = document.getElementById('back-to-validation')
   if (backToValidationBtn) {
     backToValidationBtn.onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'back-to-validation' } }, '*')
+      sendMessage('back-to-validation')
       showScreen('home')
     }
   }
@@ -6275,7 +6236,7 @@
   const gotItBtn = document.getElementById('got-it-btn')
   if (gotItBtn) {
     gotItBtn.onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'user-going-to-design-system' } }, '*')
+      sendMessage('user-going-to-design-system')
     }
   }
 
@@ -6283,7 +6244,7 @@
   const returnToFilesBtn = document.getElementById('return-to-files')
   if (returnToFilesBtn) {
     returnToFilesBtn.onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'close-plugin' } }, '*')
+      sendMessage('close-plugin')
     }
   }
 
@@ -6362,16 +6323,101 @@
 
   // Initialize the new view controller system
   function initializeNewArchitecture() {
-    console.log('🏗️ Initializing new view controller architecture');
+    console.log('🔍 Initializing new view controller architecture');
 
     // This will be replaced by proper imports
     // For now, we'll keep the old system but add the new controller alongside
   }
 
+  // ============================================================================
+  // MESSAGING
+  // ============================================================================
+
+  // Centralized message sender - all outgoing messages go through here
+  function sendMessage(messageType, payload = {}) {
+    const message = {
+      pluginMessage: {
+        type: messageType,
+        ...payload
+      }
+    };
+
+    console.log('📨 Sending message:', messageType, payload);
+    parent.postMessage(message, '*');
+  }
+
+  // Centralized message handler - all incoming messages are routed through here
+  function handleIncomingMessage(msg) {
+    console.log('📨 Received message:', msg.type);
+
+    switch (msg.type) {
+      case 'ui-mode':
+        handleUIMode(msg);
+        break;
+      case 'keys-exported':
+        handleKeysExported(msg);
+        break;
+      case 'saved-libraries':
+        handleSavedLibraries(msg);
+        break;
+      case 'library-selected':
+        handleLibrarySelected(msg);
+        break;
+      case 'libraries-cleared':
+        handleLibrariesCleared(msg);
+        break;
+      case 'text-styles-data':
+        handleTextStylesData(msg);
+        break;
+      case 'spacing-variables-data':
+        handleSpacingVariablesData(msg);
+        break;
+      case 'colors-data':
+        handleColorsData(msg);
+        break;
+      case 'corner-radius-data':
+        handleCornerRadiusData(msg);
+        break;
+      case 'validation-results':
+        handleValidationResults(msg);
+        break;
+      case 'selection-changed':
+        handleSelectionChanged(msg);
+        break;
+      case 'node-name-response':
+        handleNodeNameResponse(msg);
+        break;
+      case 'current-node-values-response':
+        handleCurrentNodeValuesResponse(msg);
+        break;
+      case 'validation-response':
+        handleValidationResponse(msg);
+        break;
+      case 'plugin-minimized':
+        handlePluginMinimized(msg);
+        break;
+      case 'validation-error':
+        handleValidationError(msg);
+        break;
+      case 'hardcoded-applied':
+        handleHardcodedApplied(msg);
+        break;
+      case 'applied':
+        handleApplied(msg);
+        break;
+      default:
+        console.log('🔍 Unhandled message type:', msg.type);
+    }
+  }
+
   // Keep old message handler for now during transition
   window.onmessage = (event) => {
     const msg = event.data.pluginMessage
+    handleIncomingMessage(msg);
+  }
 
+  // Legacy handler (will be removed after transition)
+  function legacyMessageHandler(msg) {
     if (msg.type === 'ui-mode') {
       console.log('UI received mode:', msg.mode)
       showScreen(msg.mode)
@@ -6630,6 +6676,12 @@
     if (msg.type === 'current-node-values-response') {
       console.log('🔄 CURRENT NODE VALUES RECEIVED:', msg.nodeId, msg.values);
       updateDisplayedValuesForNode(msg.nodeId, msg.values);
+
+      // Handle node values callback for Smart Fix
+      if (msg.callbackId && window.nodeValueCallbacks && window.nodeValueCallbacks[msg.callbackId]) {
+        window.nodeValueCallbacks[msg.callbackId](msg.values);
+        delete window.nodeValueCallbacks[msg.callbackId];
+      }
     }
 
     if (msg.type === 'validation-response') {
@@ -6752,6 +6804,335 @@
         if (msg.nodeId) {
           resetUpdateButton(msg.nodeId)
         }
+      }
+    }
+  }
+
+  // Message handler functions
+  function handleUIMode(msg) {
+    console.log('UI received mode:', msg.mode)
+    showScreen(msg.mode)
+
+    sendMessage('resize-ui', { sizeMode: msg.mode })
+
+    if (msg.mode === 'export') {
+      document.getElementById('file-name').textContent = msg.fileName
+    }
+    if (msg.mode === 'selection') {
+      setTimeout(() => {
+        initializeCustomDropdown()
+      }, 200)
+      sendMessage('get-saved-libraries')
+    }
+    if (msg.mode === 'home') {
+      setTimeout(() => {
+        setupCheckboxInteractions()
+        initializeCustomDropdown()
+      }, 200)
+    }
+  }
+
+  function handleKeysExported(msg) {
+    const textStylesCount = msg.textStylesCount || msg.count
+    const variablesCount = msg.variablesCount || 0
+
+    let exportMessage = `Exported <span style="color: white; font-weight: 600;">${textStylesCount} text style keys</span>`
+    if (variablesCount > 0) {
+      exportMessage += ` and <span style="color: white; font-weight: 600;">${variablesCount} variables</span>`
+    }
+    exportMessage += ` from <span style="color: white; font-weight: 600;">${msg.libraryName}</span><br>Saved as: <span style="color: #10B981; font-weight: 600;">${msg.fileName}</span>`
+
+    document.getElementById('export-details').innerHTML = exportMessage
+    sendMessage('switch-mode', { mode: 'export-confirmation' })
+  }
+
+  function handleSavedLibraries(msg) {
+    const librariesWithCount = msg.libraries.map(lib => ({
+      key: lib.key,
+      name: lib.displayName || `${lib.name} (${lib.count} styles)`
+    }))
+
+    if (homeLibraryDropdown) {
+      homeLibraryDropdown.setLibraries(librariesWithCount)
+    }
+
+    if (selectionLibraryDropdown) {
+      selectionLibraryDropdown.setLibraries(librariesWithCount)
+    }
+  }
+
+  function handleLibrarySelected(msg) {
+    const libraryNameElement = document.getElementById('selected-library-name')
+
+    if (msg.library) {
+      if (homeLibraryDropdown) {
+        homeLibraryDropdown.setValue(msg.library.key, `${msg.library.name} Attached`)
+      }
+
+      if (libraryNameElement) {
+        libraryNameElement.textContent = `${msg.library.name} Attached`
+      }
+
+      if (msg.library.tokenCounts) {
+        const counts = msg.library.tokenCounts
+
+        const textStylesElement = document.getElementById('text-styles-count')
+        if (textStylesElement) {
+          textStylesElement.textContent = `${counts.textStyles} Styles Available`
+        }
+
+        const spacingElement = document.getElementById('spacing-variables-count')
+        if (spacingElement) {
+          spacingElement.textContent = `${counts.spacing} Variables Available`
+        }
+
+        const updateCountAndVisibility = (checkboxId, countId, count, label) => {
+          const countElement = document.getElementById(countId)
+          const checkboxGroup = document.querySelector(`label[for="${checkboxId}"]`)
+
+          if (countElement) {
+            countElement.textContent = `${count} ${label}`
+          }
+
+          if (checkboxGroup) {
+            if (count > 0) {
+              checkboxGroup.style.display = 'flex'
+            } else {
+              checkboxGroup.style.display = 'none'
+              const checkbox = document.getElementById(checkboxId)
+              if (checkbox) {
+                checkbox.checked = false
+              }
+            }
+          }
+        }
+
+        const coreTextStylesElement = document.getElementById('text-styles-count')
+        if (coreTextStylesElement) {
+          coreTextStylesElement.textContent = `${counts.textStyles} Styles Available`
+        }
+
+        const coreSpacingElement = document.getElementById('spacing-variables-count')
+        if (coreSpacingElement) {
+          coreSpacingElement.textContent = `${counts.spacing} Variables Available`
+        }
+
+        updateCountAndVisibility('colors-checkbox', 'colors-count', counts.colors, 'Colors Available')
+        updateCountAndVisibility('corner-radius-checkbox', 'corner-radius-count', counts.cornerRadius, 'Radius Tokens Available')
+        updateCountAndVisibility('typography-checkbox', 'typography-count', counts.typography, 'Typography Tokens Available')
+        updateCountAndVisibility('shadows-checkbox', 'shadows-count', counts.shadows, 'Shadow Tokens Available')
+        updateCountAndVisibility('borders-checkbox', 'borders-count', counts.borders, 'Border Tokens Available')
+        updateCountAndVisibility('opacity-checkbox', 'opacity-count', counts.opacity, 'Opacity Tokens Available')
+        updateCountAndVisibility('sizing-checkbox', 'sizing-count', counts.sizing, 'Sizing Tokens Available')
+      } else {
+        const fallbackTextStylesElement = document.getElementById('text-styles-count')
+        if (fallbackTextStylesElement) {
+          fallbackTextStylesElement.textContent = `${msg.library.textStylesCount || msg.library.count} Styles Available`
+        }
+
+        const fallbackSpacingElement = document.getElementById('spacing-variables-count')
+        if (fallbackSpacingElement) {
+          fallbackSpacingElement.textContent = `${msg.library.spacingVariablesCount || 0} Variables Available`
+        }
+      }
+    }
+  }
+
+  function handleLibrariesCleared(msg) {
+    showScreen('link')
+  }
+
+  function handleTextStylesData(msg) {
+    showTextStylesScreen(msg.textStyles)
+  }
+
+  function handleSpacingVariablesData(msg) {
+    showSpacingVariablesScreen(msg.spacingVariables)
+  }
+
+  function handleColorsData(msg) {
+    showColorsScreen(msg.colors)
+  }
+
+  function handleCornerRadiusData(msg) {
+    showCornerRadiusScreen(msg.cornerRadius)
+  }
+
+  function handleValidationResults(msg) {
+    console.log('🔍 VALIDATION RESULTS RECEIVED - Using SimpleViewController');
+
+    SimpleViewController.setValidationResults(msg.results, msg.runId || Date.now().toString());
+    SimpleViewController.navigate({ type: 'GO', view: 'VALIDATION_RESULTS' });
+
+    showValidationResults(msg.results, msg.library, msg.targetName, msg.targetType, msg.options)
+    initializeEnhancedCollapsedView(msg.results, msg.library, msg.options)
+  }
+
+  function handleSelectionChanged(msg) {
+    console.log('🔍 SELECTION CHANGED EVENT RECEIVED:', msg.nodeId)
+
+    window.currentSelectedNodeId = msg.nodeId
+    window.currentSelectedNodeName = msg.nodeName
+
+    if (window.validationResults && window.validationResults.length > 0) {
+      console.log('🔍 Refreshing validation values for current selection');
+      console.log('🔍 Available validation results node IDs:', window.validationResults.map(r => r.node?.id));
+      refreshValidationValuesForNode(msg.nodeId);
+    }
+
+    if (SimpleViewController.state.current.view === 'COLLAPSED' || SimpleViewController.state.current.view === 'ISSUE_DETAILS') {
+      if (window.isNavigating) {
+        console.log('🔍 SKIPPING SELECTION HANDLING - NAVIGATION IN PROGRESS');
+        return;
+      }
+
+      console.log('🔍 HANDLING SELECTION IN COLLAPSED VIEW - DIRECT DISPLAY')
+
+      const existingModal = document.querySelector('div[style*="position: fixed"][style*="z-index: 10000"]');
+      if (existingModal) {
+        console.log('🔍 Closing existing out-of-scope modal');
+        document.body.removeChild(existingModal);
+      }
+
+      SimpleViewController.handleDirectSelection(msg.nodeId);
+      return;
+    }
+
+    if (ValidationViewManager.state.isMinimized && ValidationViewManager.state.hasValidationData) {
+      console.log('🔍 Using legacy ValidationViewManager for compatibility');
+      ValidationViewManager.onAssetSelected(msg.nodeId);
+      return;
+    } else {
+      console.log('🔍 NOT calling ValidationViewManager - isMinimized:', ValidationViewManager.state.isMinimized, 'hasValidationData:', ValidationViewManager.state.hasValidationData)
+    }
+  }
+
+  function handleNodeNameResponse(msg) {
+    console.log('🔍 NODE NAME RESPONSE RECEIVED:', msg.nodeId, msg.nodeName);
+
+    const params = window.pendingOutOfScopeParams;
+    if (params && params.nodeId === msg.nodeId) {
+      showOutOfScopePrompt(msg.nodeId, msg.nodeName);
+      delete window.pendingOutOfScopeParams;
+    }
+
+    ValidationViewManager.handleNodeNameResponse(msg.nodeId, msg.nodeName);
+  }
+
+  function handleCurrentNodeValuesResponse(msg) {
+    console.log('🔄 CURRENT NODE VALUES RECEIVED:', msg.nodeId, msg.values);
+    updateDisplayedValuesForNode(msg.nodeId, msg.values);
+
+    if (msg.callbackId && window.nodeValueCallbacks && window.nodeValueCallbacks[msg.callbackId]) {
+      window.nodeValueCallbacks[msg.callbackId](msg.values);
+      delete window.nodeValueCallbacks[msg.callbackId];
+    }
+  }
+
+  function handleValidationResponse(msg) {
+    console.log('🔍 Validation response received:', msg);
+    const validationId = msg.validationId;
+    if (window.validationCallbacks && window.validationCallbacks[validationId]) {
+      window.validationCallbacks[validationId]({
+        isFixed: msg.isFixed,
+        reason: msg.reason
+      });
+      delete window.validationCallbacks[validationId];
+    }
+  }
+
+  function handlePluginMinimized(msg) {
+    console.log('🔍 Plugin minimized message received - using SimpleViewController')
+
+    // Refresh guided mode data with current validation results
+    refreshGuidedModeData();
+
+    if (SimpleViewController.state.validationData) {
+      SimpleViewController.navigate({ type: 'GO', view: 'COLLAPSED' });
+    } else {
+      console.log('🔍 No validation data available for collapsed view');
+    }
+
+    if (ValidationViewManager.state.hasValidationData) {
+      ValidationViewManager.state.isMinimized = true;
+    }
+  }
+
+  function handleValidationError(msg) {
+    console.error('Validation error received:', msg.error)
+    const content = document.getElementById('validation-results-content')
+    if (content) {
+      content.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #dc3545;">
+          <div style="font-size: 18px; margin-bottom: 16px;">⚠️ Validation Failed</div>
+          <div style="color: #666; margin-bottom: 24px;">${msg.error}</div>
+          <button onclick="goBackToHome()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Try Again
+          </button>
+        </div>
+      `
+    }
+  }
+
+  function handleHardcodedApplied(msg) {
+    if (msg.ok) {
+      console.log('Hardcoded value applied successfully:', msg)
+
+      const cornerDropdown = document.querySelector(`.corner-radius-dropdown[data-node-id="${msg.nodeId}"][data-corner="${msg.corner}"]`)
+      if (cornerDropdown) {
+        const input = cornerDropdown.querySelector('.corner-radius-input')
+        if (input) {
+          input.value = String(msg.value)
+          input.style.display = 'block'
+
+          const isZero = msg.value === 0 || msg.value === '0'
+          const cssClass = isZero ? 'hardcoded-zero' : 'hardcoded-nonzero'
+
+          input.classList.remove('hardcoded-zero', 'hardcoded-nonzero')
+          input.classList.add(cssClass)
+
+          input.style.cssText = 'width: 40px; height: 24px; font-size: 11px; text-align: center; cursor: pointer; background: white; color: #111827;'
+          input.setAttribute('title', `Hardcoded value: ${msg.value} (click to convert to token)`)
+          input.setAttribute('readonly', 'true')
+        }
+
+        const tokenBadge = cornerDropdown.querySelector('.corner-token-badge')
+        if (tokenBadge) {
+          tokenBadge.remove()
+        }
+
+        cornerDropdown.selectedToken = null
+        cornerDropdown.hasExistingToken = false
+      }
+
+      checkAndResolveCornerRadiusItem(msg.nodeId)
+    } else {
+      console.error('❌ Hardcoded value application failed:', msg.error)
+      figma.notify(msg.error || 'Failed to apply hardcoded value', { error: true })
+    }
+  }
+
+  function handleApplied(msg) {
+    if (msg.ok) {
+      console.log('Style applied successfully:', msg)
+      showStyleAppliedFeedback(msg.nodeId, msg.styleName, msg.targetType, msg.appliedCorners, msg.isCornerRadius)
+    } else {
+      console.error('❌ Style application failed:', msg.error)
+
+      let errorMessage = msg.error;
+      if (msg.error.includes('Variable with ID') && msg.error.includes('not found')) {
+        errorMessage = `${msg.error}\n\n💡 This usually happens when:\n• The design system has been updated\n• Variables were deleted or recreated\n• You're in a different file than the design system\n\nTry re-exporting your design system or check if you're in the correct file.`;
+      } else if (msg.error.includes('not accessible in this file')) {
+        errorMessage = `${msg.error}\n\n💡 Make sure you're working in the same file as your design system, or that the design system is properly linked to this file.`;
+      }
+
+      const shouldRetry = confirm(`${errorMessage}\n\nWould you like to try refreshing the design system data?`);
+      if (shouldRetry) {
+        sendMessage('switch-mode', { mode: 'export' });
+      }
+
+      if (msg.nodeId) {
+        resetUpdateButton(msg.nodeId)
       }
     }
   }
@@ -7280,20 +7661,44 @@
 
   // Get the current active issue for conversational display
   function getCurrentActiveIssue() {
+    console.log('🔍 getCurrentActiveIssue called');
+    console.log('- currentSelectedNodeId:', window.currentSelectedNodeId);
+    console.log('- targetIssueTypeForCollapsedView:', window.targetIssueTypeForCollapsedView);
+
     if (!collapsedViewState.validationData) return null;
 
     const issues = collapsedViewState.validationData.issues;
     const issueStates = window.issueStates || new Map();
 
+    console.log('- Total issues:', issues.length);
+
     // If a specific node is selected, find issues for that node first
     if (window.currentSelectedNodeId) {
       const selectedNodeIssues = issues.filter(issue => issue.node?.id === window.currentSelectedNodeId);
+      console.log('- Issues for selected node:', selectedNodeIssues.length, selectedNodeIssues.map(i => i.type));
 
-      // Find first unresolved issue for the selected node
+      // If we have a target issue type from guided mode, prioritize that type
+      if (window.targetIssueTypeForCollapsedView) {
+        const targetTypeIssues = selectedNodeIssues.filter(issue => issue.type === window.targetIssueTypeForCollapsedView);
+        console.log('- Target type issues:', targetTypeIssues.length, targetTypeIssues.map(i => i.type));
+
+        // Find first unresolved issue of the target type
+        for (const issue of targetTypeIssues) {
+          const nodeId = issue.node?.id;
+          const state = issueStates.get(nodeId);
+          if (!state || (state !== 'resolved' && state !== 'ignored')) {
+            console.log('✅ Returning target type issue:', issue.type);
+            return issue;
+          }
+        }
+      }
+
+      // Find first unresolved issue for the selected node (fallback)
       for (const issue of selectedNodeIssues) {
         const nodeId = issue.node?.id;
         const state = issueStates.get(nodeId);
         if (!state || (state !== 'resolved' && state !== 'ignored')) {
+          console.log('🔍 Returning fallback issue:', issue.type);
           return issue;
         }
       }
@@ -7345,8 +7750,15 @@
                 No Issues
               </span>
               <button id="expand-from-issue" style="color: #6b7280; background: none; border: none; cursor: pointer; padding: 4px;">
-                <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-expand-icon lucide-expand">
+                  <path d="m15 15 6 6"/>
+                  <path d="m15 9 6-6"/>
+                  <path d="M21 16v5h-5"/>
+                  <path d="M21 8V3h-5"/>
+                  <path d="M3 16v5h5"/>
+                  <path d="m3 21 6-6"/>
+                  <path d="M3 8V3h5"/>
+                  <path d="M9 9 3 3"/>
                 </svg>
               </button>
             </div>
@@ -7410,8 +7822,22 @@
 
     // Check if this issue is resolved
     const issueStates = window.issueStates || new Map();
-    const isResolved = issueStates.get(issue.node?.id) === 'resolved';
-    const isIgnored = issueStates.get(issue.node?.id) === 'ignored';
+    const nodeId = issue.node?.id;
+
+    // Check for issue-specific state first (nodeId-issueType)
+    const issueSpecificKey = `${nodeId}-${issue.type}`;
+    const issueSpecificState = issueStates.get(issueSpecificKey);
+
+    let isResolved, isIgnored;
+    if (issueSpecificState) {
+      isResolved = issueSpecificState === 'resolved';
+      isIgnored = issueSpecificState === 'ignored';
+    } else {
+      // Fall back to node-level state for backward compatibility
+      const nodeState = issueStates.get(nodeId);
+      isResolved = nodeState === 'resolved';
+      isIgnored = nodeState === 'ignored';
+    }
 
     // Get current issue index and total count
     const issues = collapsedViewState.validationData?.issues || [];
@@ -7420,12 +7846,29 @@
     // For navigation, only count unresolved issues
     const unresolvedIssues = issues.filter(issue => {
       const nodeId = issue.node?.id;
-      const state = issueStates.get(nodeId);
-      return !state || (state !== 'resolved' && state !== 'ignored');
+
+      // Check for issue-specific state first (nodeId-issueType)
+      const issueSpecificKey = `${nodeId}-${issue.type}`;
+      const issueSpecificState = issueStates.get(issueSpecificKey);
+
+      if (issueSpecificState) {
+        return issueSpecificState !== 'resolved' && issueSpecificState !== 'ignored';
+      }
+
+      // Fall back to node-level state for backward compatibility
+      const nodeState = issueStates.get(nodeId);
+      return !nodeState || (nodeState !== 'resolved' && nodeState !== 'ignored');
     });
 
     const currentIndex = navigationIndex !== null ? navigationIndex : unresolvedIssues.findIndex(i => i.node?.id === issue.node?.id);
     const totalIssues = unresolvedIssues.length;
+
+    console.log('🔢 Navigation Counter Debug:');
+    console.log('- Total issues:', issues.length);
+    console.log('- Unresolved issues:', unresolvedIssues.length);
+    console.log('- Current index:', currentIndex);
+    console.log('- Total issues (counter):', totalIssues);
+    console.log('- Navigation index param:', navigationIndex);
     const resolvedCount = getResolvedIssuesCount();
 
     // Generate different content based on issue state
@@ -7441,8 +7884,15 @@
               ${getIssueTypeLabel(issue.type)}
             </span>
             <button id="expand-from-issue" style="color: #6b7280; background: none; border: none; cursor: pointer; padding: 4px;">
-              <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-expand-icon lucide-expand">
+                <path d="m15 15 6 6"/>
+                <path d="m15 9 6-6"/>
+                <path d="M21 16v5h-5"/>
+                <path d="M21 8V3h-5"/>
+                <path d="M3 16v5h5"/>
+                <path d="m3 21 6-6"/>
+                <path d="M3 8V3h5"/>
+                <path d="M9 9 3 3"/>
               </svg>
             </button>
           </div>
@@ -7484,8 +7934,15 @@
               ${getIssueTypeLabel(issue.type)}
             </span>
             <button id="expand-from-issue" style="color: #6b7280; background: none; border: none; cursor: pointer; padding: 4px;">
-              <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-expand-icon lucide-expand">
+                <path d="m15 15 6 6"/>
+                <path d="m15 9 6-6"/>
+                <path d="M21 16v5h-5"/>
+                <path d="M21 8V3h-5"/>
+                <path d="M3 16v5h5"/>
+                <path d="m3 21 6-6"/>
+                <path d="M3 8V3h5"/>
+                <path d="M9 9 3 3"/>
               </svg>
             </button>
           </div>
@@ -7527,8 +7984,15 @@
               ${getIssueTypeLabel(issue.type)}
             </span>
             <button id="expand-from-issue" style="color: #6b7280; background: none; border: none; cursor: pointer; padding: 4px;">
-              <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-expand-icon lucide-expand">
+                <path d="m15 15 6 6"/>
+                <path d="m15 9 6-6"/>
+                <path d="M21 16v5h-5"/>
+                <path d="M21 8V3h-5"/>
+                <path d="M3 16v5h5"/>
+                <path d="m3 21 6-6"/>
+                <path d="M3 8V3h5"/>
+                <path d="M9 9 3 3"/>
               </svg>
             </button>
           </div>
@@ -7539,13 +8003,26 @@
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto;">
-          <button class="action-btn primary" data-action="resolve" style="width: 100%; padding: 12px 16px; background: #8b5cf6; color: white; border: 1px solid #8b5cf6; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <span class="checkmark" style="display: none; color: white;">✓</span>
-            <span>Yes, Fixed</span>
-          </button>
-          <button class="action-btn secondary" data-action="ignore" style="width: 100%; padding: 12px 16px; background: white; color: #374151; border: 1px solid #e5e7eb; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s;">
-            Ignore this issue
-          </button>
+          <!-- Smart Fix Button (will be populated by JavaScript if match found) -->
+          <div id="smart-fix-container" style="display: none;">
+            <button class="action-btn smart-fix" data-action="smart-fix" style="width: 100%; padding: 12px 16px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: 1px solid #10b981; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
+              <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span id="smart-fix-text">Apply AI-Suggested Token</span>
+            </button>
+          </div>
+          
+          <!-- Action buttons container - will be styled based on Smart Fix availability -->
+          <div id="action-buttons-container" style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="action-btn secondary" data-action="ignore" style="width: 100%; padding: 12px 16px; background: white; color: #374151; border: 1px solid #e5e7eb; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 14px;">
+              Ignore this issue
+            </button>
+            <button class="action-btn primary" data-action="resolve" style="width: 100%; padding: 12px 16px; background: #8b5cf6; color: white; border: 1px solid #8b5cf6; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <span class="checkmark" style="display: none; color: white;">✓</span>
+              <span>Yes, Fixed</span>
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -7585,8 +8062,11 @@
     const actionButtons = container.querySelectorAll('.action-btn');
     actionButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const action = e.target.getAttribute('data-action');
-        handleConversationalAction(issue, action, e.target);
+        // Ensure we get the button element, not a child element
+        const button = e.target.closest('[data-action]');
+        const action = button ? button.getAttribute('data-action') : null;
+        console.log('🔍 Button clicked, action:', action, 'button:', button);
+        handleConversationalAction(issue, action, button);
         // Note: Button state will be updated only after successful validation
       });
     });
@@ -7613,44 +8093,84 @@
         expandToFullValidationView();
       });
     }
+
+    // Analyze issue for Smart Fix suggestions
+    console.log('🔍 About to analyze issue for Smart Fix:', issue);
+    showSmartFixIfAvailable(issue);
   }
 
   // Navigate to a specific issue by index
   function navigateToIssue(index) {
+    showCompactLoader('');
+
     const issues = collapsedViewState.validationData?.issues || [];
     if (index >= 0 && index < issues.length) {
       const targetIssue = issues[index];
       const container = document.querySelector('#collapsed-issue-display');
       if (container && targetIssue) {
-        // Don't auto-select to prevent infinite loops - user can manually select if needed
-        displayConversationalIssue(container, targetIssue, false);
+        setTimeout(() => {
+          // Don't auto-select to prevent infinite loops - user can manually select if needed
+          displayConversationalIssue(container, targetIssue, false);
+
+          setTimeout(() => {
+            hideCompactLoader();
+          }, 50);
+        }, 200);
       }
+    } else {
+      hideCompactLoader();
     }
   }
 
   // Navigate to a specific issue with highlighting (for explicit user actions)
   function navigateToIssueWithHighlight(index) {
+    showCompactLoader('');
+
     const issues = collapsedViewState.validationData?.issues || [];
     if (index >= 0 && index < issues.length) {
       const targetIssue = issues[index];
       const container = document.querySelector('#collapsed-issue-display');
       if (container && targetIssue) {
-        // Auto-select to highlight the issue since this is an explicit user action
-        displayConversationalIssue(container, targetIssue, true);
+        setTimeout(() => {
+          // Auto-select to highlight the issue since this is an explicit user action
+          displayConversationalIssue(container, targetIssue, true);
+
+          setTimeout(() => {
+            hideCompactLoader();
+          }, 50);
+        }, 200);
       }
+    } else {
+      hideCompactLoader();
     }
   }
 
   // Navigate to a specific unresolved issue by index in the unresolved issues array
   function navigateToUnresolvedIssue(unresolvedIndex) {
+    // Show quick loader for navigation feedback
+    showCompactLoader('');
+
+    // Refresh data to ensure we have current state
+    refreshGuidedModeData();
+
     const issues = collapsedViewState.validationData?.issues || [];
     const issueStates = window.issueStates || new Map();
 
     // Get only unresolved issues
     const unresolvedIssues = issues.filter(issue => {
       const nodeId = issue.node?.id;
-      const state = issueStates.get(nodeId);
-      return !state || (state !== 'resolved' && state !== 'ignored');
+
+      // Check for issue-specific state first (nodeId-issueType)
+      const issueSpecificKey = `${nodeId}-${issue.type}`;
+      const issueSpecificState = issueStates.get(issueSpecificKey);
+
+      if (issueSpecificState) {
+        return issueSpecificState !== 'resolved' && issueSpecificState !== 'ignored';
+      }
+
+      // Fall back to node-level state for backward compatibility
+      const nodeState = issueStates.get(nodeId);
+      return !nodeState || (nodeState !== 'resolved' && nodeState !== 'ignored');
     });
 
     console.log('🔍 Navigation Debug:');
@@ -7669,20 +8189,31 @@
         window.isNavigating = true;
 
         // Pass the navigation index to ensure correct counter display
-        displayConversationalIssue(container, targetIssue, true, unresolvedIndex);
+        setTimeout(() => {
+          displayConversationalIssue(container, targetIssue, true, unresolvedIndex);
+
+          // Hide loader after content is displayed
+          setTimeout(() => {
+            hideCompactLoader();
+          }, 50);
+        }, 200); // Small delay to show loader
 
         // Clear navigation flag after a short delay
         setTimeout(() => {
           window.isNavigating = false;
-        }, 100);
+        }, 300);
       }
     } else {
       console.log('❌ Invalid navigation index:', unresolvedIndex, 'of', unresolvedIssues.length);
+      hideCompactLoader(); // Hide loader if navigation fails
     }
   }
 
   // Navigate to the next unresolved issue (used after resolving/ignoring an issue)
   function navigateToNextUnresolvedIssue() {
+    // Refresh data to ensure we have current state
+    refreshGuidedModeData();
+
     const issues = collapsedViewState.validationData?.issues || [];
     const issueStates = window.issueStates || new Map();
 
@@ -7697,10 +8228,22 @@
     for (let i = 0; i < issues.length; i++) {
       const issue = issues[i];
       const nodeId = issue.node?.id;
-      const state = issueStates.get(nodeId);
+
+      // Check for issue-specific state first (nodeId-issueType)
+      const issueSpecificKey = `${nodeId}-${issue.type}`;
+      const issueSpecificState = issueStates.get(issueSpecificKey);
+
+      let isUnresolved;
+      if (issueSpecificState) {
+        isUnresolved = issueSpecificState !== 'resolved' && issueSpecificState !== 'ignored';
+      } else {
+        // Fall back to node-level state for backward compatibility
+        const nodeState = issueStates.get(nodeId);
+        isUnresolved = !nodeState || (nodeState !== 'resolved' && nodeState !== 'ignored');
+      }
 
       // If issue is not resolved or ignored, this is our next issue
-      if (!state || (state !== 'resolved' && state !== 'ignored')) {
+      if (isUnresolved) {
         nextUnresolvedIssue = issue;
         break;
       }
@@ -7718,25 +8261,7 @@
         if (container) {
           displayConversationalIssue(container, nextUnresolvedIssue, true);
 
-          // Highlight the asset name to show it's a new issue
-          setTimeout(() => {
-            const assetNameElement = container.querySelector('h2');
-            if (assetNameElement) {
-              // Add highlight animation
-              assetNameElement.style.transition = 'all 0.3s ease';
-              assetNameElement.style.background = '#fef3c7';
-              assetNameElement.style.padding = '4px 8px';
-              assetNameElement.style.borderRadius = '4px';
-              assetNameElement.style.transform = 'scale(1.02)';
-
-              // Remove highlight after animation
-              setTimeout(() => {
-                assetNameElement.style.background = 'transparent';
-                assetNameElement.style.padding = '0';
-                assetNameElement.style.transform = 'scale(1)';
-              }, 1500);
-            }
-          }, 100);
+          // Note: Highlight animation removed to prevent conflicts with no-transitions
 
           console.log(`🔄 Navigated to next unresolved issue: ${nextUnresolvedIssue.node?.name}`);
         }
@@ -7747,7 +8272,6 @@
       if (container) {
         displayCompletionState(container);
       }
-      showSuccessNotification('🎉 All issues resolved! Great work!', 3000);
       console.log('✅ All issues in current validation are resolved');
     }
   }
@@ -7783,7 +8307,6 @@
       console.log(`🔄 Navigated to next unresolved issue (${nextIssueIndex + 1} of ${issues.length})`);
     } else {
       // All issues are resolved!
-      showSuccessNotification('🎉 All issues resolved! Great work!', 3000);
       console.log('✅ All issues in current validation are resolved');
     }
   }
@@ -7863,7 +8386,7 @@
 
   // Show prompt when user selects an asset outside validation scope
   function showOutOfScopePrompt(nodeId, nodeName) {
-    const assetName = nodeName ? truncateText(nodeName, 25) : 'Selected Asset';
+    const assetName = nodeName ? truncateText(nodeName, TRUNCATION_CONFIG.OUT_OF_SCOPE_MAX_LENGTH) : 'Selected Asset';
     const currentScope = getCurrentValidationScopeName();
 
     console.log('🔍 Showing out-of-scope prompt for:', assetName);
@@ -8013,6 +8536,10 @@
       }
     }
 
+    // Clear guided mode target state
+    window.targetNodeIdForCollapsedView = null;
+    window.targetIssueTypeForCollapsedView = null;
+
     // Clear SimpleViewController state
     if (window.SimpleViewController) {
       SimpleViewController.state.validationData = null
@@ -8078,7 +8605,7 @@
     // Prevent double-clicks by disabling the button temporarily
     if (buttonElement) {
       if (buttonElement.disabled) {
-        console.log('⚠️ Button already processing, ignoring click');
+        console.log('🔍 Button already processing, ignoring click');
         return;
       }
       buttonElement.disabled = true;
@@ -8094,9 +8621,11 @@
         case 'resolve':
           // Validate if the issue is actually fixed before marking as resolved
           console.log('🔍 Validating issue resolution...');
+          console.log('🔍 Issue details:', issue);
           showSuccessNotification('Checking if issue is actually fixed...', 2000);
 
           const validation = await validateIssueResolution(issue);
+          console.log('🔍 Validation result:', validation);
 
           if (validation.isFixed) {
             // Update button state only on successful validation
@@ -8136,6 +8665,11 @@
           setTimeout(() => {
             navigateToNextUnresolvedIssue();
           }, 200);
+          break;
+
+        case 'smart-fix':
+          console.log('🎯 Applying Smart Fix...');
+          await applySmartFix(issue, buttonElement);
           break;
       }
     } catch (error) {
@@ -8250,7 +8784,7 @@
           </div>
           
           <button id="expand-to-summary" style="padding: 12px 24px; background: #8b5cf6; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background-color 0.2s;">
-            View Summary
+            Back to Overview
           </button>
         </div>
       </div>
@@ -8266,9 +8800,23 @@
     }
   }
 
+  // Refresh guided mode data with current validation results
+  function refreshGuidedModeData() {
+    console.log('🔄 Refreshing guided mode data with current validation results');
+
+    if (collapsedViewState.validationData) {
+      // Update the issues array with current validation results
+      collapsedViewState.validationData.issues = window.validationResults || [];
+      console.log('🔄 Updated guided mode with', collapsedViewState.validationData.issues.length, 'issues');
+    }
+  }
+
   // Update the enhanced collapsed view with current data
   function updateEnhancedCollapsedViewData() {
     console.log('🎯 Updating enhanced collapsed view data');
+
+    // Refresh data first
+    refreshGuidedModeData();
 
     if (!collapsedViewState.isInitialized) return;
 
@@ -8303,31 +8851,17 @@
     progressElement.textContent = `${resolvedCount} of ${totalCount} resolved`;
   }
 
-  // Switch to expanded view
+  // Switch to expanded view (Back to Overview button)
   function switchToExpandedView() {
-    console.log('🎯 Switching to expanded summary view');
+    console.log('🎯 Back to Overview button clicked');
 
-    // Navigate to the validation results screen to show the full summary
-    showScreen('validation-results-screen');
-
-    // Resize to full validation results size
-    parent.postMessage({
-      pluginMessage: {
-        type: 'resize-ui',
-        sizeMode: 'validation-results'
-      }
-    }, '*');
-
-    // Update the collapsed view state
-    collapsedViewState.currentView = 'expanded';
-
-    // Show success message
-    showSuccessNotification('📊 Showing validation summary', 2000);
+    // Expand and switch to resolved tab
+    expandToFullValidationView(true); // Pass true to indicate switching to resolved
   }
 
   // Direct expand to full validation view (more reliable)
-  function expandToFullValidationView() {
-    console.log('🎯 Expanding to full validation view directly');
+  function expandToFullValidationView(switchToResolved = false) {
+    console.log('🎯 Expanding to full validation view directly', switchToResolved ? '(switching to resolved tab)' : '(keeping current tab)');
 
     // Resize to full validation results size
     parent.postMessage({
@@ -8398,12 +8932,39 @@
     window.isValidationMinimized = false;
     collapsedViewState.currentView = 'expanded';
 
+    // Only switch to resolved tab if explicitly requested (Back to Overview button)
+    if (switchToResolved) {
+      // Set the resolved tab as active
+      window.currentStatusFilter = 'resolved';
+
+      // Update tab visual states
+      document.querySelectorAll('.status-tab-button').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      const resolvedTab = document.getElementById('resolved-tab');
+      if (resolvedTab) {
+        resolvedTab.classList.add('active');
+      }
+    }
+
+    // Refresh the validation results
+    setTimeout(() => {
+      // Since the validation results array is now updated, just trigger the normal filtering
+      if (typeof applyFilters === 'function') {
+        applyFilters();
+      }
+    }, 50);
+
     console.log('✅ Successfully expanded to full validation view');
   }
 
   // Switch to collapsed view
   function switchToCollapsedView() {
     console.log('🎯 Switching to collapsed view');
+
+    // Refresh guided mode data with current validation results
+    refreshGuidedModeData();
 
     collapsedViewState.currentView = 'collapsed';
 
@@ -8691,39 +9252,623 @@
     }, 5000);
   }
 
+  // Smart Fix: Analyze issue and suggest matching tokens
+  async function analyzeIssueForSmartFix(issue) {
+    if (!issue || !issue.node) return null;
+
+    try {
+      console.log('🔍 Analyzing issue for Smart Fix:', issue);
+
+      // Get current node values
+      const nodeValues = await getCurrentNodeValues(issue.node.id);
+      console.log('🔄 Node values received:', nodeValues);
+
+      if (!nodeValues) return null;
+
+      // Get available tokens from the current library
+      const library = collapsedViewState.validationData?.library;
+      if (!library || (!library.items && !library.variables)) {
+        console.log('❌ No library or library data available');
+        return null;
+      }
+
+      let suggestedToken = null;
+      let currentValue = null;
+
+      switch (issue.type) {
+        case 'spacing':
+          currentValue = nodeValues.spacing?.itemSpacing || nodeValues.spacing?.paddingLeft;
+          if (currentValue !== undefined) {
+            // Find spacing token that matches the current value
+            suggestedToken = findMatchingSpacingToken(currentValue, library);
+          }
+          break;
+
+        case 'corner-radius':
+          // Find all corner radius values and identify which ones are hardcoded (don't have tokens)
+          const cornerValues = nodeValues.cornerRadius || {};
+          const corners = CORNER_PROPERTIES.FIGMA_CORNERS;
+
+          console.log('🔍 Corner radius analysis - all values:', cornerValues);
+
+          // Get the original issue data to see which corners are actually hardcoded
+          const cornerIssueData = issue.cornerValues || {};
+          console.log('🔍 Corner issue data:', cornerIssueData);
+
+          // Find all hardcoded corners and their matching tokens
+          const tokenMatches = [];
+
+          for (const corner of corners) {
+            const value = cornerValues[corner];
+            const cornerData = cornerIssueData[corner];
+
+            // Only consider corners that are hardcoded (don't have tokens)
+            const isHardcoded = cornerData && !cornerData.hasToken;
+
+            if (isHardcoded && value !== undefined && value > 0) {
+              console.log('🔍 Checking hardcoded corner:', corner, 'value:', value);
+              const tokenMatch = findMatchingCornerToken(value, library);
+              if (tokenMatch) {
+                console.log('✅ Found token match for hardcoded corner:', corner, tokenMatch);
+
+                // Check if we already have a match for this token value
+                const existingMatch = tokenMatches.find(m => m.tokenName === tokenMatch.name);
+                if (existingMatch) {
+                  // Add this corner to the existing match
+                  existingMatch.targetCorners.push(corner);
+                } else {
+                  // Create new match entry
+                  tokenMatches.push({
+                    tokenName: tokenMatch.name,
+                    tokenValue: tokenMatch.value,
+                    targetCorners: [corner]
+                  });
+                }
+              }
+            }
+          }
+
+          // Check if we found tokens for ALL hardcoded corners
+          const allHardcodedCorners = corners.filter(corner => {
+            const cornerData = cornerIssueData[corner];
+            const value = cornerValues[corner];
+            return cornerData && !cornerData.hasToken && value !== undefined && value > 0;
+          });
+
+          console.log('🔍 All hardcoded corners:', allHardcodedCorners.length, 'Token matches found:', tokenMatches.length);
+
+          // Only show Smart Fix if we have tokens for ALL hardcoded corners
+          const totalCornersWithTokens = tokenMatches.reduce((sum, match) => sum + match.targetCorners.length, 0);
+          if (tokenMatches.length > 0 && totalCornersWithTokens === allHardcodedCorners.length) {
+            // Create a combined suggestion for all matching tokens
+            if (tokenMatches.length === 1) {
+              // Single token match
+              const match = tokenMatches[0];
+              suggestedToken = {
+                name: match.tokenName,
+                value: match.tokenValue,
+                targetCorners: match.targetCorners
+              };
+              currentValue = match.tokenValue;
+            } else {
+              // Multiple token matches - create a combined suggestion
+              const tokenNames = tokenMatches.map(m => m.tokenName).join(' & ');
+              const tokenValues = tokenMatches.map(m => m.tokenValue).join(' & ');
+              const allTargetCorners = tokenMatches.flatMap(m => m.targetCorners);
+
+              suggestedToken = {
+                name: tokenNames,
+                value: tokenValues,
+                targetCorners: allTargetCorners,
+                multipleTokens: tokenMatches // Store individual token data for application
+              };
+              currentValue = tokenMatches[0].tokenValue; // Use first value for compatibility
+            }
+
+            console.log('🎯 Corner radius token suggestion:', suggestedToken, 'for hardcoded corners:', suggestedToken.targetCorners);
+          } else {
+            console.log('❌ Cannot provide Smart Fix - not all hardcoded corners have matching tokens');
+            console.log('   Hardcoded corners:', allHardcodedCorners.length, 'Token matches:', tokenMatches.length);
+          }
+          break;
+
+        case 'color':
+          // For colors, we'd need to get the current fill/stroke color
+          // This is more complex and would require additional node analysis
+          break;
+
+        case 'text-style':
+          // For text styles, we'd analyze font size, weight, etc.
+          // This is more complex and would require additional node analysis
+          break;
+      }
+
+      if (suggestedToken) {
+        const suggestion = {
+          tokenName: suggestedToken.name,
+          tokenValue: suggestedToken.value,
+          currentValue: currentValue,
+          type: issue.type,
+          targetCorners: suggestedToken.targetCorners,
+          multipleTokens: suggestedToken.multipleTokens
+        };
+        console.log('✅ Smart Fix suggestion found:', suggestion);
+        return suggestion;
+      }
+
+      console.log('❌ No Smart Fix suggestion found for issue type:', issue.type);
+      return null;
+    } catch (error) {
+      console.error('Error analyzing issue for smart fix:', error);
+      return null;
+    }
+  }
+
+  // Helper function to get current node values
+  async function getCurrentNodeValues(nodeId) {
+    return new Promise((resolve) => {
+      const callbackId = Date.now();
+      window.nodeValueCallbacks = window.nodeValueCallbacks || {};
+      window.nodeValueCallbacks[callbackId] = resolve;
+
+      parent.postMessage({
+        pluginMessage: {
+          type: 'get-current-node-values',
+          nodeId: nodeId,
+          callbackId: callbackId
+        }
+      }, '*');
+
+      // Timeout after 3 seconds
+      setTimeout(() => {
+        if (window.nodeValueCallbacks[callbackId]) {
+          delete window.nodeValueCallbacks[callbackId];
+          resolve(null);
+        }
+      }, 3000);
+    });
+  }
+
+  // Find matching spacing token
+  function findMatchingSpacingToken(currentValue, library) {
+    // Convert library items to spacing tokens
+    const spacingTokens = Object.entries(library.items).filter(([name, value]) => {
+      // Assuming spacing tokens are numeric values
+      return typeof value === 'number' || !isNaN(parseFloat(value));
+    });
+
+    // Find exact match first
+    for (const [name, value] of spacingTokens) {
+      const tokenValue = typeof value === 'number' ? value : parseFloat(value);
+      if (Math.abs(tokenValue - currentValue) < 0.1) { // Allow small floating point differences
+        return { name, value: tokenValue };
+      }
+    }
+
+    // Find closest match within reasonable range (±2px)
+    let closestMatch = null;
+    let closestDifference = Infinity;
+
+    for (const [name, value] of spacingTokens) {
+      const tokenValue = typeof value === 'number' ? value : parseFloat(value);
+      const difference = Math.abs(tokenValue - currentValue);
+
+      if (difference <= 2 && difference < closestDifference) {
+        closestDifference = difference;
+        closestMatch = { name, value: tokenValue };
+      }
+    }
+
+    return closestMatch;
+  }
+
+  // Find matching corner radius token
+  function findMatchingCornerToken(currentValue, library) {
+    console.log('🔍 Finding matching corner token for value:', currentValue);
+    console.log('🔍 Library structure:', library);
+
+    // Check if library has variables structure (new format)
+    let cornerTokens = [];
+
+    if (library.variables) {
+      // Use the same logic as getCornerRadiusTokensArray
+      let cornerRadiusVariables = {};
+
+      // Check if using new structure (organized by collection)
+      if (library.variables['corner-radius'] || library.variables.cornerRadius) {
+        cornerRadiusVariables = library.variables['corner-radius'] || library.variables.cornerRadius;
+      } else {
+        // Handle old structure and search through all collections for corner radius-related variables
+        for (const [collectionKey, variables] of Object.entries(library.variables)) {
+          const collectionName = collectionKey.toLowerCase();
+
+          // Check if this collection contains corner radius
+          if (collectionName.includes('radius') || collectionName.includes('corner') ||
+            collectionName.includes('border-radius') || collectionName.includes('rounded')) {
+            // Add all variables from this collection
+            Object.assign(cornerRadiusVariables, variables);
+          } else {
+            // Check individual variable names for corner radius-related terms
+            for (const [varName, varData] of Object.entries(variables)) {
+              const name = varName.toLowerCase();
+              if (name.includes('radius') || name.includes('corner') || name.includes('rounded')) {
+                cornerRadiusVariables[varName] = varData;
+              }
+            }
+          }
+        }
+      }
+
+      // Convert to the format expected by the matching logic
+      cornerTokens = Object.entries(cornerRadiusVariables).map(([name, data]) => {
+        // Extract the pixel value from the variable data
+        let value = null;
+        if (data && data.values && typeof data.values === 'object') {
+          const firstModeValues = Object.values(data.values)[0];
+          if (typeof firstModeValues === 'number') {
+            value = firstModeValues;
+          }
+        }
+        return [name, { value }];
+      }).filter(([name, tokenData]) => {
+        const value = tokenData?.value;
+        return typeof value === 'number' && value >= 0;
+      });
+    }
+
+    // Fallback to items structure (old format)
+    if (cornerTokens.length === 0 && library.items) {
+      cornerTokens = Object.entries(library.items).filter(([name, value]) => {
+        return (name.toLowerCase().includes('radius') || name.toLowerCase().includes('corner')) &&
+          (typeof value === 'number' || !isNaN(parseFloat(value)));
+      });
+    }
+
+    console.log('🔍 Found corner tokens:', cornerTokens);
+
+    // For Smart Fix, only return exact matches (within 0.1px tolerance)
+    for (const [name, tokenData] of cornerTokens) {
+      const value = tokenData?.value || tokenData;
+      const tokenValue = typeof value === 'number' ? value : parseFloat(value);
+      if (Math.abs(tokenValue - currentValue) < 0.1) {
+        console.log('✅ Found exact match:', { name, value: tokenValue });
+        return { name, value: tokenValue };
+      }
+    }
+
+    // No exact match found - don't return closest matches for Smart Fix
+    console.log('❌ No exact match found for value:', currentValue);
+    return null;
+  }
+
+  // Apply Smart Fix by applying the suggested token
+  async function applySmartFix(issue, buttonElement) {
+    const smartFixContainer = document.getElementById('smart-fix-container');
+    if (!smartFixContainer) return;
+
+    const tokenName = smartFixContainer.getAttribute('data-token-name');
+    const tokenValue = smartFixContainer.getAttribute('data-token-value');
+    const issueType = smartFixContainer.getAttribute('data-issue-type');
+    const nodeId = smartFixContainer.getAttribute('data-node-id');
+    const targetCornersStr = smartFixContainer.getAttribute('data-target-corners');
+
+    if (!tokenName || !tokenValue || !issueType || !nodeId) {
+      showErrorNotification('❌ Smart Fix data missing');
+      return;
+    }
+
+    try {
+      // Update button to show loading state
+      if (buttonElement) {
+        const originalText = buttonElement.querySelector('span').textContent;
+        buttonElement.querySelector('span').textContent = 'Applying...';
+        buttonElement.disabled = true;
+        buttonElement.style.opacity = '0.6';
+      }
+
+      showSuccessNotification(`🤖 Applying AI-suggested "${tokenName}"...`);
+
+      // Apply the token based on issue type
+      let success = false;
+      switch (issueType) {
+        case 'spacing':
+          success = await applySpacingToken(nodeId, tokenName);
+          break;
+        case 'corner-radius':
+          // Parse target corners if available
+          let targetCorners = null;
+          if (targetCornersStr) {
+            try {
+              targetCorners = JSON.parse(targetCornersStr);
+            } catch (e) {
+              console.warn('Failed to parse target corners:', e);
+            }
+          }
+          success = await applyCornerRadiusToken(nodeId, tokenName, targetCorners);
+          break;
+        case 'color':
+          success = await applyColorToken(nodeId, tokenName);
+          break;
+        case 'text-style':
+          success = await applyTextStyleToken(nodeId, tokenName);
+          break;
+      }
+
+      if (success) {
+        // Hide Smart Fix button and show success
+        smartFixContainer.style.display = 'none';
+        showSuccessNotification(`✅ Applied "${tokenName}" successfully! Moving to next issue...`);
+
+        // Auto-navigate to next issue
+        setTimeout(() => {
+          navigateToNextUnresolvedIssue();
+        }, 1500);
+      } else {
+        // Re-enable button on failure
+        if (buttonElement) {
+          buttonElement.querySelector('span').textContent = `Smart Fix - Apply ${tokenName}`;
+          buttonElement.disabled = false;
+          buttonElement.style.opacity = '1';
+        }
+        showErrorNotification(`❌ Failed to apply "${tokenName}"`);
+      }
+    } catch (error) {
+      console.error('❌ Error applying Smart Fix:', error);
+
+      // Re-enable button on error
+      if (buttonElement) {
+        buttonElement.querySelector('span').textContent = `Smart Fix - Apply ${tokenName}`;
+        buttonElement.disabled = false;
+        buttonElement.style.opacity = '1';
+      }
+
+      showErrorNotification('❌ Smart Fix failed. Please try manually.');
+    }
+  }
+
+  // Helper functions to apply different token types
+  async function applySpacingToken(nodeId, tokenName) {
+    return new Promise((resolve) => {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'apply-spacing-token',
+          nodeId: nodeId,
+          tokenName: tokenName
+        }
+      }, '*');
+
+      // Simple success assumption - in a real implementation, you'd wait for confirmation
+      setTimeout(() => resolve(true), 500);
+    });
+  }
+
+  async function applyCornerRadiusToken(nodeId, tokenName, targetCorners = null) {
+    console.log('🎯 Applying corner radius token:', tokenName, 'to node:', nodeId, 'target corners:', targetCorners);
+    return new Promise((resolve) => {
+      // Set up a one-time listener for the response
+      const handleResponse = (event) => {
+        if (event.data.pluginMessage && event.data.pluginMessage.type === 'applied') {
+          const response = event.data.pluginMessage;
+          if (response.nodeId === nodeId && response.styleName === tokenName) {
+            window.removeEventListener('message', handleResponse);
+            console.log('📥 Received corner radius token response:', response);
+            resolve(response.ok === true);
+          }
+        }
+      };
+
+      window.addEventListener('message', handleResponse);
+
+      const message = {
+        type: 'apply-corner-radius-token-selective',
+        nodeId: nodeId,
+        tokenName: tokenName,
+        targetCorners: targetCorners
+      };
+
+      // Add multiple tokens data if available
+      const smartFixContainer = document.getElementById('smart-fix-container');
+      if (smartFixContainer) {
+        const multipleTokensStr = smartFixContainer.getAttribute('data-multiple-tokens');
+        if (multipleTokensStr) {
+          try {
+            message.multipleTokens = JSON.parse(multipleTokensStr);
+          } catch (e) {
+            console.warn('Failed to parse multiple tokens:', e);
+          }
+        }
+      }
+
+      parent.postMessage({
+        pluginMessage: message
+      }, '*');
+
+      console.log('📤 Sent apply-corner-radius-token-selective message');
+
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        window.removeEventListener('message', handleResponse);
+        console.log('⏰ Corner radius token application timed out');
+        resolve(false);
+      }, 5000);
+    });
+  }
+
+  async function applyColorToken(nodeId, tokenName) {
+    return new Promise((resolve) => {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'apply-color-token',
+          nodeId: nodeId,
+          tokenName: tokenName
+        }
+      }, '*');
+
+      setTimeout(() => resolve(true), 500);
+    });
+  }
+
+  async function applyTextStyleToken(nodeId, tokenName) {
+    return new Promise((resolve) => {
+      parent.postMessage({
+        pluginMessage: {
+          type: 'apply-text-style',
+          nodeId: nodeId,
+          styleName: tokenName
+        }
+      }, '*');
+
+      setTimeout(() => resolve(true), 500);
+    });
+  }
+
+  // Show Smart Fix button with suggested token
+  async function showSmartFixIfAvailable(issue) {
+    console.log('🔍 showSmartFixIfAvailable called with issue:', issue);
+
+    const smartFixContainer = document.getElementById('smart-fix-container');
+    const smartFixText = document.getElementById('smart-fix-text');
+
+    console.log('🔍 Smart Fix elements found:', { smartFixContainer: !!smartFixContainer, smartFixText: !!smartFixText });
+
+    if (!smartFixContainer || !smartFixText) {
+      console.log('❌ Smart Fix elements not found');
+      return;
+    }
+
+    // Analyze issue for potential smart fix
+    const suggestion = await analyzeIssueForSmartFix(issue);
+
+    console.log('🔍 Smart Fix analysis result:', suggestion);
+
+    if (suggestion) {
+      // Update button text with suggested token value(s) only
+      smartFixText.textContent = `Smart Fix - Apply ${suggestion.tokenValue}`;
+
+      // Store suggestion data for later use
+      smartFixContainer.setAttribute('data-token-name', suggestion.tokenName);
+      smartFixContainer.setAttribute('data-token-value', suggestion.tokenValue);
+      smartFixContainer.setAttribute('data-issue-type', suggestion.type);
+      smartFixContainer.setAttribute('data-node-id', issue.node.id);
+
+      // Store target corners for corner radius tokens
+      if (suggestion.type === 'corner-radius' && suggestion.targetCorners) {
+        smartFixContainer.setAttribute('data-target-corners', JSON.stringify(suggestion.targetCorners));
+
+        // Store multiple tokens data if available
+        if (suggestion.multipleTokens) {
+          smartFixContainer.setAttribute('data-multiple-tokens', JSON.stringify(suggestion.multipleTokens));
+        }
+      }
+
+      // Show the smart fix button
+      smartFixContainer.style.display = 'block';
+
+      // Change action buttons layout to side-by-side when Smart Fix is available
+      const actionButtonsContainer = document.getElementById('action-buttons-container');
+      if (actionButtonsContainer) {
+        actionButtonsContainer.style.flexDirection = 'row';
+        actionButtonsContainer.style.gap = '8px';
+
+        // Keep consistent button order: "Yes, Fixed" always primary position
+        const resolveButton = actionButtonsContainer.querySelector('[data-action="resolve"]');
+        const ignoreButton = actionButtonsContainer.querySelector('[data-action="ignore"]');
+
+        if (resolveButton && ignoreButton) {
+          // Keep "Yes, Fixed" in primary position (right side when horizontal)
+          actionButtonsContainer.insertBefore(ignoreButton, resolveButton);
+        }
+
+        // Adjust button styles for side-by-side layout
+        const actionButtons = actionButtonsContainer.querySelectorAll('.action-btn');
+        actionButtons.forEach(button => {
+          button.style.width = '50%';
+          button.style.fontSize = '14px';  // Keep consistent with stacked layout
+          button.style.padding = '12px 16px';  // Keep consistent with stacked layout
+        });
+      }
+
+      // Add event listener to the Smart Fix button
+      const smartFixButton = smartFixContainer.querySelector('.action-btn');
+      if (smartFixButton && !smartFixButton.hasAttribute('data-smart-fix-listener')) {
+        smartFixButton.setAttribute('data-smart-fix-listener', 'true');
+        smartFixButton.addEventListener('click', (e) => {
+          // Get the action from the button itself, not the clicked target (which might be a child element)
+          const action = smartFixButton.getAttribute('data-action');
+          console.log('🎯 Smart Fix button clicked, action:', action);
+          handleConversationalAction(issue, action, smartFixButton);
+        });
+      }
+
+      console.log('✅ Smart Fix available:', suggestion);
+    } else {
+      // Hide the smart fix button if no suggestion found
+      smartFixContainer.style.display = 'none';
+
+      // Reset action buttons layout to stacked when Smart Fix is not available
+      const actionButtonsContainer = document.getElementById('action-buttons-container');
+      if (actionButtonsContainer) {
+        actionButtonsContainer.style.flexDirection = 'column';
+        actionButtonsContainer.style.gap = '12px';
+
+        // Keep consistent button order: "Yes, Fixed" always primary position
+        const resolveButton = actionButtonsContainer.querySelector('[data-action="resolve"]');
+        const ignoreButton = actionButtonsContainer.querySelector('[data-action="ignore"]');
+
+        if (resolveButton && ignoreButton) {
+          // Keep "Yes, Fixed" in primary position (bottom when vertical)
+          actionButtonsContainer.insertBefore(ignoreButton, resolveButton);
+        }
+
+        // Reset button styles for stacked layout
+        const actionButtons = actionButtonsContainer.querySelectorAll('.action-btn');
+        actionButtons.forEach(button => {
+          button.style.width = '100%';
+          button.style.fontSize = '14px';
+          button.style.padding = '12px 16px';
+        });
+      }
+
+      console.log('❌ No Smart Fix suggestion - hiding button');
+    }
+  }
+
   // Compact loader for collapsed view transitions
   function showCompactLoader(message) {
     // Remove any existing compact loader
     hideCompactLoader();
 
+    // Find the main card container (the white background area)
+    const cardContainer = document.querySelector('#collapsed-issue-display');
+    if (!cardContainer) return;
+
     const loader = document.createElement('div');
     loader.id = 'compact-loader';
     loader.style.cssText = `
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(139, 92, 246, 0.2);
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 80px;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(4px);
       border-radius: 12px;
-      padding: 16px 24px;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 12px;
       font-size: 14px;
       font-weight: 500;
       color: #374151;
-      z-index: 10000;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
       animation: compactFadeIn 0.2s ease-out;
     `;
 
     // Create simple spinner (no dots SVG)
     const spinner = document.createElement('div');
     spinner.style.cssText = `
-      width: 16px;
-      height: 16px;
+      width: 20px;
+      height: 20px;
       border: 2px solid #e5e7eb;
       border-top: 2px solid #8b5cf6;
       border-radius: 50%;
@@ -8737,9 +9882,6 @@
       const text = document.createElement('span');
       text.textContent = message;
       loader.appendChild(text);
-    } else {
-      // Make loader smaller when no text
-      loader.style.padding = '12px';
     }
 
     // Add animation styles
@@ -8748,8 +9890,8 @@
       style.setAttribute('data-compact-loader-styles', 'true');
       style.textContent = `
         @keyframes compactFadeIn {
-          from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-          to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         @keyframes compactSpin {
           from { transform: rotate(0deg); }
@@ -8759,7 +9901,11 @@
       document.head.appendChild(style);
     }
 
-    document.body.appendChild(loader);
+    // Make sure the card container has relative positioning
+    cardContainer.style.position = 'relative';
+
+    // Append to the card container, not the body
+    cardContainer.appendChild(loader);
   }
 
   function hideCompactLoader() {
@@ -8780,6 +9926,29 @@
     const issueStates = window.issueStates || new Map();
     issueStates.set(nodeId, newState);
     window.issueStates = issueStates;
+
+    // Update the actual validation results array when resolved
+    if (newState === 'resolved' && window.validationResults) {
+      console.log('🔄 Updating validation results array for resolved issue:', nodeId);
+      window.validationResults = window.validationResults.map(result => {
+        if (result.node?.id === nodeId) {
+          console.log('🔄 Found result to update:', result.type, 'for node:', result.node?.name);
+
+          // Update the result based on its type
+          if (result.type === 'corner-radius') {
+            return updateResolvedCornerRadiusResult(result);
+          } else if (result.type === 'spacing') {
+            return updateResolvedSpacingResult(result);
+          } else if (result.type === 'text-style') {
+            return updateResolvedTextStyleResult(result);
+          } else if (result.type === 'color') {
+            return updateResolvedColorResult(result);
+          }
+        }
+        return result;
+      });
+      console.log('🔄 Validation results array updated');
+    }
 
     // Update status tab counts in expanded view
     if (typeof updateStatusTabCounts === 'function') {
@@ -9047,7 +10216,9 @@
       const resultIndex = new Map();
       (results || []).forEach(result => {
         if (result.node?.id) {
-          resultIndex.set(result.node.id, result);
+          // Use nodeId-issueType as key to handle multiple issues per node
+          const key = `${result.node.id}-${result.type}`;
+          resultIndex.set(key, result);
         }
       });
 
@@ -9089,7 +10260,14 @@
         return;
       }
 
-      const hit = this.state.resultIndex.get(nodeId);
+      // Look for any issue for this node (since resultIndex uses nodeId-issueType keys)
+      let hit = null;
+      for (const [key, result] of this.state.resultIndex.entries()) {
+        if (key.startsWith(nodeId + '-')) {
+          hit = result;
+          break;
+        }
+      }
       console.log('🎯 Selection result:', { nodeId, hit: !!hit });
 
       if (hit) {
@@ -9234,12 +10412,21 @@
 
           // Check if we have a specific target node ID from view button click
           if (window.targetNodeIdForCollapsedView && this.state.resultIndex) {
-            console.log('🔍 Showing specific issue for node:', window.targetNodeIdForCollapsedView);
-            const targetIssue = this.state.resultIndex.get(window.targetNodeIdForCollapsedView);
+            console.log('🔍 Showing specific issue for node:', window.targetNodeIdForCollapsedView, 'type:', window.targetIssueTypeForCollapsedView);
+
+            // Use nodeId-issueType as key to get the specific issue
+            const key = window.targetIssueTypeForCollapsedView
+              ? `${window.targetNodeIdForCollapsedView}-${window.targetIssueTypeForCollapsedView}`
+              : window.targetNodeIdForCollapsedView; // fallback for old format
+
+            const targetIssue = this.state.resultIndex.get(key);
+            console.log('🔍 Looking for issue with key:', key, 'found:', !!targetIssue);
+
             if (container && targetIssue) {
               displayConversationalIssue(container, targetIssue, false);
-              // Clear the target node ID after using it
+              // Clear the target node ID and issue type after using it
               window.targetNodeIdForCollapsedView = null;
+              window.targetIssueTypeForCollapsedView = null;
               return;
             }
           }
@@ -9352,7 +10539,9 @@
       this.state.resultIndex = new Map();
       (results || []).forEach(issue => {
         if (issue.node?.id) {
-          this.state.resultIndex.set(issue.node.id, issue);
+          // Use nodeId-issueType as key to handle multiple issues per node
+          const key = `${issue.node.id}-${issue.type}`;
+          this.state.resultIndex.set(key, issue);
         }
       });
 

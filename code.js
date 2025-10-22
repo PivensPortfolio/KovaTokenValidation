@@ -1542,7 +1542,8 @@ async function handleGetCurrentNodeValues(msg) {
         figma.ui.postMessage({
             type: 'current-node-values-response',
             nodeId: msg.nodeId,
-            values: values
+            values: values,
+            callbackId: msg.callbackId
         });
     }
     catch (error) {
@@ -1550,7 +1551,8 @@ async function handleGetCurrentNodeValues(msg) {
         figma.ui.postMessage({
             type: 'current-node-values-response',
             nodeId: msg.nodeId,
-            values: {}
+            values: {},
+            callbackId: msg.callbackId
         });
     }
 }

@@ -17,11 +17,12 @@ type SavedLibrary = {
 };
 
 interface PluginMessage {
-  type: 'get-ui-mode' | 'switch-mode' | 'export-keys' | 'get-saved-libraries' | 'select-library' | 'apply-text-style' | 'apply-spacing-token' | 'apply-corner-radius-token' | 'apply-corner-radius-tokens' | 'apply-hardcoded-corner-radius' | 'apply-color-token' | 'create-text-style' | 'resize-ui' | 'clear-all-libraries' | 'close-plugin' | 'user-going-to-design-system' | 'cancel-export-instructions' | 'get-text-styles' | 'get-spacing-variables' | 'get-colors' | 'get-corner-radius' | 'run-validation' | 'back-to-validation' | 'select-node' | 'select-and-position-node' | 'selection-changed' | 'enable-selection-tracking' | 'disable-selection-tracking' | 'minimize-and-position' | 'validate-issue-resolution' | 'get-node-name' | 'get-current-node-values';
+  type: 'get-ui-mode' | 'switch-mode' | 'export-keys' | 'get-saved-libraries' | 'select-library' | 'apply-text-style' | 'apply-spacing-token' | 'apply-corner-radius-token' | 'apply-corner-radius-tokens' | 'apply-corner-radius-token-selective' | 'apply-hardcoded-corner-radius' | 'apply-color-token' | 'create-text-style' | 'resize-ui' | 'clear-all-libraries' | 'close-plugin' | 'user-going-to-design-system' | 'cancel-export-instructions' | 'get-text-styles' | 'get-spacing-variables' | 'get-colors' | 'get-corner-radius' | 'run-validation' | 'back-to-validation' | 'select-node' | 'select-and-position-node' | 'selection-changed' | 'enable-selection-tracking' | 'disable-selection-tracking' | 'minimize-and-position' | 'validate-issue-resolution' | 'get-node-name' | 'get-current-node-values';
   libraryKey?: string;
   styleName?: string;
   tokenName?: string;
   cornerTokens?: Record<string, string>;
+  targetCorners?: string[];
   corner?: string;
   value?: number;
   nodeId?: string;
@@ -85,6 +86,12 @@ const UI_SIZES = {
   VALIDATION_RESULTS_COLLAPSED: { width: 450, height: 350 },
   CUSTOM: (width: number, height: number) => ({ width, height })
 } as const;
+
+// Corner properties constants
+const CORNER_PROPERTIES = {
+  // Figma API corner names (for node properties)
+  FIGMA_CORNERS: ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'] as const
+};
 
 // ============================================================================
 // GLOBAL STATE
@@ -961,7 +968,7 @@ async function applyCornerRadiusTokenToNode(tokenName: string, nodeId: string): 
     }
 
     const shapeNode = node as FrameNode | RectangleNode | EllipseNode;
-    const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'] as const;
+    const corners = CORNER_PROPERTIES.FIGMA_CORNERS;
     let cornersBound = 0;
 
     for (const corner of corners) {
@@ -985,6 +992,126 @@ async function applyCornerRadiusTokenToNode(tokenName: string, nodeId: string): 
   } catch (error) {
     handleAsyncError(error, 'Apply corner radius token');
     throw error;
+  }
+}
+
+async function handleSelectiveCornerRadiusTokenApplication(msg: PluginMessage): Promise<void> {
+  try {
+    validateRequiredParams({ tokenName: msg.tokenName, nodeId: msg.nodeId }, ['tokenName', 'nodeId']);
+    
+    const tokenName = msg.tokenName!;
+    const nodeId = msg.nodeId!;
+    const targetCorners = msg.targetCorners || null;
+    validateLibrarySelected();
+
+    console.log('🎯 Applying selective corner radius token:', { tokenName, nodeId, targetCorners });
+    console.log('🔍 Target corners type:', typeof targetCorners, 'value:', targetCorners);
+    console.log('🔍 Multiple tokens received:', (msg as any).multipleTokens);
+
+    // Get library and variables
+    const library = await getSavedLibrary(selectedLibraryKey!);
+    if (!library) {
+      throw createError('Selected library not found.');
+    }
+
+    const cornerRadiusVariables = getVariablesFromLibrary(library, ['corner-radius', 'cornerRadius', 'radius', 'corner', 'border-radius', 'rounded']);
+    const cornerPatterns = [
+      tokenName,
+      `radius-${tokenName}`,
+      `corner-${tokenName}`,
+      `${tokenName}px`,
+      `radius/${tokenName}`,
+      `corner/${tokenName}`
+    ];
+
+    // Get node first
+    const node = await getNodeById(nodeId);
+    if (!isNodeType<FrameNode | RectangleNode | EllipseNode>(node, ['FRAME', 'RECTANGLE', 'ELLIPSE'])) {
+      throw createError(`Cannot apply corner radius to node type "${node.type}". Only frames, rectangles, and ellipses support corner radius.`);
+    }
+
+    const shapeNode = node as FrameNode | RectangleNode | EllipseNode;
+    const allCorners = CORNER_PROPERTIES.FIGMA_CORNERS;
+    
+    // Check if this is a multiple token application
+    const multipleTokens = (msg as any).multipleTokens;
+    let cornersBound = 0;
+
+    if (multipleTokens && Array.isArray(multipleTokens)) {
+      // Handle multiple tokens - each token applies to specific corners
+      console.log('🎯 Applying multiple corner radius tokens:', multipleTokens);
+      
+      for (const tokenInfo of multipleTokens) {
+        const tokenData = findVariableInCollection(tokenInfo.tokenName, cornerRadiusVariables, cornerPatterns);
+        if (tokenData?.key) {
+          const tokenVariable = await importVariableByKey(tokenData.key);
+          logSuccess(`Found and imported token: ${tokenInfo.tokenName}`);
+          
+          for (const corner of tokenInfo.targetCorners) {
+            if (corner in shapeNode && allCorners.includes(corner as any)) {
+              try {
+                (shapeNode as any).setBoundVariable(corner, tokenVariable);
+                cornersBound++;
+                logSuccess(`Bound ${corner} to variable ${tokenInfo.tokenName}`);
+              } catch (cornerError) {
+                logError(`Failed to bind variable to ${corner}`, cornerError);
+              }
+            }
+          }
+        } else {
+          logError(`Token not found: ${tokenInfo.tokenName}`, new Error(`Token ${tokenInfo.tokenName} not found in library`));
+        }
+      }
+    } else {
+      // Handle single token application
+      const tokenData = findVariableInCollection(tokenName, cornerRadiusVariables, cornerPatterns);
+      if (!tokenData?.key) {
+        const availableTokens = Object.keys(cornerRadiusVariables).join(', ');
+        throw createError(`Corner radius token "${tokenName}" not found in library. Available tokens: ${availableTokens}`);
+      }
+
+      logSuccess('Found corner radius token', `${tokenData.name} (key: ${tokenData.key})`);
+
+      // Import variable
+      const importedVariable = await importVariableByKey(tokenData.key);
+      logSuccess('Imported corner radius variable', `${importedVariable.name} (ID: ${importedVariable.id})`);
+      
+      const cornersToUpdate = targetCorners && targetCorners.length > 0 ? targetCorners : allCorners;
+      
+      for (const corner of cornersToUpdate) {
+        if (corner in shapeNode && allCorners.includes(corner as any)) {
+          try {
+            (shapeNode as any).setBoundVariable(corner, importedVariable);
+            cornersBound++;
+            logSuccess(`Bound ${corner} to variable`);
+          } catch (cornerError) {
+            logError(`Failed to bind variable to ${corner}`, cornerError);
+          }
+        }
+      }
+    }
+
+    if (cornersBound > 0) {
+      const cornerText = cornersBound === 1 ? 'corner' : 'corners';
+      notifySuccess(`Applied corner radius token "${tokenName}" to ${cornersBound} ${cornerText} of "${shapeNode.name}".`);
+    } else {
+      throw createError(`Cannot apply corner radius to node "${node.name}" - no applicable corner radius properties found or variable binding failed.`);
+    }
+
+    postMessageToUI('applied', {
+      ok: true,
+      nodeId: nodeId,
+      styleName: tokenName,
+      targetType: 'node'
+    });
+
+  } catch (error) {
+    postMessageToUI('applied', {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+      nodeId: msg.nodeId,
+      styleName: msg.tokenName
+    });
   }
 }
 
@@ -1358,7 +1485,7 @@ async function runValidation(target: FrameNode | PageNode, library: SavedLibrary
         const shapeNode = node as FrameNode | RectangleNode | EllipseNode;
 
         try {
-          const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'] as const;
+          const corners = CORNER_PROPERTIES.FIGMA_CORNERS;
           const cornerIssues: any[] = [];
           const cornerValues: any = {};
 
@@ -1817,7 +1944,7 @@ async function handleGetCurrentNodeValues(msg: PluginMessage): Promise<void> {
     // Get corner radius values
     if ('topLeftRadius' in node) {
       values.cornerRadius = {};
-      const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'] as const;
+      const corners = CORNER_PROPERTIES.FIGMA_CORNERS;
       
       corners.forEach(corner => {
         if (corner in node) {
@@ -1831,7 +1958,8 @@ async function handleGetCurrentNodeValues(msg: PluginMessage): Promise<void> {
     figma.ui.postMessage({
       type: 'current-node-values-response',
       nodeId: msg.nodeId,
-      values: values
+      values: values,
+      callbackId: (msg as any).callbackId
     });
 
   } catch (error) {
@@ -1839,7 +1967,8 @@ async function handleGetCurrentNodeValues(msg: PluginMessage): Promise<void> {
     figma.ui.postMessage({
       type: 'current-node-values-response',
       nodeId: msg.nodeId,
-      values: {}
+      values: {},
+      callbackId: (msg as any).callbackId
     });
   }
 }
@@ -1909,22 +2038,40 @@ async function handleValidateIssueResolution(msg: PluginMessage): Promise<void> 
         break;
 
       case 'corner-radius':
-        // Check if node has corner radius tokens bound
+        // Check if node has corner radius tokens bound to previously hardcoded corners
         if (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE') {
           const shapeNode = node as FrameNode | RectangleNode | EllipseNode;
           const boundVariables = shapeNode.boundVariables;
           
           if (boundVariables) {
-            // Check for corner radius bound variables
-            const cornerProperties = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
-            const hasCornerToken = cornerProperties.some(prop => 
-              boundVariables[prop as keyof typeof boundVariables] !== undefined
-            );
+            // Check each corner - count hardcoded vs tokenized corners
+            const corners = CORNER_PROPERTIES.FIGMA_CORNERS;
+            let hardcodedCorners = 0;
+            let tokenizedCorners = 0;
             
-            if (hasCornerToken) {
+            for (const corner of corners) {
+              if (corner in shapeNode) {
+                const radiusValue = (shapeNode as any)[corner];
+                const isCornerBound = boundVariables && (boundVariables as any)[corner] !== undefined;
+                
+                if (typeof radiusValue === 'number' && radiusValue > 0) {
+                  if (isCornerBound) {
+                    tokenizedCorners++;
+                  } else {
+                    hardcodedCorners++;
+                  }
+                }
+              }
+            }
+            
+            console.log(`🔍 Corner validation: ${hardcodedCorners} hardcoded, ${tokenizedCorners} tokenized`);
+            
+            if (hardcodedCorners === 0 && tokenizedCorners > 0) {
               isFixed = true;
+            } else if (hardcodedCorners > 0) {
+              reason = `${hardcodedCorners} corner${hardcodedCorners > 1 ? 's' : ''} still hardcoded (not using design tokens)`;
             } else {
-              reason = 'No corner radius tokens applied to this shape';
+              reason = 'No corner radius values found on this shape';
             }
           } else {
             reason = 'No design tokens bound to this shape';
@@ -2164,6 +2311,12 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
       (msg) => handleTokenApplication(msg, 'corner-radius', applyCornerRadiusTokenToNode),
       msg,
       'apply-corner-radius-token'
+    );
+  } else if (msg.type === 'apply-corner-radius-token-selective') {
+    await safeMessageHandler(
+      (msg) => handleSelectiveCornerRadiusTokenApplication(msg),
+      msg,
+      'apply-corner-radius-token-selective'
     );
   } else if (msg.type === 'apply-corner-radius-tokens') {
     console.log('🔧 Received apply-corner-radius-tokens message:', msg);
