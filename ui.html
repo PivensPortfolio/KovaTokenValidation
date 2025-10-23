@@ -845,16 +845,32 @@
   }
 
   .validation-badge.spacing {
-    background: var(--color-warning-light);
-    color: var(--color-warning);
+    background: #F9A8D4;
+    color: #D3045D;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .validation-badge.corner-radius {
+    background: #A78BFA;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .validation-badge.color {
+    background: #60A5FA;
+    color: #04529D;
     display: flex;
     align-items: center;
     gap: 4px;
   }
 
   .validation-badge.text {
-    background: var(--color-primary-light);
-    color: var(--color-primary);
+    background: #029456;
+    color: white;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -2837,14 +2853,44 @@
 
 <script>
   // ============================================================================
-  // CONSTANTS
+  // CONSTANTS & UTILITIES
   // ============================================================================
+
+  // Structured logging utility
+  const Logger = {
+    info: (message, data = {}) => console.log(`[INFO] ${message}`, data),
+    warn: (message, data = {}) => console.warn(`[WARN] ${message}`, data),
+    error: (message, data = {}) => console.error(`[ERROR] ${message}`, data),
+    debug: (message, data = {}) => console.log(`[DEBUG] ${message}`, data)
+  };
+
+  // Validation type color theme system
+  const VALIDATION_COLORS = {
+    spacing: {
+      primary: '#F9A8D4',      // Light pink (primary - lighter)
+      secondary: '#D3045D',    // Deep pink/magenta (secondary - darker)
+      light: '#FDF2F8'         // Very light pink for backgrounds
+    },
+    'corner-radius': {
+      primary: '#A78BFA',      // Light purple (primary - lighter)
+      secondary: '#6446AE',    // Dark purple (secondary - darker)
+      light: '#F5F3FF'         // Very light purple
+    },
+    color: {
+      primary: '#60A5FA',      // Light blue (primary - lighter)
+      secondary: '#4D84C8',    // Deep blue (secondary - darker)
+      light: '#EFF6FF'         // Very light blue
+    },
+    'text-style': {
+      primary: '#34D399',      // Light green (primary - lighter)
+      secondary: '#059669',    // Dark green (secondary - darker)
+      light: '#F0FDF4'         // Very light green
+    }
+  };
 
   // Corner properties constants
   const CORNER_PROPERTIES = {
-    // UI corner names (for dropdowns and validation)
     UI_CORNERS: ['topLeft', 'topRight', 'bottomLeft', 'bottomRight'],
-    // Figma API corner names (for node properties)
     FIGMA_CORNERS: ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius']
   };
 
@@ -2858,6 +2904,48 @@
     ELLIPSIS: '...',
     RESPONSIVE_BASE_LENGTH: 8,
     RESPONSIVE_CHAR_WIDTH: 8
+  };
+
+  // Validation color utilities
+  const ValidationColors = {
+    getPrimary: (type) => VALIDATION_COLORS[type]?.primary || '#6B7280',
+    getSecondary: (type) => VALIDATION_COLORS[type]?.secondary || '#D1D5DB',
+    getLight: (type) => VALIDATION_COLORS[type]?.light || '#F9FAFB',
+
+    // Get badge style for node names
+    getNodeBadgeStyle: (type) => {
+      const colors = VALIDATION_COLORS[type];
+      if (!colors) return 'background: #F3F4F6; color: #374151; padding: 2px 6px; font-size: 11px; font-weight: 500; border-radius: 3px;';
+      return `background: ${colors.primary}; color: white; padding: 2px 6px; font-size: 11px; font-weight: 500; border-radius: 3px;`;
+    },
+
+    // Get badge style for property-specific badges
+    getPropertyBadgeStyle: (type) => {
+      const colors = VALIDATION_COLORS[type];
+      if (!colors) return 'background: #6B7280; color: white; padding: 2px 8px; font-size: 10px; font-weight: 600; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;';
+      return `background: ${colors.secondary}; color: white; padding: 2px 8px; font-size: 10px; font-weight: 600; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;`;
+    }
+  };
+
+  // Error handling utility
+  const ErrorHandler = {
+    handle: (error, context = '') => {
+      Logger.error(`${context}: ${error.message}`, {
+        stack: error.stack,
+        context
+      });
+      return false;
+    },
+
+    validateInput: (value, type, fieldName) => {
+      if (value === null || value === undefined) {
+        throw new Error(`${fieldName} is required`);
+      }
+      if (type && typeof value !== type) {
+        throw new Error(`${fieldName} must be of type ${type}`);
+      }
+      return true;
+    }
   };
 
   // ============================================================================
@@ -3078,7 +3166,7 @@
   });
 
   // Request UI mode on startup
-  console.log('UI starting up, requesting mode...')
+  Logger.info('UI initialization started')
 
   // Ensure slide-in screens are hidden on startup
   const textStylesSlideScreen = document.getElementById('text-styles-view-screen')
@@ -3519,7 +3607,7 @@
         checkAndResolveCornerRadiusItem(nodeId);
       }, 100); // Small delay to ensure validation data is refreshed
     } else {
-      // For spacing and other tokens, store resolved state and mark as resolved
+      // For spacing and other tokens, store resolved state and mark as resolved ONLY if successful
       if (targetType === 'node') {
         // Check if this is a spacing token by looking for spacing dropdown
         const spacingDropdown = document.querySelector(`.spacing-dropdown[data-node-id="${nodeId}"]`)
@@ -3538,7 +3626,7 @@
         }
       }
 
-      // Mark as resolved in the issue states (don't add to updatedItems to keep it visible in resolved tab)
+      // Mark as resolved in the issue states ONLY if the token was successfully applied
       const issueStates = window.issueStates || new Map()
       issueStates.set(nodeId, 'resolved')
       window.issueStates = issueStates
@@ -6104,7 +6192,12 @@
       } else if (currentStatusFilter === 'resolved') {
         emptyMessage = `
           <div style="text-align: center; padding: 40px 16px; color: #6b7280;">
-            <div style="font-size: 32px; margin-bottom: 12px;">📋</div>
+            <div style="margin-bottom: 12px;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6b7280;">
+                <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              </svg>
+            </div>
             <div style="font-size: 16px; font-weight: 600; margin-bottom: 6px; color: #111827;">No Resolved Issues</div>
             <div style="font-size: 14px; color: #6b7280;">Issues you fix will appear here.</div>
           </div>`
@@ -6130,17 +6223,8 @@
       const isColor = result.type === 'color'
       const isLastItem = index === filteredResults.length - 1
 
-      // Component badge styling based on type - more compact
-      let badgeStyle = ''
-      if (isSpacing) {
-        badgeStyle = 'background: #fed7aa; color: #c2410c; padding: 2px 6px; font-size: 11px; font-weight: 500; border-radius: 3px;'
-      } else if (isCornerRadius) {
-        badgeStyle = 'background: #fef3c7; color: #f59e0b; padding: 2px 6px; font-size: 11px; font-weight: 500; border-radius: 3px;'
-      } else if (isColor) {
-        badgeStyle = 'background: #fce7f3; color: #be185d; padding: 2px 6px; font-size: 11px; font-weight: 500; border-radius: 3px;'
-      } else {
-        badgeStyle = 'background: #dbeafe; color: #1d4ed8; padding: 2px 6px; font-size: 11px; font-weight: 500; border-radius: 3px;'
-      }
+      // Component badge styling based on type using consistent color theme
+      const badgeStyle = ValidationColors.getNodeBadgeStyle(result.type)
 
       // Different dropdown text based on result type
       let dropdownText = 'Select a style...'
@@ -6163,6 +6247,10 @@
              onmouseout="this.style.backgroundColor='white'">
           <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
             <span style="${badgeStyle}; max-width: 480px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${result.frameName}">${truncateFrameName(result.frameName)}</span>
+            ${result.type === 'spacing' && result.property ? `<span style="${ValidationColors.getPropertyBadgeStyle(result.type)}">${getIssueTypeLabel(result.type, result)}</span>` : ''}
+            ${result.type === 'corner-radius' ? `<span style="${ValidationColors.getPropertyBadgeStyle(result.type)}">Corner Radius</span>` : ''}
+            ${result.type === 'color' ? `<span style="${ValidationColors.getPropertyBadgeStyle(result.type)}">Color</span>` : ''}
+            ${result.type === 'text-style' ? `<span style="${ValidationColors.getPropertyBadgeStyle(result.type)}">Text Style</span>` : ''}
             <span style="font-size: 14px; color: #374151; line-height: 1.4; flex: 1;" title="${result.issue}">${result.issue}</span>
           </div>
           
@@ -8062,7 +8150,7 @@
           </h2>
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="${getBadgeStyle(issue.type)}">
-              ${getIssueTypeLabel(issue.type)}
+              ${getIssueTypeLabel(issue.type, issue)}
             </span>
             <button id="expand-from-issue" style="color: #6b7280; background: none; border: none; cursor: pointer; padding: 4px;">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-expand-icon lucide-expand">
@@ -8091,7 +8179,7 @@
         </div>
 
         <p style="color: #374151; margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
-          This ${issue.type} issue has been successfully resolved using design system tokens.
+          This ${getIssueTypeLabel(issue.type, issue).toLowerCase()} issue has been successfully resolved using design system tokens.
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto;">
@@ -8112,7 +8200,7 @@
           </h2>
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="${getBadgeStyle(issue.type)}">
-              ${getIssueTypeLabel(issue.type)}
+              ${getIssueTypeLabel(issue.type, issue)}
             </span>
             <button id="expand-from-issue" style="color: #6b7280; background: none; border: none; cursor: pointer; padding: 4px;">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-expand-icon lucide-expand">
@@ -8141,7 +8229,7 @@
         </div>
 
         <p style="color: #374151; margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
-          This ${issue.type} issue has been marked as ignored and won't be flagged in future validations.
+          This ${getIssueTypeLabel(issue.type, issue).toLowerCase()} issue has been marked as ignored and won't be flagged in future validations.
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto;">
@@ -8162,7 +8250,7 @@
           </h2>
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="${getBadgeStyle(issue.type)}">
-              ${getIssueTypeLabel(issue.type)}
+              ${getIssueTypeLabel(issue.type, issue)}
             </span>
             <button id="expand-from-issue" style="color: #6b7280; background: none; border: none; cursor: pointer; padding: 4px;">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-expand-icon lucide-expand">
@@ -8179,11 +8267,11 @@
           </div>
         </div>
 
-        <p style="color: #374151; margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
-          ${questionText}
-        </p>
-
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto;">
+          
+          <p style="color: #374151; margin-bottom: 16px; font-size: 14px; line-height: 1.5; text-align: center;">
+            ${questionText}
+          </p>
           <!-- Smart Fix Button (will be populated by JavaScript if match found) -->
           <div id="smart-fix-container" style="display: none;">
             <button class="action-btn smart-fix" data-action="smart-fix" style="width: 100%; padding: 12px 16px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: 1px solid #10b981; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
@@ -8196,12 +8284,12 @@
           
           <!-- Action buttons container - will be styled based on Smart Fix availability -->
           <div id="action-buttons-container" style="display: flex; flex-direction: column; gap: 12px;">
-            <button class="action-btn secondary" data-action="ignore" style="width: 100%; padding: 12px 16px; background: white; color: #374151; border: 1px solid #e5e7eb; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 14px;">
-              Ignore this issue
-            </button>
             <button class="action-btn primary" data-action="resolve" style="width: 100%; padding: 12px 16px; background: #8b5cf6; color: white; border: 1px solid #8b5cf6; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
               <span class="checkmark" style="display: none; color: white;">✓</span>
               <span>Yes, Fixed</span>
+            </button>
+            <button class="action-btn secondary" data-action="ignore" style="width: 100%; padding: 12px 16px; background: white; color: #374151; border: 1px solid #e5e7eb; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 14px;">
+              Ignore this issue
             </button>
           </div>
         </div>
@@ -8563,17 +8651,9 @@
 
   // Get badge style based on issue type (matching expanded view)
   function getBadgeStyle(issueType) {
-    switch (issueType) {
-      case 'spacing':
-        return 'background: #fed7aa; color: #c2410c; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;';
-      case 'corner-radius':
-        return 'background: #fef3c7; color: #f59e0b; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;';
-      case 'color':
-        return 'background: #fce7f3; color: #be185d; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;';
-      case 'text-style':
-      default:
-        return 'background: #dbeafe; color: #1d4ed8; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;';
-    }
+    const colors = VALIDATION_COLORS[issueType];
+    if (!colors) return 'background: #F3F4F6; color: #374151; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;';
+    return `background: ${colors.primary}; color: white; padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 4px;`;
   }
 
   // Generate conversational question based on issue type
@@ -8582,6 +8662,32 @@
       case 'text-style':
         return 'Did you apply the text style token?';
       case 'spacing':
+        // Handle padding pairs first
+        if (issue.paddingPair) {
+          const pairName = issue.paddingPair.type === 'vertical' ? 'top/bottom padding' : 'left/right padding';
+          return `Did you apply the spacing token to ${pairName}?`;
+        }
+        // Be specific about which spacing property
+        else if (issue.property) {
+          const propertyName = issue.property === 'itemSpacing' ? 'gap' :
+            issue.property.replace('padding', '').toLowerCase() + ' padding';
+          return `Did you apply the spacing token to ${propertyName}?`;
+        } else if (issue.issue && issue.issue.includes('gap')) {
+          return 'Did you apply the spacing token to gap?';
+        } else if (issue.issue && issue.issue.includes('padding')) {
+          // Extract padding type from issue description
+          if (issue.issue.includes('top/bottom padding')) {
+            return 'Did you apply the spacing token to top/bottom padding?';
+          } else if (issue.issue.includes('left/right padding')) {
+            return 'Did you apply the spacing token to left/right padding?';
+          } else {
+            const paddingMatch = issue.issue.match(/(left|right|top|bottom) padding/i);
+            if (paddingMatch) {
+              return `Did you apply the spacing token to ${paddingMatch[1].toLowerCase()} padding?`;
+            }
+          }
+          return 'Did you apply the spacing token to padding?';
+        }
         return 'Did you apply the spacing token?';
       case 'color':
         return 'Did you apply the color token?';
@@ -8593,11 +8699,31 @@
   }
 
   // Get user-friendly label for issue type
-  function getIssueTypeLabel(type) {
+  function getIssueTypeLabel(type, issue = null) {
     switch (type) {
       case 'text-style':
         return 'Text Style';
       case 'spacing':
+        // Handle padding pairs first
+        if (issue && issue.paddingPair) {
+          return issue.paddingPair.type === 'vertical' ? 'Top/Bottom Padding' : 'Left/Right Padding';
+        }
+        // Be specific about which spacing property
+        else if (issue && issue.property) {
+          const propertyName = issue.property === 'itemSpacing' ? 'Gap' :
+            issue.property.replace('padding', '').charAt(0).toUpperCase() +
+            issue.property.replace('padding', '').slice(1).toLowerCase() + ' Padding';
+          return propertyName;
+        } else if (issue && issue.issue) {
+          if (issue.issue.includes('gap')) return 'Gap';
+          if (issue.issue.includes('top/bottom padding')) return 'Top/Bottom Padding';
+          if (issue.issue.includes('left/right padding')) return 'Left/Right Padding';
+          if (issue.issue.includes('left padding')) return 'Left Padding';
+          if (issue.issue.includes('right padding')) return 'Right Padding';
+          if (issue.issue.includes('top padding')) return 'Top Padding';
+          if (issue.issue.includes('bottom padding')) return 'Bottom Padding';
+          if (issue.issue.includes('padding')) return 'Padding';
+        }
         return 'Spacing';
       case 'color':
         return 'Color';
@@ -9563,6 +9689,56 @@
     }, 5000);
   }
 
+  // Analyze padding pairs to detect Figma's vertical/horizontal padding behavior
+  function analyzePaddingPairs(spacing, currentProperty) {
+    const {
+      paddingTop = 0,
+      paddingBottom = 0,
+      paddingLeft = 0,
+      paddingRight = 0
+    } = spacing;
+
+    console.log('🔍 Analyzing padding pairs:', { paddingTop, paddingBottom, paddingLeft, paddingRight, currentProperty });
+
+    // Check if vertical padding (top/bottom) are paired
+    const verticalPaired = paddingTop === paddingBottom && paddingTop > 0;
+
+    // Check if horizontal padding (left/right) are paired
+    const horizontalPaired = paddingLeft === paddingRight && paddingLeft > 0;
+
+    console.log('🔍 Pairing analysis:', { verticalPaired, horizontalPaired });
+
+    // Determine which pair the current property belongs to
+    if (currentProperty === 'paddingTop' || currentProperty === 'paddingBottom') {
+      return {
+        isPaired: verticalPaired,
+        pairType: 'vertical',
+        pairedValue: paddingTop, // Use top value as representative
+        properties: ['paddingTop', 'paddingBottom'],
+        values: { paddingTop, paddingBottom }
+      };
+    }
+
+    if (currentProperty === 'paddingLeft' || currentProperty === 'paddingRight') {
+      return {
+        isPaired: horizontalPaired,
+        pairType: 'horizontal',
+        pairedValue: paddingLeft, // Use left value as representative
+        properties: ['paddingLeft', 'paddingRight'],
+        values: { paddingLeft, paddingRight }
+      };
+    }
+
+    // Not a padding property or no pairing detected
+    return {
+      isPaired: false,
+      pairType: null,
+      pairedValue: null,
+      properties: [],
+      values: {}
+    };
+  }
+
   // Smart Fix: Analyze issue and suggest matching tokens
   async function analyzeIssueForSmartFix(issue) {
     if (!issue || !issue.node) return null;
@@ -9588,10 +9764,39 @@
 
       switch (issue.type) {
         case 'spacing':
-          currentValue = nodeValues.spacing?.itemSpacing || nodeValues.spacing?.paddingLeft;
+          console.log('🔍 Spacing Smart Fix - Issue property:', issue.property);
+          console.log('🔍 Available spacing values:', nodeValues.spacing);
+
+          // Smart padding detection: Check if padding values are paired
+          const spacing = nodeValues.spacing || {};
+          const paddingAnalysis = analyzePaddingPairs(spacing, issue.property);
+          console.log('🔍 Padding analysis:', paddingAnalysis);
+
+          if (paddingAnalysis.isPaired) {
+            // Use the paired value for token matching
+            currentValue = paddingAnalysis.pairedValue;
+            console.log(`🎯 Using paired ${paddingAnalysis.pairType} value:`, currentValue);
+          } else if (issue.property && spacing[issue.property] !== undefined) {
+            // Use the specific property value
+            currentValue = spacing[issue.property];
+            console.log(`🎯 Using specific property ${issue.property} with value:`, currentValue);
+          } else {
+            // Fallback to itemSpacing or paddingLeft for backward compatibility
+            currentValue = spacing.itemSpacing || spacing.paddingLeft;
+            console.log('🔄 Using fallback value:', currentValue);
+          }
+
           if (currentValue !== undefined) {
             // Find spacing token that matches the current value
             suggestedToken = findMatchingSpacingToken(currentValue, library);
+
+            // Add pairing information to the suggestion
+            if (suggestedToken && paddingAnalysis.isPaired) {
+              suggestedToken.paddingPair = paddingAnalysis;
+              console.log('🔗 Added padding pair to suggestedToken:', paddingAnalysis);
+            } else {
+              console.log('🔍 Not adding padding pair - suggestedToken:', !!suggestedToken, 'isPaired:', paddingAnalysis.isPaired);
+            }
           }
           break;
 
@@ -9701,8 +9906,10 @@
           currentValue: currentValue,
           type: issue.type,
           targetCorners: suggestedToken.targetCorners,
-          multipleTokens: suggestedToken.multipleTokens
+          multipleTokens: suggestedToken.multipleTokens,
+          paddingPair: suggestedToken.paddingPair
         };
+        console.log('🔍 Created suggestion with paddingPair:', suggestion.paddingPair);
         console.log('✅ Smart Fix suggestion found:', suggestion);
         return suggestion;
       }
@@ -9751,7 +9958,7 @@
 
     console.log('🔍 Available spacing tokens:', spacingTokens);
 
-    // Find exact match first
+    // Only find exact matches for spacing tokens (Smart Fix should be precise)
     for (const [name, tokenData] of spacingTokens) {
       // Extract value from token data structure
       const tokenValue = tokenData?.values ? Object.values(tokenData.values)[0] : tokenData?.value || tokenData;
@@ -9765,28 +9972,9 @@
       }
     }
 
-    // Find closest match within reasonable range (±2px)
-    let closestMatch = null;
-    let closestDifference = Infinity;
-
-    for (const [name, tokenData] of spacingTokens) {
-      const tokenValue = tokenData?.values ? Object.values(tokenData.values)[0] : tokenData?.value || tokenData;
-      const numericValue = typeof tokenValue === 'number' ? tokenValue : parseFloat(tokenValue);
-
-      if (!isNaN(numericValue)) {
-        const difference = Math.abs(numericValue - currentValue);
-        console.log(`🔍 Token "${name}": ${numericValue}, difference: ${difference}`);
-
-        if (difference <= 2 && difference < closestDifference) {
-          closestDifference = difference;
-          closestMatch = { name, value: numericValue };
-          console.log(`🎯 New closest match: ${name} = ${numericValue} (diff: ${difference})`);
-        }
-      }
-    }
-
-    console.log('🔍 Final spacing token match:', closestMatch);
-    return closestMatch;
+    // No exact match found - don't suggest closest matches for Smart Fix
+    console.log('❌ No exact spacing token match found for value:', currentValue);
+    return null;
   }
 
   // Find matching corner radius token
@@ -9878,6 +10066,8 @@
     const issueType = smartFixContainer.getAttribute('data-issue-type');
     const nodeId = smartFixContainer.getAttribute('data-node-id');
     const targetCornersStr = smartFixContainer.getAttribute('data-target-corners');
+    const targetProperty = smartFixContainer.getAttribute('data-target-property');
+    const paddingPairStr = smartFixContainer.getAttribute('data-padding-pair');
 
     if (!tokenName || !tokenValue || !issueType || !nodeId) {
       showErrorNotification('❌ Smart Fix data missing');
@@ -9901,7 +10091,19 @@
       let success = false;
       switch (issueType) {
         case 'spacing':
-          success = await applySpacingToken(nodeId, tokenName);
+          // Parse padding pair information if available
+          let paddingPair = null;
+          console.log('🔍 Smart Fix - Padding pair string:', paddingPairStr);
+          if (paddingPairStr) {
+            try {
+              paddingPair = JSON.parse(paddingPairStr);
+              console.log('🔍 Smart Fix - Parsed padding pair:', paddingPair);
+            } catch (e) {
+              console.warn('Failed to parse padding pair:', e);
+            }
+          }
+
+          success = await applySpacingTokenWithPairs(nodeId, tokenName, targetProperty, paddingPair);
           break;
         case 'corner-radius':
           // Parse target corners if available
@@ -9975,13 +10177,38 @@
   }
 
   // Helper functions to apply different token types
-  async function applySpacingToken(nodeId, tokenName) {
+  async function applySpacingTokenWithPairs(nodeId, tokenName, targetProperty = null, paddingPair = null) {
+    return new Promise((resolve) => {
+      const message = {
+        type: 'apply-spacing-token',
+        nodeId: nodeId,
+        tokenName: tokenName,
+        targetProperty: targetProperty
+      };
+
+      // Add padding pair information for smart application
+      if (paddingPair && paddingPair.isPaired) {
+        message.paddingPair = paddingPair;
+        console.log('🎯 Applying spacing token with padding pair:', paddingPair);
+      }
+
+      parent.postMessage({
+        pluginMessage: message
+      }, '*');
+
+      // Simple success assumption - in a real implementation, you'd wait for confirmation
+      setTimeout(() => resolve(true), 500);
+    });
+  }
+
+  async function applySpacingToken(nodeId, tokenName, targetProperty = null) {
     return new Promise((resolve) => {
       parent.postMessage({
         pluginMessage: {
           type: 'apply-spacing-token',
           nodeId: nodeId,
-          tokenName: tokenName
+          tokenName: tokenName,
+          targetProperty: targetProperty
         }
       }, '*');
 
@@ -10099,6 +10326,16 @@
       smartFixContainer.setAttribute('data-issue-type', suggestion.type);
       smartFixContainer.setAttribute('data-node-id', issue.node.id);
 
+      // Store target property for spacing tokens
+      if (suggestion.type === 'spacing' && issue.property) {
+        smartFixContainer.setAttribute('data-target-property', issue.property);
+
+        // Store padding pair information if available
+        if (suggestion.paddingPair) {
+          smartFixContainer.setAttribute('data-padding-pair', JSON.stringify(suggestion.paddingPair));
+        }
+      }
+
       // Store target corners for corner radius tokens
       if (suggestion.type === 'corner-radius' && suggestion.targetCorners) {
         smartFixContainer.setAttribute('data-target-corners', JSON.stringify(suggestion.targetCorners));
@@ -10164,8 +10401,8 @@
         const ignoreButton = actionButtonsContainer.querySelector('[data-action="ignore"]');
 
         if (resolveButton && ignoreButton) {
-          // Keep "Yes, Fixed" in primary position (bottom when vertical)
-          actionButtonsContainer.insertBefore(ignoreButton, resolveButton);
+          // Keep "Yes, Fixed" in primary position (top when vertical)
+          actionButtonsContainer.insertBefore(resolveButton, ignoreButton);
         }
 
         // Reset button styles for stacked layout

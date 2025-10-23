@@ -28,6 +28,11 @@ const UI_SIZES = {
     VALIDATION_RESULTS_COLLAPSED: { width: 450, height: 350 },
     CUSTOM: (width, height) => ({ width, height })
 };
+// Corner properties constants
+const CORNER_PROPERTIES = {
+    // Figma API corner names (for node properties)
+    FIGMA_CORNERS: ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius']
+};
 // ============================================================================
 // GLOBAL STATE
 // ============================================================================
@@ -208,7 +213,13 @@ async function handleTokenApplication(msg, tokenType, applyFunction) {
     try {
         const tokenName = msg.styleName || msg.tokenName;
         validateRequiredParams({ tokenName, nodeId: msg.nodeId }, ['tokenName', 'nodeId']);
-        await applyFunction(tokenName, msg.nodeId);
+        // Pass additional parameters based on token type
+        if (tokenType === 'spacing') {
+            await applyFunction(tokenName, msg.nodeId, msg.targetProperty, msg.paddingPair);
+        }
+        else {
+            await applyFunction(tokenName, msg.nodeId);
+        }
         postMessageToUI('applied', {
             ok: true,
             nodeId: msg.nodeId,
@@ -653,8 +664,11 @@ async function ensureVariableImportedByName(collectionMatch, variableName, type 
     }
     return await figma.variables.importVariableByKeyAsync(libVar.key);
 }
-async function applySpacingTokenToNode(tokenName, nodeId) {
-    logOperation('applySpacingTokenToNode', { tokenName, nodeId, selectedLibraryKey });
+async function applySpacingTokenToNode(tokenName, nodeId, targetProperty, paddingPair) {
+    logOperation('applySpacingTokenToNode', { tokenName, nodeId, targetProperty, paddingPair, selectedLibraryKey });
+    if (paddingPair) {
+        console.log('🔍 Backend received padding pair:', paddingPair);
+    }
     try {
         // Validate inputs
         validateRequiredParams({ tokenName, nodeId }, ['tokenName', 'nodeId']);
@@ -690,29 +704,71 @@ async function applySpacingTokenToNode(tokenName, nodeId) {
         }
         const containerNode = node;
         let applied = false;
-        // Try auto layout gap first
-        if ('layoutMode' in containerNode && containerNode.layoutMode !== 'NONE' && 'itemSpacing' in containerNode) {
+        let appliedTo = '';
+        // Handle padding pairs intelligently
+        if (paddingPair && paddingPair.isPaired && paddingPair.properties) {
+            try {
+                let appliedCount = 0;
+                for (const property of paddingPair.properties) {
+                    if (property in containerNode) {
+                        containerNode.setBoundVariable(property, importedVariable);
+                        appliedCount++;
+                    }
+                }
+                if (appliedCount > 0) {
+                    const pairName = paddingPair.pairType === 'vertical' ? 'vertical padding' : 'horizontal padding';
+                    notifySuccess(`Applied spacing token "${tokenName}" as ${pairName} to "${containerNode.name}".`);
+                    applied = true;
+                    appliedTo = pairName;
+                }
+            }
+            catch (bindError) {
+                logError(`Failed to bind variable to ${paddingPair.pairType} padding`, bindError);
+            }
+        }
+        // If specific property is requested and no pairing, try that property
+        else if (targetProperty && targetProperty in containerNode) {
+            try {
+                containerNode.setBoundVariable(targetProperty, importedVariable);
+                const propertyName = targetProperty === 'itemSpacing' ? 'gap' :
+                    targetProperty.replace('padding', '').toLowerCase() + ' padding';
+                notifySuccess(`Applied spacing token "${tokenName}" as ${propertyName} to "${containerNode.name}".`);
+                applied = true;
+                appliedTo = propertyName;
+            }
+            catch (bindError) {
+                logError(`Failed to bind variable to ${targetProperty}`, bindError);
+            }
+        }
+        // Try auto layout gap if not already applied
+        if (!applied && 'layoutMode' in containerNode && containerNode.layoutMode !== 'NONE' && 'itemSpacing' in containerNode) {
             try {
                 containerNode.setBoundVariable('itemSpacing', importedVariable);
                 notifySuccess(`Applied spacing token "${tokenName}" as gap to "${containerNode.name}".`);
                 applied = true;
+                appliedTo = 'gap';
             }
             catch (bindError) {
                 logError('Failed to bind variable to itemSpacing', bindError);
             }
         }
-        // Try padding as fallback
+        // Try all padding properties as fallback
         if (!applied && 'paddingLeft' in containerNode) {
-            try {
-                containerNode.setBoundVariable('paddingLeft', importedVariable);
-                containerNode.setBoundVariable('paddingRight', importedVariable);
-                containerNode.setBoundVariable('paddingTop', importedVariable);
-                containerNode.setBoundVariable('paddingBottom', importedVariable);
+            const paddingProperties = ['paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom'];
+            let paddingApplied = 0;
+            for (const paddingProp of paddingProperties) {
+                try {
+                    containerNode.setBoundVariable(paddingProp, importedVariable);
+                    paddingApplied++;
+                }
+                catch (bindError) {
+                    logError(`Failed to bind variable to ${paddingProp}`, bindError);
+                }
+            }
+            if (paddingApplied > 0) {
                 notifySuccess(`Applied spacing token "${tokenName}" as padding to "${containerNode.name}".`);
                 applied = true;
-            }
-            catch (bindError) {
-                logError('Failed to bind variable to padding', bindError);
+                appliedTo = 'padding';
             }
         }
         if (!applied) {
@@ -760,7 +816,7 @@ async function applyCornerRadiusTokenToNode(tokenName, nodeId) {
             throw createError(`Cannot apply corner radius to node type "${node.type}". Only frames, rectangles, and ellipses support corner radius.`);
         }
         const shapeNode = node;
-        const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
+        const corners = CORNER_PROPERTIES.FIGMA_CORNERS;
         let cornersBound = 0;
         for (const corner of corners) {
             if (corner in shapeNode) {
@@ -784,6 +840,114 @@ async function applyCornerRadiusTokenToNode(tokenName, nodeId) {
     catch (error) {
         handleAsyncError(error, 'Apply corner radius token');
         throw error;
+    }
+}
+async function handleSelectiveCornerRadiusTokenApplication(msg) {
+    try {
+        validateRequiredParams({ tokenName: msg.tokenName, nodeId: msg.nodeId }, ['tokenName', 'nodeId']);
+        const tokenName = msg.tokenName;
+        const nodeId = msg.nodeId;
+        const targetCorners = msg.targetCorners || null;
+        validateLibrarySelected();
+        console.log('🎯 Applying selective corner radius token:', { tokenName, nodeId, targetCorners });
+        console.log('🔍 Target corners type:', typeof targetCorners, 'value:', targetCorners);
+        console.log('🔍 Multiple tokens received:', msg.multipleTokens);
+        // Get library and variables
+        const library = await getSavedLibrary(selectedLibraryKey);
+        if (!library) {
+            throw createError('Selected library not found.');
+        }
+        const cornerRadiusVariables = getVariablesFromLibrary(library, ['corner-radius', 'cornerRadius', 'radius', 'corner', 'border-radius', 'rounded']);
+        const cornerPatterns = [
+            tokenName,
+            `radius-${tokenName}`,
+            `corner-${tokenName}`,
+            `${tokenName}px`,
+            `radius/${tokenName}`,
+            `corner/${tokenName}`
+        ];
+        // Get node first
+        const node = await getNodeById(nodeId);
+        if (!isNodeType(node, ['FRAME', 'RECTANGLE', 'ELLIPSE'])) {
+            throw createError(`Cannot apply corner radius to node type "${node.type}". Only frames, rectangles, and ellipses support corner radius.`);
+        }
+        const shapeNode = node;
+        const allCorners = CORNER_PROPERTIES.FIGMA_CORNERS;
+        // Check if this is a multiple token application
+        const multipleTokens = msg.multipleTokens;
+        let cornersBound = 0;
+        if (multipleTokens && Array.isArray(multipleTokens)) {
+            // Handle multiple tokens - each token applies to specific corners
+            console.log('🎯 Applying multiple corner radius tokens:', multipleTokens);
+            for (const tokenInfo of multipleTokens) {
+                const tokenData = findVariableInCollection(tokenInfo.tokenName, cornerRadiusVariables, cornerPatterns);
+                if (tokenData === null || tokenData === void 0 ? void 0 : tokenData.key) {
+                    const tokenVariable = await importVariableByKey(tokenData.key);
+                    logSuccess(`Found and imported token: ${tokenInfo.tokenName}`);
+                    for (const corner of tokenInfo.targetCorners) {
+                        if (corner in shapeNode && allCorners.includes(corner)) {
+                            try {
+                                shapeNode.setBoundVariable(corner, tokenVariable);
+                                cornersBound++;
+                                logSuccess(`Bound ${corner} to variable ${tokenInfo.tokenName}`);
+                            }
+                            catch (cornerError) {
+                                logError(`Failed to bind variable to ${corner}`, cornerError);
+                            }
+                        }
+                    }
+                }
+                else {
+                    logError(`Token not found: ${tokenInfo.tokenName}`, new Error(`Token ${tokenInfo.tokenName} not found in library`));
+                }
+            }
+        }
+        else {
+            // Handle single token application
+            const tokenData = findVariableInCollection(tokenName, cornerRadiusVariables, cornerPatterns);
+            if (!(tokenData === null || tokenData === void 0 ? void 0 : tokenData.key)) {
+                const availableTokens = Object.keys(cornerRadiusVariables).join(', ');
+                throw createError(`Corner radius token "${tokenName}" not found in library. Available tokens: ${availableTokens}`);
+            }
+            logSuccess('Found corner radius token', `${tokenData.name} (key: ${tokenData.key})`);
+            // Import variable
+            const importedVariable = await importVariableByKey(tokenData.key);
+            logSuccess('Imported corner radius variable', `${importedVariable.name} (ID: ${importedVariable.id})`);
+            const cornersToUpdate = targetCorners && targetCorners.length > 0 ? targetCorners : allCorners;
+            for (const corner of cornersToUpdate) {
+                if (corner in shapeNode && allCorners.includes(corner)) {
+                    try {
+                        shapeNode.setBoundVariable(corner, importedVariable);
+                        cornersBound++;
+                        logSuccess(`Bound ${corner} to variable`);
+                    }
+                    catch (cornerError) {
+                        logError(`Failed to bind variable to ${corner}`, cornerError);
+                    }
+                }
+            }
+        }
+        if (cornersBound > 0) {
+            const cornerText = cornersBound === 1 ? 'corner' : 'corners';
+            notifySuccess(`Applied corner radius token "${tokenName}" to ${cornersBound} ${cornerText} of "${shapeNode.name}".`);
+        }
+        else {
+            throw createError(`Cannot apply corner radius to node "${node.name}" - no applicable corner radius properties found or variable binding failed.`);
+        }
+        postMessageToUI('applied', {
+            ok: true,
+            nodeId: nodeId,
+            styleName: tokenName,
+            targetType: 'node'
+        });
+    }
+    catch (error) {
+        postMessageToUI('applied', {
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+            nodeId: msg.nodeId,
+            styleName: msg.tokenName
+        });
     }
 }
 async function applyCornerRadiusTokensToNode(cornerTokens, nodeId) {
@@ -1069,27 +1233,127 @@ async function runValidation(target, library, options, targetName) {
             // Spacing validation
             if (options.spacing && (node.type === 'FRAME' || node.type === 'GROUP')) {
                 const containerNode = node;
-                // Check padding (only if it exists and is accessible)
-                try {
-                    if ('paddingLeft' in containerNode && containerNode.paddingLeft && containerNode.paddingLeft > 0) {
-                        const paddingValue = containerNode.paddingLeft;
-                        if (!isSpacingBoundToToken(containerNode, 'paddingLeft')) {
-                            results.push({
-                                type: 'spacing',
-                                issue: `Hardcoded padding (${paddingValue}px)`,
-                                node: {
-                                    id: containerNode.id,
-                                    name: containerNode.name
-                                },
-                                frameName: containerNode.name,
-                                nodeType: 'SPACING',
-                                value: paddingValue
-                            });
-                        }
+                // Smart padding validation with pair detection
+                const paddingValues = {
+                    paddingTop: containerNode.paddingTop || 0,
+                    paddingBottom: containerNode.paddingBottom || 0,
+                    paddingLeft: containerNode.paddingLeft || 0,
+                    paddingRight: containerNode.paddingRight || 0
+                };
+                // Detect padding pairs
+                const verticalPaired = paddingValues.paddingTop === paddingValues.paddingBottom && paddingValues.paddingTop > 0;
+                const horizontalPaired = paddingValues.paddingLeft === paddingValues.paddingRight && paddingValues.paddingLeft > 0;
+                // Check vertical padding (top/bottom)
+                if (verticalPaired) {
+                    // Both top and bottom have same value - create one combined entry
+                    const bothBoundToToken = isSpacingBoundToToken(containerNode, 'paddingTop') &&
+                        isSpacingBoundToToken(containerNode, 'paddingBottom');
+                    if (!bothBoundToToken) {
+                        results.push({
+                            type: 'spacing',
+                            issue: `Hardcoded padding (${paddingValues.paddingTop}px)`,
+                            node: {
+                                id: containerNode.id,
+                                name: containerNode.name
+                            },
+                            frameName: containerNode.name,
+                            nodeType: 'SPACING',
+                            value: paddingValues.paddingTop,
+                            property: 'paddingTop', // Use top as representative
+                            paddingPair: {
+                                type: 'vertical',
+                                properties: ['paddingTop', 'paddingBottom'],
+                                value: paddingValues.paddingTop
+                            }
+                        });
                     }
                 }
-                catch (error) {
-                    // Silent error handling for performance
+                else {
+                    // Check individual top and bottom padding
+                    if (paddingValues.paddingTop > 0 && !isSpacingBoundToToken(containerNode, 'paddingTop')) {
+                        results.push({
+                            type: 'spacing',
+                            issue: `Hardcoded top padding (${paddingValues.paddingTop}px)`,
+                            node: {
+                                id: containerNode.id,
+                                name: containerNode.name
+                            },
+                            frameName: containerNode.name,
+                            nodeType: 'SPACING',
+                            value: paddingValues.paddingTop,
+                            property: 'paddingTop'
+                        });
+                    }
+                    if (paddingValues.paddingBottom > 0 && !isSpacingBoundToToken(containerNode, 'paddingBottom')) {
+                        results.push({
+                            type: 'spacing',
+                            issue: `Hardcoded bottom padding (${paddingValues.paddingBottom}px)`,
+                            node: {
+                                id: containerNode.id,
+                                name: containerNode.name
+                            },
+                            frameName: containerNode.name,
+                            nodeType: 'SPACING',
+                            value: paddingValues.paddingBottom,
+                            property: 'paddingBottom'
+                        });
+                    }
+                }
+                // Check horizontal padding (left/right)
+                if (horizontalPaired) {
+                    // Both left and right have same value - create one combined entry
+                    const bothBoundToToken = isSpacingBoundToToken(containerNode, 'paddingLeft') &&
+                        isSpacingBoundToToken(containerNode, 'paddingRight');
+                    if (!bothBoundToToken) {
+                        results.push({
+                            type: 'spacing',
+                            issue: `Hardcoded padding (${paddingValues.paddingLeft}px)`,
+                            node: {
+                                id: containerNode.id,
+                                name: containerNode.name
+                            },
+                            frameName: containerNode.name,
+                            nodeType: 'SPACING',
+                            value: paddingValues.paddingLeft,
+                            property: 'paddingLeft', // Use left as representative
+                            paddingPair: {
+                                type: 'horizontal',
+                                properties: ['paddingLeft', 'paddingRight'],
+                                value: paddingValues.paddingLeft
+                            }
+                        });
+                    }
+                }
+                else {
+                    // Check individual left and right padding
+                    if (paddingValues.paddingLeft > 0 && !isSpacingBoundToToken(containerNode, 'paddingLeft')) {
+                        results.push({
+                            type: 'spacing',
+                            issue: `Hardcoded left padding (${paddingValues.paddingLeft}px)`,
+                            node: {
+                                id: containerNode.id,
+                                name: containerNode.name
+                            },
+                            frameName: containerNode.name,
+                            nodeType: 'SPACING',
+                            value: paddingValues.paddingLeft,
+                            property: 'paddingLeft'
+                        });
+                    }
+                    if (paddingValues.paddingRight > 0 && !isSpacingBoundToToken(containerNode, 'paddingRight')) {
+                        results.push({
+                            type: 'spacing',
+                            issue: `Hardcoded right padding (${paddingValues.paddingRight}px)`,
+                            node: {
+                                id: containerNode.id,
+                                name: containerNode.name
+                            },
+                            frameName: containerNode.name,
+                            nodeType: 'SPACING',
+                            value: paddingValues.paddingRight,
+                            property: 'paddingRight'
+                        });
+                    }
                 }
                 // Check gaps in auto layout
                 try {
@@ -1106,7 +1370,8 @@ async function runValidation(target, library, options, targetName) {
                                 },
                                 frameName: containerNode.name,
                                 nodeType: 'SPACING',
-                                value: gapValue
+                                value: gapValue,
+                                property: 'itemSpacing'
                             });
                         }
                     }
@@ -1119,7 +1384,7 @@ async function runValidation(target, library, options, targetName) {
             if (options.cornerRadius && (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE')) {
                 const shapeNode = node;
                 try {
-                    const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
+                    const corners = CORNER_PROPERTIES.FIGMA_CORNERS;
                     const cornerIssues = [];
                     const cornerValues = {};
                     for (const corner of corners) {
@@ -1531,7 +1796,7 @@ async function handleGetCurrentNodeValues(msg) {
         // Get corner radius values
         if ('topLeftRadius' in node) {
             values.cornerRadius = {};
-            const corners = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
+            const corners = CORNER_PROPERTIES.FIGMA_CORNERS;
             corners.forEach(corner => {
                 if (corner in node) {
                     values.cornerRadius[corner] = node[corner];
@@ -1556,131 +1821,109 @@ async function handleGetCurrentNodeValues(msg) {
         });
     }
 }
+// Validation rules for design token compliance
+const VALIDATION_RULES = {
+    'text-style': {
+        supportedTypes: ['TEXT'],
+        validate: (node) => {
+            const textNode = node;
+            return textNode.textStyleId && textNode.textStyleId !== ''
+                ? { isFixed: true }
+                : { isFixed: false, reason: 'No text style applied' };
+        }
+    },
+    'spacing': {
+        supportedTypes: ['FRAME'],
+        validate: (node) => {
+            const frameNode = node;
+            const boundVariables = frameNode.boundVariables;
+            if (!boundVariables) {
+                return { isFixed: false, reason: 'No design tokens bound' };
+            }
+            const spacingProps = [
+                { key: 'paddingTop', value: frameNode.paddingTop },
+                { key: 'paddingBottom', value: frameNode.paddingBottom },
+                { key: 'paddingLeft', value: frameNode.paddingLeft },
+                { key: 'paddingRight', value: frameNode.paddingRight },
+                { key: 'itemSpacing', value: frameNode.itemSpacing }
+            ];
+            const hardcoded = spacingProps
+                .filter(p => typeof p.value === 'number' && p.value > 0)
+                .filter(p => !boundVariables[p.key])
+                .map(p => p.key);
+            return hardcoded.length > 0
+                ? { isFixed: false, reason: `Hardcoded spacing: ${hardcoded.join(', ')}` }
+                : { isFixed: true };
+        }
+    },
+    'corner-radius': {
+        supportedTypes: ['FRAME', 'RECTANGLE', 'ELLIPSE'],
+        validate: (node) => {
+            const shapeNode = node;
+            const boundVariables = shapeNode.boundVariables;
+            if (!boundVariables) {
+                return { isFixed: false, reason: 'No design tokens bound' };
+            }
+            const corners = CORNER_PROPERTIES.FIGMA_CORNERS;
+            const hardcoded = corners
+                .filter(corner => {
+                const value = shapeNode[corner];
+                return typeof value === 'number' && value > 0;
+            })
+                .filter(corner => !boundVariables[corner])
+                .length;
+            return hardcoded > 0
+                ? { isFixed: false, reason: `${hardcoded} corner${hardcoded > 1 ? 's' : ''} still hardcoded` }
+                : { isFixed: true };
+        }
+    },
+    'color': {
+        supportedTypes: ['*'], // All nodes with fills/strokes
+        validate: (node) => {
+            if (!('fills' in node) && !('strokes' in node)) {
+                return { isFixed: false, reason: 'Node does not support colors' };
+            }
+            const nodeWithColor = node;
+            const boundVariables = nodeWithColor.boundVariables;
+            if (!boundVariables) {
+                return { isFixed: false, reason: 'No design tokens bound' };
+            }
+            const hasColorToken = boundVariables.fills || boundVariables.strokes;
+            return hasColorToken
+                ? { isFixed: true }
+                : { isFixed: false, reason: 'No color tokens applied' };
+        }
+    }
+};
 async function handleValidateIssueResolution(msg) {
-    console.log('🔍 Validating issue resolution:', msg);
     try {
-        const nodeId = msg.nodeId;
-        const issueType = msg.issueType;
-        const validationId = msg.validationId;
-        if (!nodeId || !issueType) {
-            postMessageToUI('validation-response', {
-                validationId,
-                isFixed: false,
-                reason: 'Missing node ID or issue type'
-            });
-            return;
+        const { nodeId, issueType, validationId } = msg;
+        if (!nodeId || !issueType || validationId === undefined) {
+            return postValidationResponse(validationId || 0, false, 'Missing node ID or issue type');
         }
-        // Get the node
         const node = await getNodeById(nodeId);
-        let isFixed = false;
-        let reason = '';
-        // Validate based on issue type
-        switch (issueType) {
-            case 'text-style':
-                // Check if text node has a text style applied
-                if (node.type === 'TEXT') {
-                    const textNode = node;
-                    if (textNode.textStyleId && textNode.textStyleId !== '') {
-                        isFixed = true;
-                    }
-                    else {
-                        reason = 'No text style applied to this text layer';
-                    }
-                }
-                else {
-                    reason = 'Node is not a text layer';
-                }
-                break;
-            case 'spacing':
-                // Check if node has spacing tokens bound
-                if (node.type === 'FRAME') {
-                    const frameNode = node;
-                    const boundVariables = frameNode.boundVariables;
-                    if (boundVariables) {
-                        // Check for spacing-related bound variables
-                        const spacingProperties = ['itemSpacing', 'paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom'];
-                        const hasSpacingToken = spacingProperties.some(prop => boundVariables[prop] !== undefined);
-                        if (hasSpacingToken) {
-                            isFixed = true;
-                        }
-                        else {
-                            reason = 'No spacing tokens applied to this frame';
-                        }
-                    }
-                    else {
-                        reason = 'No design tokens bound to this frame';
-                    }
-                }
-                else {
-                    reason = 'Node does not support spacing tokens';
-                }
-                break;
-            case 'corner-radius':
-                // Check if node has corner radius tokens bound
-                if (node.type === 'FRAME' || node.type === 'RECTANGLE' || node.type === 'ELLIPSE') {
-                    const shapeNode = node;
-                    const boundVariables = shapeNode.boundVariables;
-                    if (boundVariables) {
-                        // Check for corner radius bound variables
-                        const cornerProperties = ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'];
-                        const hasCornerToken = cornerProperties.some(prop => boundVariables[prop] !== undefined);
-                        if (hasCornerToken) {
-                            isFixed = true;
-                        }
-                        else {
-                            reason = 'No corner radius tokens applied to this shape';
-                        }
-                    }
-                    else {
-                        reason = 'No design tokens bound to this shape';
-                    }
-                }
-                else {
-                    reason = 'Node does not support corner radius tokens';
-                }
-                break;
-            case 'color':
-                // Check if node has color tokens bound
-                if ('fills' in node || 'strokes' in node) {
-                    const nodeWithColor = node;
-                    const boundVariables = nodeWithColor.boundVariables;
-                    if (boundVariables) {
-                        // Check for color-related bound variables
-                        const hasColorToken = boundVariables.fills !== undefined || boundVariables.strokes !== undefined;
-                        if (hasColorToken) {
-                            isFixed = true;
-                        }
-                        else {
-                            reason = 'No color tokens applied to this element';
-                        }
-                    }
-                    else {
-                        reason = 'No design tokens bound to this element';
-                    }
-                }
-                else {
-                    reason = 'Node does not support color tokens';
-                }
-                break;
-            default:
-                reason = `Unknown issue type: ${issueType}`;
+        const rule = VALIDATION_RULES[issueType];
+        if (!rule) {
+            return postValidationResponse(validationId, false, `Unknown issue type: ${issueType}`);
         }
-        // Send response back to UI
-        postMessageToUI('validation-response', {
-            validationId,
-            isFixed,
-            reason: isFixed ? 'Issue resolved with design tokens' : reason
-        });
-        console.log('🔍 Validation result:', { isFixed, reason });
+        if (!rule.supportedTypes.includes('*') && !rule.supportedTypes.includes(node.type)) {
+            return postValidationResponse(validationId, false, `Node type ${node.type} not supported for ${issueType}`);
+        }
+        const result = rule.validate(node);
+        postValidationResponse(validationId, result.isFixed, result.reason);
     }
     catch (error) {
-        console.error('🔍 Validation error:', error);
-        postMessageToUI('validation-response', {
-            validationId: msg.validationId,
-            isFixed: false,
-            reason: 'Error during validation: ' + (error instanceof Error ? error.message : String(error))
-        });
+        console.error('Validation error:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        postValidationResponse(msg.validationId || 0, false, `Validation failed: ${errorMessage}`);
     }
+}
+function postValidationResponse(validationId, isFixed, reason) {
+    postMessageToUI('validation-response', {
+        validationId,
+        isFixed,
+        reason: isFixed ? 'Issue resolved with design tokens' : reason
+    });
 }
 async function handleLibrarySelection(msg) {
     var _a, _b;
@@ -1865,6 +2108,9 @@ figma.ui.onmessage = async (msg) => {
     }
     else if (msg.type === 'apply-corner-radius-token') {
         await safeMessageHandler((msg) => handleTokenApplication(msg, 'corner-radius', applyCornerRadiusTokenToNode), msg, 'apply-corner-radius-token');
+    }
+    else if (msg.type === 'apply-corner-radius-token-selective') {
+        await safeMessageHandler((msg) => handleSelectiveCornerRadiusTokenApplication(msg), msg, 'apply-corner-radius-token-selective');
     }
     else if (msg.type === 'apply-corner-radius-tokens') {
         console.log('🔧 Received apply-corner-radius-tokens message:', msg);
