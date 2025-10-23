@@ -38,6 +38,25 @@ variablesMap[collectionKey][variable.name] = {
 
 ## Working Implementation
 
+### Variable Lookup Strategy
+The plugin uses a multi-approach strategy to find variables:
+
+```typescript
+// Approach 1: Try local variable by ID (same file)
+if (tokenData.id) {
+  const localVariable = await figma.variables.getVariableByIdAsync(tokenData.id);
+  if (localVariable) return localVariable;
+}
+
+// Approach 2: Try local variable by name (same file fallback)
+const allLocalVariables = await figma.variables.getLocalVariablesAsync();
+const matchingVariable = allLocalVariables.find(v => v.name === tokenName);
+if (matchingVariable) return matchingVariable;
+
+// Approach 3: Import by key (cross-file via Team Library)
+return await figma.variables.importVariableByKeyAsync(tokenData.key);
+```
+
 ### Import Function
 ```typescript
 async function ensureVariableImportedByName(
@@ -96,6 +115,27 @@ containerNode.setBoundVariable('itemSpacing', importedVariable);
 **Cause**: Missing teamlibrary permission
 **Solution**: Add to manifest.json permissions array
 
+### Plugin Stops Working After Code Changes
+**Cause**: Figma doesn't hot-reload plugin code changes
+**Solution**: **RESTART FIGMA** - This is the most common fix for plugin issues
+
+### "Could not find variable with key" Error
+**Cause**: Multiple possible issues:
+1. Variables not published to Team Library
+2. Library not enabled in current file
+3. Stale cached data in plugin storage
+**Solutions**:
+1. Check Variables panel → Enable design system library
+2. Restart Figma to clear plugin cache
+3. Use "Reset Libraries" button to clear stored data
+
+### "Found 0 local variables" Error
+**Cause**: Testing in wrong file or variables not accessible
+**Solutions**:
+1. Test in the same file where variables were exported
+2. Enable Team Library access in Variables panel
+3. Verify variables exist with "DEBUG: Check Available Variables" button
+
 ## Supported Properties
 
 ### Auto Layout Frames
@@ -112,6 +152,40 @@ containerNode.setBoundVariable('itemSpacing', importedVariable);
 1. **Export from design system**: Captures variable keys
 2. **Enable library in working file**: Makes variables accessible via Team Library API
 3. **Apply tokens**: Plugin imports by key and binds successfully
+
+## Troubleshooting Checklist
+
+When variable binding fails, try these steps **in order**:
+
+### 1. 🔄 Restart Figma First
+- **Most common fix** - Figma needs restart after plugin code changes
+- Close Figma completely and reopen
+- Test variable binding again
+
+### 2. 🔍 Debug Available Variables
+- Use "DEBUG: Check Available Variables" button
+- Verify variables exist and are accessible
+- Check console for detailed variable information
+
+### 3. 📦 Check Storage State
+- Use "DEBUG: Check Storage State" button
+- Verify library data was exported correctly
+- Look for fresh timestamps and variable keys
+
+### 4. 🔗 Verify Library Connection
+- Open Variables panel (⌘ + Option + V)
+- Check if design system library is enabled
+- Enable library if not already active
+
+### 5. 🧹 Clear Plugin Data
+- Use "Reset Libraries" button to clear cached data
+- Re-export from design system
+- Test again with fresh data
+
+### 6. 📍 Check File Context
+- Verify you're in the correct file
+- Same-file: Variables should be found locally
+- Cross-file: Library must be enabled in Variables panel
 
 ## Success Indicators
 
@@ -164,5 +238,20 @@ As of October 2024, the plugin successfully:
 - Handles multiple spacing token formats and naming conventions
 - **NEW**: Dynamically generates validation options based on available tokens
 - **NEW**: Supports validation for colors, corner radius, and other variable types
+- **NEW**: Multi-approach variable lookup (local ID → local name → Team Library import)
+- **NEW**: Comprehensive debug tools for troubleshooting variable issues
+
+## Critical Development Notes
+
+### Plugin Restart Requirement
+**IMPORTANT**: Figma must be restarted after plugin code changes. This is the #1 cause of "broken" functionality during development.
+
+### Debug Tools Available
+- `DEBUG: Check Available Variables` - Shows Team Library variables
+- `DEBUG: Check Storage State` - Shows cached library data
+- `Reset Libraries` - Clears all cached data
+
+### Variable Key Stability
+Variable keys remain stable across publishes, making them reliable for cross-file imports. Variable IDs are file-specific and only work within the same file.
 
 This architecture follows Figma's recommended patterns and provides reliable cross-file variable binding with extensible validation categories.

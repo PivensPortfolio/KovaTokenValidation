@@ -1260,6 +1260,65 @@
     }
   }
 
+  /* Guide Loader - Modal overlay for validation actions */
+  .guide-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 80px;
+    /* Don't cover bottom navigation */
+    background: #ffffff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+  }
+
+  .guide-loader.active {
+    display: flex;
+  }
+
+  /* Smooth fade-out transition for guide loader */
+  .guide-loader {
+    transition: opacity 0.3s ease-out;
+  }
+
+  .guide-loader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .guide-loader-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(139, 92, 246, 0.2);
+    border-top: 3px solid #8b5cf6;
+    border-radius: 50%;
+    animation: guideLoaderSpin 1s linear infinite;
+  }
+
+  .guide-loader-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    max-width: 300px;
+  }
+
+  @keyframes guideLoaderSpin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
   /* Light Theme Loader */
   .kova-loader.light {
     background: #ffffff;
@@ -2768,6 +2827,14 @@
   </div>
 </div>
 
+<!-- Guide Loader - Modal for validation actions -->
+<div id="guide-loader" class="guide-loader">
+  <div class="guide-loader-content">
+    <div class="guide-loader-spinner"></div>
+    <div class="guide-loader-text" id="guide-loader-text">Loading...</div>
+  </div>
+</div>
+
 <script>
   // ============================================================================
   // CONSTANTS
@@ -2898,6 +2965,99 @@
         loader.classList.remove('light', 'dark');
         loader.classList.add(theme);
       }
+    },
+
+    // Guide Loader - Modal overlay for validation actions
+    showGuide: function (message = 'Loading...') {
+      const guideLoader = document.getElementById('guide-loader');
+      const guideText = document.getElementById('guide-loader-text');
+
+      if (guideLoader && guideText) {
+        guideText.textContent = message;
+        guideLoader.classList.add('active');
+      }
+    },
+
+    hideGuide: function () {
+      const guideLoader = document.getElementById('guide-loader');
+      if (guideLoader) {
+        guideLoader.classList.remove('active');
+      }
+    },
+
+    updateGuide: function (message) {
+      const guideText = document.getElementById('guide-loader-text');
+      if (guideText) {
+        // Support both text and HTML content
+        if (message.includes('<svg')) {
+          guideText.innerHTML = message;
+        } else {
+          guideText.textContent = message;
+        }
+      }
+    }
+  };
+
+  // Mini Loader Functions for inline use
+  window.MiniLoader = {
+    show: function (containerId, message = 'Loading...') {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const miniLoader = document.createElement('div');
+      miniLoader.className = 'mini-loader';
+      miniLoader.id = `mini-loader-${containerId}`;
+      miniLoader.innerHTML = `
+        <div class="mini-loader-dots">
+          <div class="mini-loader-dot"></div>
+          <div class="mini-loader-dot"></div>
+          <div class="mini-loader-dot"></div>
+        </div>
+        <span>${message}</span>
+      `;
+
+      // Remove existing mini loader if present
+      this.hide(containerId);
+
+      container.appendChild(miniLoader);
+      return miniLoader;
+    },
+
+    hide: function (containerId) {
+      const existingLoader = document.getElementById(`mini-loader-${containerId}`);
+      if (existingLoader) {
+        existingLoader.remove();
+      }
+    },
+
+    updateMessage: function (containerId, message) {
+      const loader = document.getElementById(`mini-loader-${containerId}`);
+      if (loader) {
+        const span = loader.querySelector('span');
+        if (span) {
+          span.textContent = message;
+        }
+      }
+    },
+
+    showInValidationItem: function (nodeId, message = 'Applying...') {
+      const validationItem = document.querySelector(`[data-node-id="${nodeId}"]`);
+      if (!validationItem) return;
+
+      const container = validationItem.closest('.validation-item') || validationItem.parentElement;
+      if (!container) return;
+
+      return this.show(container.id || `validation-${nodeId}`, message);
+    },
+
+    hideFromValidationItem: function (nodeId) {
+      const validationItem = document.querySelector(`[data-node-id="${nodeId}"]`);
+      if (!validationItem) return;
+
+      const container = validationItem.closest('.validation-item') || validationItem.parentElement;
+      if (!container) return;
+
+      this.hide(container.id || `validation-${nodeId}`);
     }
   };
 
@@ -3342,8 +3502,7 @@
   // Visual feedback functions for applied styles
   function showStyleAppliedFeedback(nodeId, styleName, targetType, appliedCorners = null, isCornerRadius = false) {
     if (!nodeId) {
-      // For selection-based applications, show a general success message
-      showSuccessNotification('Updated')
+      // For selection-based applications, no notification needed
       return
     }
 
@@ -3427,8 +3586,7 @@
       }
     }
 
-    // Show generic success notification
-    showSuccessNotification('Updated')
+    // No notification needed - loader handles feedback
   }
 
   function updateCornerRadiusStates(nodeId, appliedCorners) {
@@ -3610,16 +3768,15 @@
   }
 
   function showUpdateButtonLoading(button, styleName) {
-    const nodeId = button.getAttribute('data-node-id')
-    const validationItem = button.closest('div[style*="display: flex"]')
+    // Store original content
+    if (!button.dataset.originalContent) {
+      button.dataset.originalContent = button.innerHTML;
+    }
 
-    // Show Kova loader with applying message
-    KovaLoader.showLight(`Applying ${styleName}...`)
-
-    // Update button to show simple loading state
-    button.innerHTML = 'Applying...'
-    button.disabled = true
-    button.style.opacity = '0.8'
+    // Simple button loading state - no external loaders needed
+    button.innerHTML = `Applying ${styleName}...`;
+    button.disabled = true;
+    button.style.opacity = '0.7';
   }
 
   function resetUpdateButton(nodeId) {
@@ -3642,46 +3799,70 @@
       notification.id = 'success-notification'
       notification.style.cssText = `
         position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #8b5cf6;
+        top: 24px;
+        right: 24px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
+        padding: 16px 24px;
+        border-radius: 12px;
         font-size: 14px;
-        font-weight: 500;
-        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        font-weight: 600;
+        box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4), 0 4px 16px rgba(0, 0, 0, 0.1);
         z-index: 10000;
-        transform: translateX(100%);
-        transition: transform 0.3s ease-in-out;
+        transform: translateX(120%) scale(0.8);
+        transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         display: flex;
         align-items: center;
-        gap: 8px;
-        border: 1px solid rgba(139, 92, 246, 0.2);
+        gap: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(8px);
+        min-width: 280px;
+        opacity: 0;
       `
       document.body.appendChild(notification)
     }
 
     notification.innerHTML = `
-      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-      </svg>
-      ${message}
+      <div style="
+        width: 24px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      ">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" style="transform: scale(0); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+      </div>
+      <span style="flex: 1;">${message}</span>
     `
 
-    // Show notification
+    // Animate in with bounce effect
     setTimeout(() => {
-      notification.style.transform = 'translateX(0)'
-    }, 100)
+      notification.style.transform = 'translateX(0) scale(1)'
+      notification.style.opacity = '1'
 
-    // Hide notification after 3 seconds
+      // Animate checkmark icon after toast appears
+      setTimeout(() => {
+        const checkIcon = notification.querySelector('svg')
+        if (checkIcon) {
+          checkIcon.style.transform = 'scale(1)'
+        }
+      }, 200)
+    }, 50)
+
+    // Hide notification after 3 seconds with smooth exit
     setTimeout(() => {
-      notification.style.transform = 'translateX(100%)'
+      notification.style.transform = 'translateX(120%) scale(0.9)'
+      notification.style.opacity = '0'
       setTimeout(() => {
         if (notification.parentNode) {
           notification.parentNode.removeChild(notification)
         }
-      }, 300)
+      }, 500)
     }, 3000)
   }
 
@@ -8103,51 +8284,60 @@
   function navigateToIssue(index) {
     showCompactLoader('');
 
-    const issues = collapsedViewState.validationData?.issues || [];
-    if (index >= 0 && index < issues.length) {
-      const targetIssue = issues[index];
-      const container = document.querySelector('#collapsed-issue-display');
-      if (container && targetIssue) {
-        setTimeout(() => {
-          // Don't auto-select to prevent infinite loops - user can manually select if needed
-          displayConversationalIssue(container, targetIssue, false);
-
+    // Add 0.5s delay before navigation
+    setTimeout(() => {
+      const issues = collapsedViewState.validationData?.issues || [];
+      if (index >= 0 && index < issues.length) {
+        const targetIssue = issues[index];
+        const container = document.querySelector('#collapsed-issue-display');
+        if (container && targetIssue) {
           setTimeout(() => {
-            hideCompactLoader();
-          }, 50);
-        }, 200);
+            // Don't auto-select to prevent infinite loops - user can manually select if needed
+            displayConversationalIssue(container, targetIssue, false);
+
+            setTimeout(() => {
+              hideCompactLoader();
+            }, 50);
+          }, 200);
+        }
+      } else {
+        hideCompactLoader();
       }
-    } else {
-      hideCompactLoader();
-    }
+    }, 500); // 0.5s delay before navigation
   }
 
   // Navigate to a specific issue with highlighting (for explicit user actions)
   function navigateToIssueWithHighlight(index) {
     showCompactLoader('');
 
-    const issues = collapsedViewState.validationData?.issues || [];
-    if (index >= 0 && index < issues.length) {
-      const targetIssue = issues[index];
-      const container = document.querySelector('#collapsed-issue-display');
-      if (container && targetIssue) {
-        setTimeout(() => {
-          // Auto-select to highlight the issue since this is an explicit user action
-          displayConversationalIssue(container, targetIssue, true);
-
+    // Add 0.5s delay before navigation
+    setTimeout(() => {
+      const issues = collapsedViewState.validationData?.issues || [];
+      if (index >= 0 && index < issues.length) {
+        const targetIssue = issues[index];
+        const container = document.querySelector('#collapsed-issue-display');
+        if (container && targetIssue) {
           setTimeout(() => {
-            hideCompactLoader();
-          }, 50);
-        }, 200);
+            // Auto-select to highlight the issue since this is an explicit user action
+            displayConversationalIssue(container, targetIssue, true);
+
+            setTimeout(() => {
+              hideCompactLoader();
+            }, 50);
+          }, 200);
+        }
+      } else {
+        hideCompactLoader();
       }
-    } else {
-      hideCompactLoader();
-    }
+    }, 500); // 0.5s delay before navigation
   }
 
   // Navigate to a specific unresolved issue by index in the unresolved issues array
   function navigateToUnresolvedIssue(unresolvedIndex) {
-    // Show quick loader for navigation feedback
+    // Show guide loader for navigation feedback (so we can test fade-out)
+    KovaLoader.showGuide('Navigating to next issue...');
+
+    // Also show compact loader for existing functionality
     showCompactLoader('');
 
     // Refresh data to ensure we have current state
@@ -8192,7 +8382,25 @@
         setTimeout(() => {
           displayConversationalIssue(container, targetIssue, true, unresolvedIndex);
 
-          // Hide loader after content is displayed
+          // Add 0.5s delay before starting fade-out transition for guide loader
+          const guideLoader = document.getElementById('guide-loader');
+          if (guideLoader && guideLoader.classList.contains('active')) {
+            // Wait 0.5s, then start fade-out transition
+            setTimeout(() => {
+              // Fade out the loader smoothly
+              guideLoader.style.transition = 'opacity 0.25s ease-out';
+              guideLoader.style.opacity = '0';
+
+              // Wait for fade-out, then hide
+              setTimeout(() => {
+                KovaLoader.hideGuide();
+                guideLoader.style.transition = '';
+                guideLoader.style.opacity = '';
+              }, 250);
+            }, 500); // 0.5s delay before fade-out starts
+          }
+
+          // Hide compact loader after content is displayed
           setTimeout(() => {
             hideCompactLoader();
           }, 50);
@@ -8211,6 +8419,33 @@
 
   // Navigate to the next unresolved issue (used after resolving/ignoring an issue)
   function navigateToNextUnresolvedIssue() {
+    // Add 0.5s delay before starting fade-out transition
+    const guideLoader = document.getElementById('guide-loader');
+    if (guideLoader && guideLoader.classList.contains('active')) {
+      // Wait 0.5s, then start fade-out transition
+      setTimeout(() => {
+        // Fade out the loader smoothly
+        guideLoader.style.transition = 'opacity 0.25s ease-out';
+        guideLoader.style.opacity = '0';
+
+        // Wait for fade-out, then hide and navigate
+        setTimeout(() => {
+          KovaLoader.hideGuide();
+          guideLoader.style.transition = '';
+          guideLoader.style.opacity = '';
+          performNavigation();
+        }, 250);
+      }, 500); // 0.5s delay before fade-out starts
+    } else {
+      // No loader visible, add delay then navigate
+      setTimeout(() => {
+        performNavigation();
+      }, 500);
+    }
+  }
+
+  // Actual navigation logic (separated for smooth transitions)
+  function performNavigation() {
     // Refresh data to ensure we have current state
     refreshGuidedModeData();
 
@@ -8278,37 +8513,40 @@
 
   // Navigate to the next issue in the current validation
   function navigateToNextIssue() {
-    const issues = collapsedViewState.validationData?.issues || [];
+    // Add 0.5s delay before navigation
+    setTimeout(() => {
+      const issues = collapsedViewState.validationData?.issues || [];
 
-    if (issues.length === 0) {
-      showSuccessNotification('🎉 No issues found! Great work!', 3000);
-      return;
-    }
-
-    // Find the first unresolved issue
-    const issueStates = window.issueStates || new Map();
-    let nextIssueIndex = -1;
-
-    for (let i = 0; i < issues.length; i++) {
-      const issue = issues[i];
-      const nodeId = issue.node?.id;
-      const state = issueStates.get(nodeId);
-
-      // If issue is not resolved or ignored, this is our next issue
-      if (!state || (state !== 'resolved' && state !== 'ignored')) {
-        nextIssueIndex = i;
-        break;
+      if (issues.length === 0) {
+        showSuccessNotification('🎉 No issues found! Great work!', 3000);
+        return;
       }
-    }
 
-    if (nextIssueIndex !== -1) {
-      // Navigate to the next unresolved issue with highlighting
-      navigateToIssueWithHighlight(nextIssueIndex);
-      console.log(`🔄 Navigated to next unresolved issue (${nextIssueIndex + 1} of ${issues.length})`);
-    } else {
-      // All issues are resolved!
-      console.log('✅ All issues in current validation are resolved');
-    }
+      // Find the first unresolved issue
+      const issueStates = window.issueStates || new Map();
+      let nextIssueIndex = -1;
+
+      for (let i = 0; i < issues.length; i++) {
+        const issue = issues[i];
+        const nodeId = issue.node?.id;
+        const state = issueStates.get(nodeId);
+
+        // If issue is not resolved or ignored, this is our next issue
+        if (!state || (state !== 'resolved' && state !== 'ignored')) {
+          nextIssueIndex = i;
+          break;
+        }
+      }
+
+      if (nextIssueIndex !== -1) {
+        // Navigate to the next unresolved issue with highlighting
+        navigateToIssueWithHighlight(nextIssueIndex);
+        console.log(`🔄 Navigated to next unresolved issue (${nextIssueIndex + 1} of ${issues.length})`);
+      } else {
+        // All issues are resolved!
+        console.log('✅ All issues in current validation are resolved');
+      }
+    }, 500); // 0.5s delay before navigation
   }
 
   // Get count of resolved issues
@@ -8622,7 +8860,8 @@
           // Validate if the issue is actually fixed before marking as resolved
           console.log('🔍 Validating issue resolution...');
           console.log('🔍 Issue details:', issue);
-          showSuccessNotification('Checking if issue is actually fixed...', 2000);
+          // Show guide loader modal
+          KovaLoader.showGuide('Verifying fix...');
 
           const validation = await validateIssueResolution(issue);
           console.log('🔍 Validation result:', validation);
@@ -8639,7 +8878,14 @@
             }
 
             syncStateWithExpandedView(nodeId, 'resolved');
-            showSuccessNotification('✅ Issue fixed! Moving to next issue...');
+
+            // Update guide loader to show success with check icon
+            KovaLoader.updateGuide(`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 6px; color: #10b981;"><polyline points="20,6 9,17 4,12"></polyline></svg>Issue verified!`);
+
+            // Hide guide loader after brief success message
+            setTimeout(() => {
+              KovaLoader.hideGuide();
+            }, 1500);
 
             // Auto-navigate to next unresolved issue with transition feedback
             setTimeout(() => {
@@ -8652,14 +8898,35 @@
               buttonElement.style.opacity = '1';
               buttonElement.style.cursor = 'pointer';
             }
-            showErrorNotification(`❌ Issue not fixed: ${validation.reason || 'No design token detected'}`);
-            console.log('🔍 Issue validation failed:', validation);
+            // Add smooth fade-out transition for guide loader
+            const guideLoader = document.getElementById('guide-loader');
+            if (guideLoader && guideLoader.classList.contains('active')) {
+              // Fade out the loader smoothly
+              guideLoader.style.transition = 'opacity 0.25s ease-out';
+              guideLoader.style.opacity = '0';
+
+              // Wait for fade-out, then hide
+              setTimeout(() => {
+                KovaLoader.hideGuide();
+                guideLoader.style.transition = '';
+                guideLoader.style.opacity = '';
+              }, 250);
+            }
+
+            // Show persistent red toast notification for validation errors
+            showErrorNotification(`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 6px; vertical-align: middle;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Issue not fixed: ${validation.reason || 'No design token detected'}`);
+            console.log('Issue validation failed:', validation);
           }
           break;
 
         case 'ignore':
+          // Show brief loading for ignore action
+          KovaLoader.showLight('Ignoring issue...');
+
           syncStateWithExpandedView(nodeId, 'ignored');
-          showSuccessNotification('Issue ignored');
+
+          // Update loading message
+          KovaLoader.updateMessage('Issue ignored. Loading next issue...');
 
           // Auto-navigate to next unresolved issue with transition feedback
           setTimeout(() => {
@@ -8682,7 +8949,12 @@
         buttonElement.style.cursor = 'pointer';
       }
 
-      showErrorNotification('❌ An error occurred. Please try again.');
+      KovaLoader.updateMessage('❌ An error occurred. Please try again.');
+
+      // Hide loader after showing error briefly
+      setTimeout(() => {
+        KovaLoader.hide();
+      }, 2000);
     }
   }
 
@@ -9109,41 +9381,74 @@
 
   // Show success notification
   function showSuccessNotification(message) {
-    // Create a simple notification
+    // Create enhanced notification with cool animations
     const notification = document.createElement('div');
     notification.style.cssText = `
       position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #8b5cf6;
+      top: 24px;
+      right: 24px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: white;
-      padding: 12px 16px;
-      border-radius: 8px;
+      padding: 16px 24px;
+      border-radius: 12px;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
+      box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4), 0 4px 16px rgba(0, 0, 0, 0.1);
       z-index: 10000;
-      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      animation: slideIn 0.3s ease-out;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      min-width: 280px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transform: translateX(120%) scale(0.8);
+      opacity: 0;
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
     `;
-    notification.textContent = message;
 
-    // Add animation styles
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
+    notification.innerHTML = `
+      <div style="
+        width: 24px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      ">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" style="transform: scale(0); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+      </div>
+      <span style="flex: 1;">${message}</span>
     `;
-    document.head.appendChild(style);
 
     document.body.appendChild(notification);
 
-    // Remove after 3 seconds
+    // Animate in with bounce effect
     setTimeout(() => {
-      notification.remove();
-      style.remove();
+      notification.style.transform = 'translateX(0) scale(1)';
+      notification.style.opacity = '1';
+
+      // Animate checkmark icon after toast appears
+      setTimeout(() => {
+        const checkIcon = notification.querySelector('svg');
+        if (checkIcon) {
+          checkIcon.style.transform = 'scale(1)';
+        }
+      }, 200);
+    }, 50);
+
+    // Remove after 3 seconds with smooth exit
+    setTimeout(() => {
+      notification.style.transform = 'translateX(120%) scale(0.9)';
+      notification.style.opacity = '0';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 500);
     }, 3000);
   }
 
@@ -9165,7 +9470,13 @@
       border: 1px solid rgba(220, 38, 38, 0.2);
       animation: slideIn 0.3s ease-out;
     `;
-    notification.textContent = message;
+
+    // Support both text and HTML content (like icons)
+    if (message.includes('<svg')) {
+      notification.innerHTML = message;
+    } else {
+      notification.textContent = message;
+    }
 
     // Add animation styles if not already present
     if (!document.querySelector('style[data-notification-styles]')) {
@@ -9431,17 +9742,26 @@
 
   // Find matching spacing token
   function findMatchingSpacingToken(currentValue, library) {
-    // Convert library items to spacing tokens
-    const spacingTokens = Object.entries(library.items).filter(([name, value]) => {
-      // Assuming spacing tokens are numeric values
-      return typeof value === 'number' || !isNaN(parseFloat(value));
-    });
+    console.log('🔍 Finding spacing token for value:', currentValue);
+    console.log('🔍 Library structure:', library);
+
+    // Get spacing tokens from variables (not items which are text styles)
+    const spacingVariables = library.variables?.spacing || {};
+    const spacingTokens = Object.entries(spacingVariables);
+
+    console.log('🔍 Available spacing tokens:', spacingTokens);
 
     // Find exact match first
-    for (const [name, value] of spacingTokens) {
-      const tokenValue = typeof value === 'number' ? value : parseFloat(value);
-      if (Math.abs(tokenValue - currentValue) < 0.1) { // Allow small floating point differences
-        return { name, value: tokenValue };
+    for (const [name, tokenData] of spacingTokens) {
+      // Extract value from token data structure
+      const tokenValue = tokenData?.values ? Object.values(tokenData.values)[0] : tokenData?.value || tokenData;
+      const numericValue = typeof tokenValue === 'number' ? tokenValue : parseFloat(tokenValue);
+
+      console.log(`🔍 Checking token "${name}": ${numericValue} vs current ${currentValue}`);
+
+      if (!isNaN(numericValue) && Math.abs(numericValue - currentValue) < 0.1) {
+        console.log(`✅ Exact match found: ${name} = ${numericValue}`);
+        return { name, value: numericValue };
       }
     }
 
@@ -9449,16 +9769,23 @@
     let closestMatch = null;
     let closestDifference = Infinity;
 
-    for (const [name, value] of spacingTokens) {
-      const tokenValue = typeof value === 'number' ? value : parseFloat(value);
-      const difference = Math.abs(tokenValue - currentValue);
+    for (const [name, tokenData] of spacingTokens) {
+      const tokenValue = tokenData?.values ? Object.values(tokenData.values)[0] : tokenData?.value || tokenData;
+      const numericValue = typeof tokenValue === 'number' ? tokenValue : parseFloat(tokenValue);
 
-      if (difference <= 2 && difference < closestDifference) {
-        closestDifference = difference;
-        closestMatch = { name, value: tokenValue };
+      if (!isNaN(numericValue)) {
+        const difference = Math.abs(numericValue - currentValue);
+        console.log(`🔍 Token "${name}": ${numericValue}, difference: ${difference}`);
+
+        if (difference <= 2 && difference < closestDifference) {
+          closestDifference = difference;
+          closestMatch = { name, value: numericValue };
+          console.log(`🎯 New closest match: ${name} = ${numericValue} (diff: ${difference})`);
+        }
       }
     }
 
+    console.log('🔍 Final spacing token match:', closestMatch);
     return closestMatch;
   }
 
@@ -9566,7 +9893,9 @@
         buttonElement.style.opacity = '0.6';
       }
 
-      showSuccessNotification(`🤖 Applying AI-suggested "${tokenName}"...`);
+      // Show guide loader modal with issue type context
+      const issueTypeDisplay = issueType === 'spacing' ? 'spacing' : issueType === 'corner-radius' ? 'corner radius' : issueType;
+      KovaLoader.showGuide(`Applying ${tokenName} to ${issueTypeDisplay}...`);
 
       // Apply the token based on issue type
       let success = false;
@@ -9595,14 +9924,20 @@
       }
 
       if (success) {
-        // Hide Smart Fix button and show success
+        // Hide guide loader immediately
+        KovaLoader.hideGuide();
+
+        // Show success toast notification
+        const issueTypeDisplay = issueType === 'spacing' ? 'spacing' : issueType === 'corner-radius' ? 'corner radius' : issueType;
+        showSuccessNotification(`${tokenName} applied to ${issueTypeDisplay}`);
+
+        // Hide Smart Fix button
         smartFixContainer.style.display = 'none';
-        showSuccessNotification(`✅ Applied "${tokenName}" successfully! Moving to next issue...`);
 
         // Auto-navigate to next issue
         setTimeout(() => {
           navigateToNextUnresolvedIssue();
-        }, 1500);
+        }, 500);
       } else {
         // Re-enable button on failure
         if (buttonElement) {
@@ -9610,7 +9945,14 @@
           buttonElement.disabled = false;
           buttonElement.style.opacity = '1';
         }
-        showErrorNotification(`❌ Failed to apply "${tokenName}"`);
+
+        // Update guide loader to show error with X icon
+        KovaLoader.updateGuide(`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 6px; color: #dc2626;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Failed to apply ${tokenName}`);
+
+        // Hide guide loader after showing error briefly
+        setTimeout(() => {
+          KovaLoader.hideGuide();
+        }, 2000);
       }
     } catch (error) {
       console.error('❌ Error applying Smart Fix:', error);
@@ -9622,7 +9964,13 @@
         buttonElement.style.opacity = '1';
       }
 
-      showErrorNotification('❌ Smart Fix failed. Please try manually.');
+      // Update guide loader to show error with X icon
+      KovaLoader.updateGuide(`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 6px; color: #dc2626;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Smart Fix failed. Please try manually.`);
+
+      // Hide guide loader after showing error briefly
+      setTimeout(() => {
+        KovaLoader.hideGuide();
+      }, 2000);
     }
   }
 
